@@ -34,12 +34,33 @@ bool EnemyCanSpare(const Enemy *enemy)
     return enemy->spareable && enemy->aggression < AGGRESSION_HIGH;
 }
 
+void EnemyApplyStatus(Enemy *enemy, StatusEffect status, int turns)
+{
+    if (status == STATUS_NONE || turns <= 0) return;
+    enemy->status = status;
+    enemy->status_turns = turns;
+}
+
+bool EnemyAdvanceStatus(Enemy *enemy, int *damage)
+{
+    *damage = 0;
+    if (enemy->status_turns <= 0) return false;
+    if (enemy->status == STATUS_BURN) {
+        *damage = 3;
+        EnemyTakeDamage(enemy, *damage, 1.0f);
+    }
+    enemy->status_turns--;
+    if (enemy->status_turns == 0) enemy->status = STATUS_NONE;
+    return *damage > 0;
+}
+
 Enemy EnemyCreate(EnemyId id)
 {
     Enemy enemy;
 
     memset(&enemy, 0, sizeof(enemy));
     enemy.id = id;
+    enemy.projectile_damage_multiplier = 1.0f;
     enemy.last_action_index = -1;
     for (int index = 0; index < MAX_ENEMY_ACTIONS; index++) enemy.action_last_turn[index] = -1;
     switch (id) {
@@ -137,8 +158,15 @@ Enemy EnemyCreate(EnemyId id)
             snprintf(enemy.name, sizeof(enemy.name), "Sineiro Vazio");
             enemy.hp_max = 100; enemy.hp = enemy.hp_max; enemy.type = TYPE_SHADOW; enemy.type2 = TYPE_LIGHT;
             enemy.has_type2 = true; enemy.boss = true; enemy.aggression = 55;
-            for (int i = 0; i < 6; i++) enemy.pattern_ids[i] = (BulletPatternId)i;
-            enemy.pattern_count = 6;
+            enemy.pattern_ids[0] = PATTERN_TIGHT_SPIRAL;
+            enemy.pattern_ids[1] = PATTERN_CROSS_LASERS;
+            enemy.pattern_ids[2] = PATTERN_RING_BURST;
+            enemy.pattern_ids[3] = PATTERN_PAUSE_DARTS;
+            enemy.pattern_ids[4] = PATTERN_MOVING_WALL;
+            enemy.pattern_ids[5] = PATTERN_SIDE_WAVE;
+            enemy.pattern_ids[6] = PATTERN_SPIRAL;
+            enemy.pattern_ids[7] = PATTERN_PINWHEEL;
+            enemy.pattern_count = 8;
             snprintf(enemy.description, sizeof(enemy.description), "Um sino sem som guarda o quinto andar.");
             enemy.actions[0] = MakeAction("Analisar", "", ENEMY_ACTION_ANALYZE, 0, 0, 0, 0, 1.0f, 100);
             enemy.actions[1] = MakeAction("Escutar", "O metal para de tremer.", ENEMY_ACTION_SOCIAL, 28, -16, 3, 1, .5f, 100);
@@ -148,8 +176,15 @@ Enemy EnemyCreate(EnemyId id)
         case ENEMY_BOSS_LAST_TOWER:
             snprintf(enemy.name, sizeof(enemy.name), "A Ultima Torre");
             enemy.hp_max = 145; enemy.hp = enemy.hp_max; enemy.type = TYPE_NEUTRAL; enemy.boss = true; enemy.aggression = 62;
-            for (int i = 0; i < 6; i++) enemy.pattern_ids[i] = (BulletPatternId)i;
-            enemy.pattern_count = 6;
+            enemy.pattern_ids[0] = PATTERN_CROSS_LASERS;
+            enemy.pattern_ids[1] = PATTERN_MOVING_WALL;
+            enemy.pattern_ids[2] = PATTERN_SPLIT_SHOTS;
+            enemy.pattern_ids[3] = PATTERN_BOUNCE_ORBS;
+            enemy.pattern_ids[4] = PATTERN_CHASE_WAVE;
+            enemy.pattern_ids[5] = PATTERN_RING_BURST;
+            enemy.pattern_ids[6] = PATTERN_DIAGONAL_RAIN;
+            enemy.pattern_ids[7] = PATTERN_PINWHEEL;
+            enemy.pattern_count = 8;
             snprintf(enemy.description, sizeof(enemy.description), "A torre responde com a sua propria voz.");
             enemy.actions[0] = MakeAction("Analisar", "", ENEMY_ACTION_ANALYZE, 0, 0, 0, 0, 1.0f, 100);
             enemy.actions[1] = MakeAction("Lembrar", "As paredes ficam mais leves.", ENEMY_ACTION_SOCIAL, 26, -16, 3, 1, .5f, 100);

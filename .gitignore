@@ -1,5 +1,8 @@
 build/
+build-sanitize/
+build-release/
 save.dat
 AscencaoDaTorre/
 *.exe
 test_save_temp.dat
+playtest_log.csv

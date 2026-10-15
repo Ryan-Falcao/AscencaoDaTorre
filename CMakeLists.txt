@@ -11,6 +11,10 @@ find_package(raylib CONFIG REQUIRED)
 add_executable(ascensao_torre
     src/main.c
     src/input.c
+    src/audio.c
+    src/sprites.c
+    src/fx.c
+    src/playtest.c
     src/save.c
     src/render.c
     src/game.c
@@ -53,7 +57,23 @@ if(BUILD_TYPE_TESTS)
     add_executable(test_save tests/test_save.c src/save.c src/items.c)
     target_include_directories(test_save PRIVATE include)
     target_compile_options(test_save PRIVATE -Wall -Wextra)
+
+    add_executable(test_balance tests/test_balance.c)
+    target_include_directories(test_balance PRIVATE include)
+    target_compile_options(test_balance PRIVATE -Wall -Wextra)
+
+    add_executable(test_sprites tests/test_sprites.c src/sprites.c src/types.c)
+    target_include_directories(test_sprites PRIVATE include)
+    target_compile_options(test_sprites PRIVATE -Wall -Wextra)
+    target_link_libraries(test_sprites PRIVATE raylib)
+
+    add_executable(test_phase10 tests/test_phase10.c src/player.c src/items.c src/enemy.c src/types.c)
+    target_include_directories(test_phase10 PRIVATE include)
+    target_compile_options(test_phase10 PRIVATE -Wall -Wextra)
+    target_link_libraries(test_phase10 PRIVATE raylib)
 endif()
+
+set(CMAKE_C_FLAGS_RELEASE "-O2 -DNDEBUG" CACHE STRING "Release flags" FORCE)
 
 if(UNIX AND NOT APPLE)
     target_link_libraries(ascensao_torre PRIVATE m)

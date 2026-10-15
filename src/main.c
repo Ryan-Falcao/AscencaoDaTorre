@@ -1,5 +1,7 @@
 #include "game.h"
 
+#include <string.h>
+
 static Rectangle GetLetterboxDestination(void)
 {
     const float horizontal_scale = (float)GetScreenWidth() / LOGICAL_WIDTH;
@@ -27,7 +29,7 @@ static Vector2 GetLogicalMousePosition(void)
     };
 }
 
-int main(void)
+int main(int argc, char **argv)
 {
     GameState game;
 
@@ -38,6 +40,17 @@ int main(void)
 
     RenderTexture2D canvas = LoadRenderTexture(LOGICAL_WIDTH, LOGICAL_HEIGHT);
     GameInit(&game);
+    for (int index = 1; index < argc; index++) {
+        if (strcmp(argv[index], "--telemetry") == 0) game.telemetry_enabled = true;
+        if (strcmp(argv[index], "--export-placeholders") == 0) {
+            SpritesExportPlaceholders();
+            SpritesUnload(&game.sprites);
+            AudioUnload(&game.audio);
+            UnloadRenderTexture(canvas);
+            CloseWindow();
+            return 0;
+        }
+    }
 
     while (!WindowShouldClose() && !game.quit_requested) {
         game.mouse_position = GetLogicalMousePosition();
@@ -60,6 +73,8 @@ int main(void)
     }
 
     SaveWrite(&game.save);
+    SpritesUnload(&game.sprites);
+    AudioUnload(&game.audio);
     UnloadRenderTexture(canvas);
     CloseWindow();
     return 0;

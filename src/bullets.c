@@ -2,6 +2,7 @@
 
 #include "input.h"
 #include "ui.h"
+#include "sprites.h"
 #include "raymath.h"
 
 #include <math.h>
@@ -11,6 +12,8 @@
 #define AGGRESSION_HIGH_MIN 67
 #define HIGH_AGGRESSION_SPEED_MULTIPLIER 1.15f
 #define HIGH_AGGRESSION_DAMAGE_MULTIPLIER 1.25f
+#define DEFENSE_START_GRACE_SECONDS 0.35f
+#define SPIRAL_SAFE_SPAWN_RADIUS 34.0f
 
 static const BulletPattern PATTERNS[PATTERN_COUNT] = {
     [PATTERN_RAIN] = {
@@ -36,6 +39,46 @@ static const BulletPattern PATTERNS[PATTERN_COUNT] = {
     [PATTERN_TIGHT_SPIRAL] = {
         7.0f, 270.0f, 160.0f, 0.30f, 5, 120.0f, 5.0f, 1.25f, 0.0f,
         TYPE_SHADOW, 5, 3, SPAWN_SPIRAL
+    },
+    [PATTERN_PETAL_ORBIT] = {
+        6.5f, 300.0f, 175.0f, 0.36f, 6, 82.0f, 5.0f, 1.05f, 0.0f,
+        TYPE_PLANT, 4, 2, SPAWN_SPIRAL
+    },
+    [PATTERN_BOUNCE_ORBS] = {
+        6.5f, 310.0f, 170.0f, 0.55f, 4, 116.0f, 7.0f, 0.75f, 0.0f,
+        TYPE_WATER, 4, 2, SPAWN_SPIRAL
+    },
+    [PATTERN_MOVING_WALL] = {
+        7.0f, 335.0f, 180.0f, 0.72f, 10, 130.0f, 6.0f, 0.0f, 58.0f,
+        TYPE_NEUTRAL, 5, 3, SPAWN_SIDE_WAVE
+    },
+    [PATTERN_SPLIT_SHOTS] = {
+        6.5f, 300.0f, 170.0f, 0.30f, 3, 138.0f, 5.0f, 0.48f, 0.0f,
+        TYPE_FLAME, 5, 3, SPAWN_RAIN
+    },
+    [PATTERN_CROSS_LASERS] = {
+        6.0f, 320.0f, 170.0f, 0.90f, 8, 158.0f, 5.0f, 0.0f, 48.0f,
+        TYPE_LIGHT, 6, 3, SPAWN_SIDE_WAVE
+    },
+    [PATTERN_PAUSE_DARTS] = {
+        6.5f, 290.0f, 165.0f, 0.46f, 5, 72.0f, 6.0f, 1.26f, 0.0f,
+        TYPE_SHADOW, 5, 2, SPAWN_SPIRAL
+    },
+    [PATTERN_RING_BURST] = {
+        6.0f, 300.0f, 170.0f, 0.58f, 8, 110.0f, 5.0f, 0.78f, 0.0f,
+        TYPE_LIGHT, 5, 2, SPAWN_SPIRAL
+    },
+    [PATTERN_DIAGONAL_RAIN] = {
+        6.5f, 305.0f, 175.0f, 0.28f, 4, 150.0f, 5.0f, 0.0f, 0.0f,
+        TYPE_FLAME, 4, 2, SPAWN_RAIN
+    },
+    [PATTERN_CHASE_WAVE] = {
+        7.0f, 320.0f, 176.0f, 0.66f, 8, 152.0f, 6.0f, 0.0f, 46.0f,
+        TYPE_WATER, 5, 3, SPAWN_SIDE_WAVE
+    },
+    [PATTERN_PINWHEEL] = {
+        7.0f, 285.0f, 165.0f, 0.34f, 6, 126.0f, 5.0f, 1.05f, 0.0f,
+        TYPE_PLANT, 5, 3, SPAWN_SPIRAL
     }
 };
 
@@ -66,7 +109,7 @@ static void SpawnBullet(DefenseState *defense, Vector2 position, Vector2 velocit
                 true,
                 position,
                 velocity,
-                defense->pattern.radius,
+                defense->pattern.hitbox_radius,
                 defense->pattern.type,
                 defense->pattern.damage,
                 0.0f
@@ -104,7 +147,13 @@ static void SpawnPatternShot(DefenseState *defense)
         for (int bullet_index = 0; bullet_index < pattern->bullets_per_spawn; bullet_index++) {
             const float angle = defense->spiral_angle + pattern->angle_spread * (float)bullet_index;
             const Vector2 velocity = {cosf(angle) * pattern->speed, sinf(angle) * pattern->speed};
-            SpawnBullet(defense, center, velocity);
+            const Vector2 position = {
+                center.x + cosf(angle) * SPIRAL_SAFE_SPAWN_RADIUS,
+                center.y + sinf(angle) * SPIRAL_SAFE_SPAWN_RADIUS
+            };
+
+            /* The soul begins in the centre: never spawn a spiral bullet inside its hitbox. */
+            SpawnBullet(defense, position, velocity);
         }
         defense->spiral_angle += 0.48f;
     }
@@ -120,13 +169,18 @@ void DefenseInit(DefenseState *defense)
 }
 
 void DefenseStart(DefenseState *defense, BulletPatternId pattern_id, Rectangle menu_box,
-                  int aggression, int damage_bonus)
+                  int aggression, int damage_bonus, float damage_multiplier, float speed_multiplier)
 {
     if (pattern_id < PATTERN_RAIN || pattern_id >= PATTERN_COUNT) pattern_id = PATTERN_RAIN;
 
     ClearBullets(defense);
     defense->pattern = PATTERNS[pattern_id];
+    defense->pattern_id = pattern_id;
+    if (defense->pattern.visual_scale <= 0.0f) defense->pattern.visual_scale = 1.0f;
+    if (defense->pattern.hitbox_radius <= 0.0f) defense->pattern.hitbox_radius = defense->pattern.radius;
     defense->pattern.damage += damage_bonus;
+    defense->pattern.damage = (int)ceilf((float)defense->pattern.damage * damage_multiplier);
+    defense->pattern.speed *= speed_multiplier;
     if (aggression >= AGGRESSION_HIGH_MIN) {
         defense->pattern.speed *= HIGH_AGGRESSION_SPEED_MULTIPLIER;
         defense->pattern.damage = (int)ceilf((float)defense->pattern.damage *
@@ -146,10 +200,12 @@ void DefenseStart(DefenseState *defense, BulletPatternId pattern_id, Rectangle m
         defense->target_box.x + defense->target_box.width * 0.5f,
         defense->target_box.y + defense->target_box.height * 0.5f
     };
-    defense->invincibility_timer = 0.0f;
+    for (int index = 0; index < 6; index++) defense->soul_trail[index] = defense->soul_position;
+    /* A short readable gap after the box opens prevents an unavoidable first hit. */
+    defense->invincibility_timer = DEFENSE_START_GRACE_SECONDS + 0.25f;
     defense->phase_timer = 0.0f;
     defense->pattern_timer = 0.0f;
-    defense->spawn_timer = 0.0f;
+    defense->spawn_timer = -DEFENSE_START_GRACE_SECONDS;
     defense->spiral_angle = 0.0f;
     defense->spawn_count = 0;
     defense->phase = DEFENSE_ENTERING;
@@ -179,6 +235,8 @@ static void UpdateSoul(DefenseState *defense, float delta_time)
     if (input_down_down()) movement.y += 1.0f;
     if (movement.x != 0.0f && movement.y != 0.0f) movement = Vector2Scale(movement, 0.7071f);
 
+    for (int index = 5; index > 0; index--) defense->soul_trail[index] = defense->soul_trail[index - 1];
+    defense->soul_trail[0] = defense->soul_position;
     defense->soul_position = Vector2Add(defense->soul_position, Vector2Scale(movement, speed * delta_time));
     defense->soul_position.x = Clamp(defense->soul_position.x, defense->box.x + defense->soul_radius,
                                      defense->box.x + defense->box.width - defense->soul_radius);
@@ -203,11 +261,12 @@ static void UpdateBullets(DefenseState *defense, PlayerStats *player, float delt
             continue;
         }
 
-        if (defense->invincibility_timer <= 0.0f &&
+        if (!defense->debug_invincible && defense->invincibility_timer <= 0.0f &&
             CheckCollisionCircles(defense->soul_position, defense->soul_radius,
                                   bullet->position, bullet->radius)) {
             const float multiplier = type_effectiveness(bullet->type, player->defense_type);
-            int damage = (int)ceilf((float)bullet->damage * multiplier);
+            int damage = (int)ceilf((float)bullet->damage * multiplier *
+                                    player->incoming_damage_multiplier);
 
             if (damage < 1) damage = 1;
             player->hp -= damage;
@@ -265,15 +324,39 @@ DefenseResult DefenseUpdate(DefenseState *defense, PlayerStats *player, float de
     return DEFENSE_RUNNING;
 }
 
-void DefenseDraw(const DefenseState *defense)
+void DefenseDraw(const DefenseState *defense, bool draw_effects, const SpriteSystem *sprites)
 {
     DrawRectangleRec(defense->box, BLACK);
     DrawRectangleLinesEx(defense->box, 4.0f, RAYWHITE);
 
     if (defense->phase == DEFENSE_ACTIVE) {
+        if (defense->pattern_timer < 0.40f && defense->pattern.radius >= 6.0f) {
+            const Vector2 warning = {defense->box.x + defense->box.width * 0.5f,
+                                     defense->box.y + defense->box.height * 0.5f};
+            DrawCircleLines((int)warning.x, (int)warning.y, 18, (Color){245, 90, 82, 255});
+            DrawText("!", (int)warning.x - 3, (int)warning.y - 10, 18, (Color){245, 90, 82, 255});
+        }
         for (int bullet_index = 0; bullet_index < MAX_BULLETS; bullet_index++) {
             const Bullet *bullet = &defense->bullets[bullet_index];
-            if (bullet->active) DrawCircleV(bullet->position, bullet->radius, type_color(bullet->type));
+            if (!bullet->active) continue;
+            const SpriteId pattern_sprite = SpriteBulletPatternId(defense->pattern_id);
+            const SpriteId sprite_id = sprite_get(sprites, pattern_sprite) != NULL ? pattern_sprite :
+                                       SpriteBulletId(bullet->type);
+            if (sprite_get(sprites, sprite_id) != NULL) {
+                const float angle = defense->pattern.rotate ?
+                    atan2f(bullet->velocity.y, bullet->velocity.x) * 57.2958f : 0.0f;
+                SpriteDrawCenteredRotated(sprites, sprite_id, bullet->position, WHITE,
+                                          bullet->lifetime, angle, sprites->debug_bounds);
+                DrawCircleLines((int)bullet->position.x, (int)bullet->position.y,
+                                bullet->radius + 1.0f, Fade(type_color(bullet->type), 0.65f));
+            } else {
+                DrawCircleV(bullet->position, bullet->radius, type_color(bullet->type));
+            }
+            if (defense->pattern.trail && draw_effects) {
+                DrawCircleV((Vector2){bullet->position.x - bullet->velocity.x * 0.05f,
+                                      bullet->position.y - bullet->velocity.y * 0.05f},
+                            bullet->radius * 0.55f, Fade(type_color(bullet->type), 0.35f));
+            }
         }
 
         if (defense->damage_popup_timer > 0.0f) {
@@ -283,13 +366,24 @@ void DefenseDraw(const DefenseState *defense)
                      (int)defense->soul_position.y - 18, font_size, color);
         }
 
+        if (draw_effects) {
+            for (int index = 5; index > 0; index--) {
+                const unsigned char alpha = (unsigned char)(index * 18);
+                DrawCircleV(defense->soul_trail[index], 3.0f, (Color){231, 87, 112, alpha});
+            }
+        }
         if (defense->invincibility_timer <= 0.0f || ((int)(defense->invincibility_timer * 14.0f) % 2 == 0)) {
             const Vector2 soul = defense->soul_position;
             const Color heart = {231, 87, 112, 255};
-            DrawCircle((int)soul.x - 3, (int)soul.y - 2, 4, heart);
-            DrawCircle((int)soul.x + 3, (int)soul.y - 2, 4, heart);
-            DrawTriangle((Vector2){soul.x - 7, soul.y}, (Vector2){soul.x + 7, soul.y},
-                         (Vector2){soul.x, soul.y + 8}, heart);
+            if (sprite_get(sprites, SPRITE_SOUL) != NULL) {
+                SpriteDrawCentered(sprites, SPRITE_SOUL, soul, heart, defense->pattern_timer,
+                                   sprites->debug_bounds);
+            } else {
+                DrawCircle((int)soul.x - 3, (int)soul.y - 2, 4, heart);
+                DrawCircle((int)soul.x + 3, (int)soul.y - 2, 4, heart);
+                DrawTriangle((Vector2){soul.x - 7, soul.y}, (Vector2){soul.x + 7, soul.y},
+                             (Vector2){soul.x, soul.y + 8}, heart);
+            }
         }
     }
 }

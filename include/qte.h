@@ -57,6 +57,7 @@ const char *qte_result_name(QteResult result);
 QteResult qte_result_from_timing_distance(float distance, int difficulty);
 QteResult qte_result_from_sequence(int correct, int total, float elapsed, float limit);
 bool qte_is_in_guard(const Qte *qte);
+void qte_resume_with_guard(Qte *qte);
 QteInput qte_input_for_test(bool confirm_pressed, bool confirm_down, bool confirm_released,
                             int direction_pressed);
 

@@ -4,7 +4,8 @@ Roguelike 2D de batalhas por turnos, feito em C11 e Raylib. A jornada possui 10 
 
 ## Estado atual
 
-**Fase 8A concluida:** save entre runs, desbloqueios, Relíquias, Opções e visual pastel original.
+**Fase 8C concluida:** save migrável, tutorial contextual, áudio procedural, polimento,
+acessibilidade e revisão de balanceamento. As Fases 1 a 7 tambem estao prontas.
 As Fases 1 a 7 tambem estao prontas.
 
 ## Dependencias
@@ -71,9 +72,55 @@ Para adicionar um tipo novo, inclua-o em `Type` e `TYPE_COUNT` em `include/types
 a linha e coluna correspondentes em `EFFECTIVENESS`, seu nome e cor em `src/types.c`, e atualize
 `tests/test_types.c` com os valores esperados.
 
-## Proximas fases
+## Fase 8B: audio, acessibilidade e balanceamento
 
-1. Audio, polimento e balanceamento.
+O jogo gera efeitos e tres trilhas curtas diretamente em memoria: andares comuns, chefes e
+descanso/loja. Se o dispositivo de audio falhar, a run continua silenciosamente. Para substituir
+um efeito gerado, crie `assets/audio/<nome>.wav`; os nomes aceitos estao em `EFFECT_FILES`, em
+`src/audio.c` (por exemplo, `confirm.wav`, `qte_perfect.wav` e `victory.wav`).
+
+Em **Opcoes** ficam os volumes, tela cheia, tremor de linha, **Efeitos reduzidos** e dificuldade.
+Efeitos reduzidos remove tremores visuais; Calmo recebe 25% menos dano, Normal usa a curva padrao
+e Dificil recebe 25% mais dano e sobe um nivel na dificuldade dos QTEs. Todas as constantes de
+curva ficam centralizadas em `include/balance.h`.
+
+A tela **Como jogar** fica no titulo e no menu de pausa. A pausa agora oferece continuar, opcoes,
+como jogar, desistir com confirmacao ou voltar ao titulo. Ela congela defesa e QTE normalmente.
+
+### Simulacao de balanceamento
+
+Execute `cmake --build build --target test_balance` ou `make test-balance`. O teste nao abre
+janela: imprime uma simulacao deterministica de lutas representativas por andar para tres estilos
+de bot (aleatorio, focado em tipo e poupador), incluindo taxa de vitoria e HP medio. Ele serve para
+comparar alteracoes em `balance.h` antes de testar jogando.
+
+O simulador roda 1.000 batalhas por andar, estilo de bot e dificuldade. Uma batalha termina por
+HP do jogador zerado, inimigo derrotado ou inimigo ainda vivo depois de 18 turnos. Isto torna a
+dificuldade capaz de afetar a taxa de vitoria, e nao apenas o HP exibido.
+
+### Telemetria de playtest
+
+Pressione **F3** durante o jogo, ou execute `ascensao_torre.exe --telemetry`, para gravar
+`playtest_log.csv`. O arquivo registra cada batalha (andar, inimigo, vitoria, HP perdido, turnos,
+duracao e resultados de QTE) e o resumo da run. Ele nao e criado quando a telemetria esta desligada.
+
+### Release e distribuicao no Windows
+
+Com Make: `make release`. Com CMake: `cmake -S . -B build-release -G Ninja -DCMAKE_BUILD_TYPE=Release`
+e depois `cmake --build build-release`. A build de release usa `-O2` e `-DNDEBUG`.
+
+Tambem existe o preset: `cmake --preset release` e `cmake --build --preset release`.
+
+Para montar `dist/`, copie `ascensao_torre.exe`, `assets/` caso tenha colocado sons personalizados,
+e a DLL da Raylib se a sua instalacao gerar executavel dinamico. A build atual pelo MSYS2 UCRT64
+normalmente tambem precisa das DLLs correspondentes ao lado do executavel.
+
+### Tutorial e save
+
+Na primeira run, o jogo mostra cinco dicas curtas: menu, tipos/Analisar, mercy/agressividade,
+defesa e QTE. ESPACO, ENTER, Z, X ou Backspace pulam a dica atual. **Opcoes > Rever tutorial**
+redefine essas dicas. O save agora esta na versao 3; saves da versao 2 sao migrados mantendo a
+progressao e exibindo o tutorial, enquanto arquivos invalidos continuam seguros e recriam o padrao.
 
 ## Como expandir o conteudo
 
@@ -163,3 +210,42 @@ intervalo, quantidade, velocidade, raio, tipo e dano. Em seguida, acrescente o i
 `BulletPatternId` e na lista `pattern_ids` do inimigo em `src/enemy.c`. Os tres modos atuais de
 spawn sao chuva, onda lateral com brecha e espiral. Novos modos podem ser acrescentados no unico
 `switch` de spawn, sem duplicar o loop de movimento, colisao ou dano.
+
+### Sprites PNG opcionais
+
+Coloque artes PNG em `assets/sprites/`. Nenhum arquivo e obrigatorio: quando um sprite nao existe,
+o jogo usa automaticamente o desenho por codigo. Isso permite trocar uma arte sem tocar em nenhuma
+regra de combate. Os nomes, IDs e dimensoes recomendadas estao em
+`assets/sprites/README.md`.
+
+Para experimentar, crie somente `assets/sprites/soul.png` (16x16) ou
+`assets/sprites/enemy_mariposa_poeira.png` (96x96) e execute normalmente. F6 recarrega os
+arquivos em uma build de depuracao, enquanto F7 exibe limites e ancoras para ajuste visual.
+
+Inimigos podem ser animados com `enemy_<id>_sheet.png` e um metadado
+`enemy_<id>.txt`, por exemplo `frames=4 fps=6 frame_w=96 frame_h=96`. Os quadros ficam em uma
+linha horizontal. Tipos, itens e projeteis tambem aceitam PNGs opcionais; o raio de colisao sempre
+continua sendo o da logica do jogo, nunca o tamanho da imagem.
+
+Para gerar gabaritos de tamanhos, rode `ascensao_torre --export-placeholders`. Os arquivos serao
+criados em `assets/sprites_template/`, prontos para serem redesenhados e copiados para
+`assets/sprites/`.
+
+O teste do parser e dos IDs de fallback pode ser rodado com
+`cmake --build build --target test_sprites` ou `make test-sprites`.
+
+### Ataques e efeitos visuais
+
+Os ataques usam dados em `src/player.c`: tipo, dano, QTE, quantidade de golpes, efeito, status,
+usos e cooldown. Os cinco estilos de efeito sao `IMPACT`, `PROJECTILE`, `SLASH`, `RAIN` e `BEAM`.
+Todo efeito procura primeiro `fx_<ataque>_sheet.png`, depois `fx_type_<tipo>_sheet.png`; se nenhum
+PNG estiver instalado, um efeito geometricamente desenhado por codigo ocupa o lugar.
+
+`F8`, em build de depuracao, abre o teste de efeitos: A/D escolhe o ataque, W/S escolhe o resultado
+do QTE e Espaco toca o efeito. `F6` recarrega sprites. A lista completa de nomes de imagem e
+dimensoes fica em `assets/sprites/README.md`.
+
+Status: Queimar causa dano no inicio do turno inimigo; Molhar aumenta em 25% ataques de Planta e
+Luz; Enraizar reduz a velocidade da defesa; Cegar reduz o dano; Atordoar faz o inimigo perder um
+turno. Usos e cooldowns impedem repetir ataques pesados sem custo. Rode
+`cmake --build build --target test_phase10` ou `make test-phase10` para validar essa logica.

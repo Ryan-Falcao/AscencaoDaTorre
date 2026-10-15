@@ -6,7 +6,7 @@
 #include "player.h"
 #include "bullets.h"
 
-#define MAX_ENEMY_PATTERNS 6
+#define MAX_ENEMY_PATTERNS 8
 #define MAX_ENEMY_ACTIONS 4
 
 typedef enum {
@@ -78,7 +78,10 @@ typedef struct {
     int last_aggression_delta;
     int action_count;
     int projectile_damage_bonus;
+    float projectile_damage_multiplier;
     int reward_bonus;
+    StatusEffect status;
+    int status_turns;
 } Enemy;
 
 Enemy EnemyCreate(EnemyId id);
@@ -88,5 +91,7 @@ void EnemyRefreshSpareable(Enemy *enemy);
 void EnemyAdvanceTurn(Enemy *enemy);
 bool EnemyCanSpare(const Enemy *enemy);
 bool EnemyActionAvailable(const Enemy *enemy, int action_index, char *reason, int reason_size);
+void EnemyApplyStatus(Enemy *enemy, StatusEffect status, int turns);
+bool EnemyAdvanceStatus(Enemy *enemy, int *damage);
 
 #endif

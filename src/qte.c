@@ -110,6 +110,11 @@ bool qte_is_in_guard(const Qte *qte)
     return qte->guard_timer > 0.0f;
 }
 
+void qte_resume_with_guard(Qte *qte)
+{
+    if (qte->active && !qte->result_ready) qte->guard_timer = QTE_GUARD_SECONDS;
+}
+
 void qte_update_with_input(Qte *qte, float delta_time, QteInput input)
 {
     if (!qte->active) return;

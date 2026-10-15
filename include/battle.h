@@ -3,6 +3,9 @@
 
 #include "enemy.h"
 #include "ui.h"
+#include "audio.h"
+#include "sprites.h"
+#include "fx.h"
 
 typedef enum {
     BATTLE_INTRO,
@@ -40,7 +43,21 @@ typedef struct {
     BattleOutcome outcome;
     int coins;
     int xp;
+    int hp_lost;
+    int turns;
+    float duration_seconds;
+    int qte_results[4];
 } BattleResult;
+
+#define MAX_BATTLE_PARTICLES 32
+
+typedef struct {
+    bool active;
+    Vector2 position;
+    Vector2 velocity;
+    Color color;
+    float lifetime;
+} BattleParticle;
 
 typedef struct {
     BattlePhase phase;
@@ -48,6 +65,7 @@ typedef struct {
     ActionMenu action_menu;
     int main_selection;
     int floor;
+    int qte_difficulty;
     int action_selection;
     float enemy_turn_timer;
     float elapsed_time;
@@ -56,6 +74,16 @@ typedef struct {
     float last_effectiveness;
     int qte_attack_index;
     float screen_shake_timer;
+    float hitstop_timer;
+    int starting_player_hp;
+    int turn_count;
+    int qte_results[4];
+    float displayed_enemy_hp;
+    float enemy_hp_trail;
+    float displayed_player_hp;
+    float player_hp_trail;
+    BattleParticle particles[MAX_BATTLE_PARTICLES];
+    AttackFx attack_fx;
     float displayed_mercy;
     float displayed_aggression;
     float stat_change_timer;
@@ -69,8 +97,9 @@ typedef struct {
 void BattleInit(Battle *battle, TypewriterText *dialogue, int floor);
 BattleResult BattleUpdate(Battle *battle, PlayerStats *player, Enemy *enemy,
                           TypewriterText *dialogue, Vector2 mouse_position,
-                          bool mouse_pressed, Qte *qte);
+                          bool mouse_pressed, Qte *qte, AudioState *audio);
 void BattleDraw(const Battle *battle, const PlayerStats *player, const Enemy *enemy,
-                const TypewriterText *dialogue, const Qte *qte, bool line_tremor);
+                const TypewriterText *dialogue, const Qte *qte, bool line_tremor,
+                bool reduced_effects, const SpriteSystem *sprites);
 
 #endif

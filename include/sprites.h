@@ -1,0 +1,83 @@
+#ifndef SPRITES_H
+#define SPRITES_H
+
+#include <stdbool.h>
+
+#include "raylib.h"
+
+#include "enemy.h"
+#include "items.h"
+#include "types.h"
+
+typedef enum {
+    SPRITE_ENEMY_DUST_MOTH, SPRITE_ENEMY_GLOW_FROG, SPRITE_ENEMY_CINDER_BIRD,
+    SPRITE_ENEMY_MINT_SLIME, SPRITE_ENEMY_LANTERN_WISP, SPRITE_ENEMY_THORN_HARE,
+    SPRITE_ENEMY_SHADE_CAT, SPRITE_ENEMY_PETAL_KNIGHT, SPRITE_BOSS_BELLKEEPER_P1,
+    SPRITE_BOSS_BELLKEEPER_P2, SPRITE_BOSS_LAST_TOWER_P1, SPRITE_BOSS_LAST_TOWER_P2,
+    SPRITE_SOUL, SPRITE_TITLE_TOWER, SPRITE_TYPE_FLAME, SPRITE_TYPE_WATER,
+    SPRITE_TYPE_PLANT, SPRITE_TYPE_LIGHT, SPRITE_TYPE_SHADOW, SPRITE_TYPE_NEUTRAL,
+    SPRITE_BULLET_FLAME, SPRITE_BULLET_WATER, SPRITE_BULLET_PLANT, SPRITE_BULLET_LIGHT,
+    SPRITE_BULLET_SHADOW, SPRITE_BULLET_NEUTRAL,
+    SPRITE_ITEM_TEA, SPRITE_ITEM_MOON_HERB, SPRITE_ITEM_RED_RIBBON, SPRITE_ITEM_TOWER_BELL,
+    SPRITE_ITEM_WET_CLOAK, SPRITE_ITEM_SOLAR_BROOCH, SPRITE_ITEM_FIRECRACKER,
+    SPRITE_ITEM_THORN_BOMB, SPRITE_BG_PASTEL, SPRITE_BG_BOSS,
+    SPRITE_ATTACK_BRASA, SPRITE_ATTACK_GOTA_CLARA, SPRITE_ATTACK_RAIZ_RAPIDA,
+    SPRITE_ATTACK_RAIO_MANSO, SPRITE_ATTACK_ECO_SOMBRIO, SPRITE_ATTACK_GOLPE_NEUTRO,
+    SPRITE_ATTACK_CHAMA_ALTA, SPRITE_ATTACK_MARE_CURTA, SPRITE_ATTACK_VINHA_FINA,
+    SPRITE_ATTACK_LUZ_GUIA, SPRITE_ATTACK_SOMBRA_FRIA, SPRITE_ATTACK_PULSO_CALMO,
+    SPRITE_ATTACK_FAGULHA, SPRITE_ATTACK_ORVALHO, SPRITE_ATTACK_ESPINHO_LUNAR,
+    SPRITE_ATTACK_SINO_VAZIO,
+    SPRITE_FX_TYPE_FLAME, SPRITE_FX_TYPE_WATER, SPRITE_FX_TYPE_PLANT, SPRITE_FX_TYPE_LIGHT,
+    SPRITE_FX_TYPE_SHADOW, SPRITE_FX_TYPE_NEUTRAL,
+    SPRITE_FX_ATTACK_BRASA, SPRITE_FX_ATTACK_GOTA_CLARA, SPRITE_FX_ATTACK_RAIZ_RAPIDA,
+    SPRITE_FX_ATTACK_RAIO_MANSO, SPRITE_FX_ATTACK_ECO_SOMBRIO, SPRITE_FX_ATTACK_GOLPE_NEUTRO,
+    SPRITE_FX_ATTACK_CHAMA_ALTA, SPRITE_FX_ATTACK_MARE_CURTA, SPRITE_FX_ATTACK_VINHA_FINA,
+    SPRITE_FX_ATTACK_LUZ_GUIA, SPRITE_FX_ATTACK_SOMBRA_FRIA, SPRITE_FX_ATTACK_PULSO_CALMO,
+    SPRITE_FX_ATTACK_FAGULHA, SPRITE_FX_ATTACK_ORVALHO, SPRITE_FX_ATTACK_ESPINHO_LUNAR,
+    SPRITE_FX_ATTACK_SINO_VAZIO,
+    SPRITE_BULLET_PATTERN_RAIN, SPRITE_BULLET_PATTERN_SIDE_WAVE, SPRITE_BULLET_PATTERN_SPIRAL,
+    SPRITE_BULLET_PATTERN_FAST_RAIN, SPRITE_BULLET_PATTERN_WIDE_WAVE, SPRITE_BULLET_PATTERN_TIGHT_SPIRAL,
+    SPRITE_BULLET_PATTERN_PETAL_ORBIT, SPRITE_BULLET_PATTERN_BOUNCE_ORBS,
+    SPRITE_BULLET_PATTERN_MOVING_WALL, SPRITE_BULLET_PATTERN_SPLIT_SHOTS,
+    SPRITE_BULLET_PATTERN_CROSS_LASERS, SPRITE_BULLET_PATTERN_PAUSE_DARTS,
+    SPRITE_BULLET_PATTERN_RING_BURST, SPRITE_BULLET_PATTERN_DIAGONAL_RAIN,
+    SPRITE_BULLET_PATTERN_CHASE_WAVE, SPRITE_BULLET_PATTERN_PINWHEEL, SPRITE_COUNT
+} SpriteId;
+
+typedef struct {
+    int frames, fps, frame_width, frame_height;
+} SpriteMetadata;
+
+typedef struct {
+    Texture2D texture;
+    bool loaded;
+    float scale;
+    Vector2 offset;
+    SpriteMetadata metadata;
+} Sprite;
+
+typedef struct SpriteSystem { Sprite sprites[SPRITE_COUNT]; bool debug_bounds; } SpriteSystem;
+
+void SpritesInit(SpriteSystem *sprites);
+void SpritesUnload(SpriteSystem *sprites);
+void SpritesReload(SpriteSystem *sprites);
+const Sprite *sprite_get(const SpriteSystem *sprites, SpriteId id);
+SpriteId SpriteEnemyId(EnemyId enemy, bool phase_two);
+SpriteId SpriteTypeId(Type type);
+SpriteId SpriteBulletId(Type type);
+SpriteId SpriteItemId(ItemId item);
+SpriteId SpriteBulletPatternId(BulletPatternId pattern);
+SpriteId SpriteAttackId(AttackId attack);
+SpriteId SpriteFxAttackId(AttackId attack);
+SpriteId SpriteFxTypeId(Type type);
+bool SpriteParseMetadataText(const char *text, SpriteMetadata *metadata);
+void SpriteDrawCentered(const SpriteSystem *sprites, SpriteId id, Vector2 center, Color tint,
+                        float time, bool debug_bounds);
+void SpriteDrawCenteredScaled(const SpriteSystem *sprites, SpriteId id, Vector2 center, Color tint,
+                              float time, float scale, bool debug_bounds);
+void SpriteDrawCenteredRotated(const SpriteSystem *sprites, SpriteId id, Vector2 center, Color tint,
+                               float time, float rotation, bool debug_bounds);
+void SpriteDrawFit(const SpriteSystem *sprites, SpriteId id, Rectangle destination, Color tint);
+void SpritesExportPlaceholders(void);
+
+#endif

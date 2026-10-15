@@ -1,4 +1,5 @@
 #include "tower.h"
+#include "balance.h"
 
 #include <string.h>
 
@@ -52,9 +53,10 @@ void TowerScaleEnemy(Enemy *enemy, int floor)
 {
     const int multiplier = floor - 1;
 
-    enemy->hp_max += multiplier * (enemy->boss ? 8 : 3);
+    enemy->hp_max += multiplier * (enemy->boss ? BALANCE_BOSS_HP_PER_FLOOR : BALANCE_COMMON_HP_PER_FLOOR);
     enemy->hp = enemy->hp_max;
-    enemy->projectile_damage_bonus = multiplier / 3;
+    enemy->projectile_damage_bonus = multiplier / BALANCE_PROJECTILE_BONUS_EVERY;
+    enemy->projectile_damage_multiplier = enemy->boss ? 1.0f : BalanceFloorDamageMultiplier(floor);
     enemy->reward_bonus = multiplier;
 }
 
@@ -62,9 +64,16 @@ void TowerRollRewards(Tower *tower, const PlayerStats *player)
 {
     unsigned int random = tower->seed;
     int attack_id = (int)(NextRandom(&random) % (unsigned int)PlayerRewardAttackCount());
+    const int attack_count = PlayerRewardAttackCount();
 
-    while (PlayerHasAttack(player, PlayerRewardAttack(attack_id)) &&
-           attack_id < PlayerRewardAttackCount() - 1) attack_id++;
+    /* Search circularly, so a duplicate at the last table position cannot be offered. */
+    for (int attempt = 0; attempt < attack_count; attempt++) {
+        const int candidate = (attack_id + attempt) % attack_count;
+        if (!PlayerHasAttack(player, PlayerRewardAttack(candidate))) {
+            attack_id = candidate;
+            break;
+        }
+    }
     tower->rewards[0] = (TowerReward){REWARD_ATTACK, attack_id, 0};
     tower->rewards[1] = (TowerReward){REWARD_ITEM, (int)(NextRandom(&random) % ITEM_COUNT), 1};
     tower->rewards[2] = (TowerReward){NextRandom(&random) % 2u ? REWARD_HP : REWARD_DAMAGE, 0, 4};
@@ -77,7 +86,8 @@ void TowerRollShop(Tower *tower)
 
     for (int index = 0; index < 3; index++) {
         tower->shop_items[index] = (ItemId)(NextRandom(&random) % ITEM_COUNT);
-        tower->shop_prices[index] = 5 + (int)(NextRandom(&random) % 7u);
+        tower->shop_prices[index] = BALANCE_SHOP_BASE_PRICE +
+                                    (int)(NextRandom(&random) % BALANCE_SHOP_PRICE_VARIATION);
     }
     tower->seed = random;
 }

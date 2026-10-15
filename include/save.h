@@ -6,7 +6,7 @@
 
 #include "items.h"
 
-#define SAVE_VERSION 1u
+#define SAVE_VERSION 3u
 #define SAVE_ATTACK_BITS 16
 
 typedef enum {
@@ -14,6 +14,12 @@ typedef enum {
     RELIC_ITEM,
     RELIC_ATTACK
 } RelicChoiceKind;
+
+typedef enum {
+    DIFFICULTY_CALM,
+    DIFFICULTY_NORMAL,
+    DIFFICULTY_HARD
+} GameDifficulty;
 
 typedef struct {
     int best_floor;
@@ -28,8 +34,12 @@ typedef struct {
     float effects_volume;
     bool fullscreen;
     bool line_tremor;
+    bool reduced_effects;
+    unsigned int tutorial_seen;
+    GameDifficulty difficulty;
     RelicChoiceKind relic_kind;
     int relic_id;
+    bool tutorial_done;
 } SaveData;
 
 void SaveSetDefaults(SaveData *save);
