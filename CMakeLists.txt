@@ -25,6 +25,7 @@ add_executable(ascensao_torre
     src/enemy.c
     src/types.c
     src/bullets.c
+    src/hazards.c
     src/qte.c
     src/ui.c
 )
@@ -71,6 +72,16 @@ if(BUILD_TYPE_TESTS)
     target_include_directories(test_phase10 PRIVATE include)
     target_compile_options(test_phase10 PRIVATE -Wall -Wextra)
     target_link_libraries(test_phase10 PRIVATE raylib)
+
+    add_executable(test_bullets tests/test_bullets.c src/bullets.c src/hazards.c src/player.c src/types.c src/input.c src/ui.c src/sprites.c src/items.c src/enemy.c)
+    target_include_directories(test_bullets PRIVATE include)
+    target_compile_options(test_bullets PRIVATE -Wall -Wextra)
+    target_link_libraries(test_bullets PRIVATE raylib)
+
+    add_executable(test_hazards tests/test_hazards.c src/hazards.c src/player.c src/items.c src/types.c src/sprites.c)
+    target_include_directories(test_hazards PRIVATE include)
+    target_compile_options(test_hazards PRIVATE -Wall -Wextra)
+    target_link_libraries(test_hazards PRIVATE raylib)
 endif()
 
 set(CMAKE_C_FLAGS_RELEASE "-O2 -DNDEBUG" CACHE STRING "Release flags" FORCE)

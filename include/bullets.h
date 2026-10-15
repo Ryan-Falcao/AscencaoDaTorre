@@ -4,6 +4,7 @@
 #include "raylib.h"
 
 #include "player.h"
+#include "hazards.h"
 typedef struct SpriteSystem SpriteSystem;
 
 #define MAX_BULLETS 512
@@ -25,6 +26,8 @@ typedef enum {
     PATTERN_DIAGONAL_RAIN,
     PATTERN_CHASE_WAVE,
     PATTERN_PINWHEEL,
+    PATTERN_GRAVITY_FLIP,
+    PATTERN_SHADOW_BLOOM,
     PATTERN_COUNT
 } BulletPatternId;
 
@@ -49,6 +52,7 @@ typedef struct {
     Type type;
     int damage;
     float lifetime;
+    bool split_done;
 } Bullet;
 
 typedef struct {
@@ -86,12 +90,20 @@ typedef struct {
     int last_damage;
     float last_damage_multiplier;
     float damage_popup_timer;
+    float graze_popup_timer;
+    int graze_count;
     float phase_timer;
     float pattern_timer;
     float spawn_timer;
     float spiral_angle;
     int spawn_count;
     bool debug_invincible;
+    HazardPool hazards;
+    int gravity_wall;
+    int gravity_repeat;
+    int gravity_repeats;
+    bool gravity_thorns_created;
+    float special_timer;
     DefensePhase phase;
 } DefenseState;
 

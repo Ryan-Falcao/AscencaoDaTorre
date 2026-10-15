@@ -14,6 +14,20 @@
 #define BALANCE_BOSS_COIN_BONUS 8
 #define BALANCE_BOSS_XP_BONUS 10
 
+/* Bellkeeper special-defense attacks. Values are deliberately conservative: the escape strip is
+   48px, less than one third of even the smallest 270px arena. */
+#define BALANCE_GRAVITY_ESCAPE_TIME 1.15f
+#define BALANCE_GRAVITY_ESCAPE_TIME_PHASE_TWO 0.85f
+#define BALANCE_GRAVITY_STRENGTH 430.0f
+#define BALANCE_GRAVITY_THORN_DEPTH 48.0f
+#define BALANCE_GRAVITY_THORN_ACTIVE_TIME 0.65f
+#define BALANCE_GRAVITY_THORN_FADE_TIME 0.12f
+#define BALANCE_GRAVITY_DAMAGE 6
+#define BALANCE_SHADOW_BLOOM_GROW_TIME 1.0f
+#define BALANCE_SHADOW_BLOOM_STAGGER 0.13f
+#define BALANCE_SHADOW_BLOOM_RADIUS 56.0f
+#define BALANCE_SHADOW_BLOOM_DAMAGE 6
+
 static inline float BalanceIncomingDamageMultiplier(GameDifficulty difficulty)
 {
     static const float values[] = {0.75f, 1.00f, 1.25f};

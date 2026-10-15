@@ -181,8 +181,19 @@ static void StartEnemyTurn(Battle *battle, Enemy *enemy, TypewriterText *dialogu
     DefenseStart(&battle->defense, pattern_id, (Rectangle){42.0f, 228.0f, 556.0f, 94.0f},
                  enemy->aggression, enemy->projectile_damage_bonus,
                  damage_multiplier, speed_multiplier);
-    if (enemy->boss && enemy->phase_two) DefenseResizeBox(&battle->defense, 250.0f, 140.0f);
-    UiSetText(dialogue, enemy->aggression >= 67 ? "Ela avanca furiosa!" :
+    if (enemy->boss && enemy->phase_two) {
+        DefenseResizeBox(&battle->defense, 250.0f, 140.0f);
+        if (pattern_id == PATTERN_GRAVITY_FLIP) {
+            battle->defense.gravity_repeats = 3;
+            battle->defense.pattern.duration = 11.0f;
+        }
+        if (pattern_id == PATTERN_SHADOW_BLOOM) battle->defense.gravity_repeats = 3;
+    }
+    if (enemy->id == ENEMY_BOSS_BELLKEEPER && pattern_id == PATTERN_GRAVITY_FLIP) {
+        UiSetText(dialogue, "O chao nao e seu.");
+    } else if (enemy->id == ENEMY_BOSS_BELLKEEPER && pattern_id == PATTERN_SHADOW_BLOOM) {
+        UiSetText(dialogue, "A sombra cresce.");
+    } else UiSetText(dialogue, enemy->aggression >= 67 ? "Ela avanca furiosa!" :
                         (enemy->aggression <= 33 ? "Ela parece calma." : "Ela observa, irritada."));
 }
 

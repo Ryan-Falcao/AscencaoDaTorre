@@ -41,7 +41,12 @@ typedef enum {
     SPRITE_BULLET_PATTERN_MOVING_WALL, SPRITE_BULLET_PATTERN_SPLIT_SHOTS,
     SPRITE_BULLET_PATTERN_CROSS_LASERS, SPRITE_BULLET_PATTERN_PAUSE_DARTS,
     SPRITE_BULLET_PATTERN_RING_BURST, SPRITE_BULLET_PATTERN_DIAGONAL_RAIN,
-    SPRITE_BULLET_PATTERN_CHASE_WAVE, SPRITE_BULLET_PATTERN_PINWHEEL, SPRITE_COUNT
+    SPRITE_BULLET_PATTERN_CHASE_WAVE, SPRITE_BULLET_PATTERN_PINWHEEL,
+    SPRITE_BULLET_PATTERN_GRAVITY_FLIP, SPRITE_BULLET_PATTERN_SHADOW_BLOOM,
+    SPRITE_ARENA_BORDER, SPRITE_ARENA_BG, SPRITE_WARN_DANGER, SPRITE_FX_HIT_SOUL,
+    SPRITE_WARN_GRAVITY, SPRITE_GRAVITY_WALL_GLOW, SPRITE_THORN_WALL,
+    SPRITE_THORN_WALL_WARN, SPRITE_SHADOW_ORB, SPRITE_SHADOW_BLOOM_WARN,
+    SPRITE_SHADOW_BURST, SPRITE_COUNT
 } SpriteId;
 
 typedef struct {
@@ -76,7 +81,7 @@ void SpriteDrawCentered(const SpriteSystem *sprites, SpriteId id, Vector2 center
 void SpriteDrawCenteredScaled(const SpriteSystem *sprites, SpriteId id, Vector2 center, Color tint,
                               float time, float scale, bool debug_bounds);
 void SpriteDrawCenteredRotated(const SpriteSystem *sprites, SpriteId id, Vector2 center, Color tint,
-                               float time, float rotation, bool debug_bounds);
+                               float time, float rotation, float scale, bool debug_bounds);
 void SpriteDrawFit(const SpriteSystem *sprites, SpriteId id, Rectangle destination, Color tint);
 void SpritesExportPlaceholders(void);
 

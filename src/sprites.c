@@ -96,6 +96,19 @@ static const SpriteSpec SPECS[] = {
     ,{SPRITE_BULLET_PATTERN_DIAGONAL_RAIN, "assets/sprites/bullet_diagonal_rain.png", 1, {0, 0}}
     ,{SPRITE_BULLET_PATTERN_CHASE_WAVE, "assets/sprites/bullet_chase_wave.png", 1, {0, 0}}
     ,{SPRITE_BULLET_PATTERN_PINWHEEL, "assets/sprites/bullet_pinwheel.png", 1, {0, 0}}
+    ,{SPRITE_BULLET_PATTERN_GRAVITY_FLIP, "assets/sprites/bullet_gravity_flip.png", 1, {0, 0}}
+    ,{SPRITE_BULLET_PATTERN_SHADOW_BLOOM, "assets/sprites/bullet_shadow_bloom.png", 1, {0, 0}}
+    ,{SPRITE_ARENA_BORDER, "assets/sprites/arena_border.png", 1, {0, 0}}
+    ,{SPRITE_ARENA_BG, "assets/sprites/arena_bg_pastel.png", 1, {0, 0}}
+    ,{SPRITE_WARN_DANGER, "assets/sprites/warn_danger.png", 1, {0, 0}}
+    ,{SPRITE_FX_HIT_SOUL, "assets/sprites/fx_hit_soul.png", 1, {0, 0}}
+    ,{SPRITE_WARN_GRAVITY, "assets/sprites/warn_gravity.png", 1, {0, 0}}
+    ,{SPRITE_GRAVITY_WALL_GLOW, "assets/sprites/gravity_wall_glow.png", 1, {0, 0}}
+    ,{SPRITE_THORN_WALL, "assets/sprites/thorn_wall.png", 1, {0, 0}}
+    ,{SPRITE_THORN_WALL_WARN, "assets/sprites/thorn_wall_warn.png", 1, {0, 0}}
+    ,{SPRITE_SHADOW_ORB, "assets/sprites/shadow_orb.png", 1, {0, 0}}
+    ,{SPRITE_SHADOW_BLOOM_WARN, "assets/sprites/shadow_bloom_warn.png", 1, {0, 0}}
+    ,{SPRITE_SHADOW_BURST, "assets/sprites/shadow_burst.png", 1, {0, 0}}
 };
 
 bool SpriteParseMetadataText(const char *text, SpriteMetadata *metadata)
@@ -219,7 +232,7 @@ void SpriteDrawCenteredScaled(const SpriteSystem *sprites, SpriteId id, Vector2 
 }
 
 void SpriteDrawCenteredRotated(const SpriteSystem *sprites, SpriteId id, Vector2 center, Color tint,
-                               float time, float rotation, bool debug_bounds)
+                               float time, float rotation, float scale, bool debug_bounds)
 {
     const Sprite *sprite = sprite_get(sprites, id);
     if (sprite == NULL) return;
@@ -227,11 +240,12 @@ void SpriteDrawCenteredRotated(const SpriteSystem *sprites, SpriteId id, Vector2
     const int frame_w = sprite->metadata.frame_width > 0 ? sprite->metadata.frame_width : sprite->texture.width;
     const int frame_h = sprite->metadata.frame_height > 0 ? sprite->metadata.frame_height : sprite->texture.height;
     const Rectangle source = {(float)(frame * frame_w), 0, (float)frame_w, (float)frame_h};
+    const float full_scale = sprite->scale * scale;
     const Rectangle destination = {center.x + sprite->offset.x, center.y + sprite->offset.y,
-                                   frame_w * sprite->scale, frame_h * sprite->scale};
+                                   frame_w * full_scale, frame_h * full_scale};
     DrawTexturePro(sprite->texture, source, destination,
                    (Vector2){destination.width * 0.5f, destination.height * 0.5f}, rotation, tint);
-    if (debug_bounds) DrawCircleLines((int)center.x, (int)center.y, frame_w * sprite->scale * 0.5f, MAGENTA);
+    if (debug_bounds) DrawCircleLines((int)center.x, (int)center.y, frame_w * full_scale * 0.5f, MAGENTA);
 }
 
 void SpriteDrawFit(const SpriteSystem *sprites, SpriteId id, Rectangle destination, Color tint)
@@ -283,11 +297,22 @@ void SpritesExportPlaceholders(void)
     static const char *const pattern_names[] = {"rain", "side_wave", "spiral", "fast_rain",
         "wide_wave", "tight_spiral", "petal_orbit", "bounce_orbs", "moving_wall",
         "split_shots", "cross_lasers", "pause_darts", "ring_burst", "diagonal_rain",
-        "chase_wave", "pinwheel"};
+        "chase_wave", "pinwheel", "gravity_flip", "shadow_bloom"};
     for (int index = 0; index < PATTERN_COUNT; index++) {
         char path[128];
         snprintf(path, sizeof(path), "assets/sprites_template/bullet_%s.png", pattern_names[index]);
         ExportBlank(path, 16, 16, BLANK);
     }
     ExportBlank("assets/sprites_template/warn_danger.png", 32, 32, (Color){245, 90, 82, 255});
+    ExportBlank("assets/sprites_template/arena_border.png", 16, 16, RAYWHITE);
+    ExportBlank("assets/sprites_template/arena_bg_pastel.png", 320, 180, BLACK);
+    ExportBlank("assets/sprites_template/fx_hit_soul.png", 32, 32, BLANK);
+    ExportBlank("assets/sprites_template/fx_hit_soul_sheet.png", 128, 32, BLANK);
+    ExportBlank("assets/sprites_template/warn_gravity.png", 32, 32, BLANK);
+    ExportBlank("assets/sprites_template/gravity_wall_glow_sheet.png", 64, 16, BLANK);
+    ExportBlank("assets/sprites_template/thorn_wall_sheet.png", 64, 48, BLANK);
+    ExportBlank("assets/sprites_template/thorn_wall_warn.png", 16, 48, BLANK);
+    ExportBlank("assets/sprites_template/shadow_orb_sheet.png", 128, 32, BLANK);
+    ExportBlank("assets/sprites_template/shadow_bloom_warn.png", 64, 64, BLANK);
+    ExportBlank("assets/sprites_template/shadow_burst_sheet.png", 576, 96, BLANK);
 }

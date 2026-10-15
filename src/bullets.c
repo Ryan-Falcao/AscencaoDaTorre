@@ -3,6 +3,7 @@
 #include "input.h"
 #include "ui.h"
 #include "sprites.h"
+#include "balance.h"
 #include "raymath.h"
 
 #include <math.h>
@@ -79,6 +80,14 @@ static const BulletPattern PATTERNS[PATTERN_COUNT] = {
     [PATTERN_PINWHEEL] = {
         7.0f, 285.0f, 165.0f, 0.34f, 6, 126.0f, 5.0f, 1.05f, 0.0f,
         TYPE_PLANT, 5, 3, SPAWN_SPIRAL
+    },
+    [PATTERN_GRAVITY_FLIP] = {
+        8.0f, 300.0f, 175.0f, 99.0f, 1, 0.0f, 1.0f, 0.0f, 0.0f,
+        TYPE_PLANT, BALANCE_GRAVITY_DAMAGE, 3, SPAWN_SPIRAL
+    },
+    [PATTERN_SHADOW_BLOOM] = {
+        7.0f, 300.0f, 175.0f, 99.0f, 1, 0.0f, 1.0f, 0.0f, 0.0f,
+        TYPE_SHADOW, BALANCE_SHADOW_BLOOM_DAMAGE, 3, SPAWN_SPIRAL
     }
 };
 
@@ -99,7 +108,51 @@ static void ClearBullets(DefenseState *defense)
     }
 }
 
-static void SpawnBullet(DefenseState *defense, Vector2 position, Vector2 velocity)
+static Rectangle GravityThornRect(const DefenseState *defense)
+{
+    const Rectangle box = defense->box;
+    const float depth = BALANCE_GRAVITY_THORN_DEPTH;
+    switch (defense->gravity_wall) {
+        case 0: return (Rectangle){box.x, box.y, box.width, depth};
+        case 1: return (Rectangle){box.x, box.y + box.height - depth, box.width, depth};
+        case 2: return (Rectangle){box.x, box.y, depth, box.height};
+        default: return (Rectangle){box.x + box.width - depth, box.y, depth, box.height};
+    }
+}
+
+static void StartGravityCycle(DefenseState *defense)
+{
+    defense->gravity_wall = GetRandomValue(0, 3);
+    defense->gravity_thorns_created = false;
+    defense->special_timer = 0.0f;
+}
+
+static void StartShadowBloom(DefenseState *defense)
+{
+    const int count = defense->gravity_repeats > 2 ? 7 : 5;
+    for (int index = 0; index < count; index++) {
+        Vector2 position;
+        do {
+            position = (Vector2){(float)GetRandomValue((int)defense->box.x + 34,
+                                                         (int)(defense->box.x + defense->box.width - 34)),
+                                 (float)GetRandomValue((int)defense->box.y + 34,
+                                                         (int)(defense->box.y + defense->box.height - 34))};
+        } while (Vector2Distance(position, defense->soul_position) < 72.0f);
+        HazardsAddCircle(&defense->hazards, position,
+                         BALANCE_SHADOW_BLOOM_RADIUS + (float)(index % 2) * 8.0f,
+                         BALANCE_SHADOW_BLOOM_GROW_TIME + (float)index * BALANCE_SHADOW_BLOOM_STAGGER,
+                         0.10f, 0.15f, TYPE_SHADOW, BALANCE_SHADOW_BLOOM_DAMAGE, true);
+    }
+}
+
+static void StartSpecialPattern(DefenseState *defense)
+{
+    defense->special_timer = 0.0f;
+    if (defense->pattern_id == PATTERN_GRAVITY_FLIP) StartGravityCycle(defense);
+    else if (defense->pattern_id == PATTERN_SHADOW_BLOOM) StartShadowBloom(defense);
+}
+
+static Bullet *SpawnBullet(DefenseState *defense, Vector2 position, Vector2 velocity)
 {
     for (int bullet_index = 0; bullet_index < MAX_BULLETS; bullet_index++) {
         Bullet *bullet = &defense->bullets[bullet_index];
@@ -112,11 +165,13 @@ static void SpawnBullet(DefenseState *defense, Vector2 position, Vector2 velocit
                 defense->pattern.hitbox_radius,
                 defense->pattern.type,
                 defense->pattern.damage,
-                0.0f
+                0.0f,
+                false
             };
-            return;
+            return bullet;
         }
     }
+    return NULL;
 }
 
 static void SpawnPatternShot(DefenseState *defense)
@@ -127,8 +182,10 @@ static void SpawnPatternShot(DefenseState *defense)
     if (pattern->spawn_mode == SPAWN_RAIN) {
         for (int bullet_index = 0; bullet_index < pattern->bullets_per_spawn; bullet_index++) {
             const float x = (float)GetRandomValue((int)box.x + 8, (int)(box.x + box.width - 8));
+            const float diagonal = defense->pattern_id == PATTERN_DIAGONAL_RAIN ?
+                (bullet_index % 2 == 0 ? pattern->speed * 0.42f : -pattern->speed * 0.42f) : 0.0f;
             SpawnBullet(defense, (Vector2){x, box.y - pattern->radius},
-                        (Vector2){0.0f, pattern->speed});
+                        (Vector2){diagonal, pattern->speed});
         }
     } else if (pattern->spawn_mode == SPAWN_SIDE_WAVE) {
         const int gap = defense->spawn_count % pattern->bullets_per_spawn;
@@ -174,10 +231,20 @@ void DefenseStart(DefenseState *defense, BulletPatternId pattern_id, Rectangle m
     if (pattern_id < PATTERN_RAIN || pattern_id >= PATTERN_COUNT) pattern_id = PATTERN_RAIN;
 
     ClearBullets(defense);
+    HazardsClear(&defense->hazards);
     defense->pattern = PATTERNS[pattern_id];
     defense->pattern_id = pattern_id;
     if (defense->pattern.visual_scale <= 0.0f) defense->pattern.visual_scale = 1.0f;
     if (defense->pattern.hitbox_radius <= 0.0f) defense->pattern.hitbox_radius = defense->pattern.radius;
+    /* Defaults keep old data compatible while still giving every new pattern a clear look. */
+    defense->pattern.rotate = pattern_id == PATTERN_DIAGONAL_RAIN ||
+                               pattern_id == PATTERN_PAUSE_DARTS ||
+                               pattern_id == PATTERN_CHASE_WAVE;
+    defense->pattern.trail = pattern_id == PATTERN_SPIRAL || pattern_id == PATTERN_TIGHT_SPIRAL ||
+                             pattern_id == PATTERN_PETAL_ORBIT || pattern_id == PATTERN_PINWHEEL;
+    if (pattern_id == PATTERN_CROSS_LASERS || pattern_id == PATTERN_MOVING_WALL) {
+        defense->pattern.visual_scale = 1.35f;
+    }
     defense->pattern.damage += damage_bonus;
     defense->pattern.damage = (int)ceilf((float)defense->pattern.damage * damage_multiplier);
     defense->pattern.speed *= speed_multiplier;
@@ -208,6 +275,7 @@ void DefenseStart(DefenseState *defense, BulletPatternId pattern_id, Rectangle m
     defense->spawn_timer = -DEFENSE_START_GRACE_SECONDS;
     defense->spiral_angle = 0.0f;
     defense->spawn_count = 0;
+    defense->gravity_repeats = 2;
     defense->phase = DEFENSE_ENTERING;
 }
 
@@ -238,10 +306,47 @@ static void UpdateSoul(DefenseState *defense, float delta_time)
     for (int index = 5; index > 0; index--) defense->soul_trail[index] = defense->soul_trail[index - 1];
     defense->soul_trail[0] = defense->soul_position;
     defense->soul_position = Vector2Add(defense->soul_position, Vector2Scale(movement, speed * delta_time));
+    if (defense->pattern_id == PATTERN_GRAVITY_FLIP && !defense->gravity_thorns_created) {
+        const float pull = BALANCE_GRAVITY_STRENGTH * delta_time;
+        if (defense->gravity_wall == 0) defense->soul_position.y -= pull;
+        else if (defense->gravity_wall == 1) defense->soul_position.y += pull;
+        else if (defense->gravity_wall == 2) defense->soul_position.x -= pull;
+        else defense->soul_position.x += pull;
+    }
     defense->soul_position.x = Clamp(defense->soul_position.x, defense->box.x + defense->soul_radius,
                                      defense->box.x + defense->box.width - defense->soul_radius);
     defense->soul_position.y = Clamp(defense->soul_position.y, defense->box.y + defense->soul_radius,
                                      defense->box.y + defense->box.height - defense->soul_radius);
+}
+
+static void UpdateSpecialPattern(DefenseState *defense, PlayerStats *player, float delta_time)
+{
+    if (defense->pattern_id == PATTERN_GRAVITY_FLIP) {
+        const float escape = defense->gravity_repeats > 2 ? BALANCE_GRAVITY_ESCAPE_TIME_PHASE_TWO :
+                                                            BALANCE_GRAVITY_ESCAPE_TIME;
+        defense->special_timer += delta_time;
+        if (!defense->gravity_thorns_created && defense->special_timer >= escape) {
+            HazardsAddRect(&defense->hazards, GravityThornRect(defense), 0.0f,
+                           BALANCE_GRAVITY_THORN_ACTIVE_TIME, BALANCE_GRAVITY_THORN_FADE_TIME, defense->pattern.type,
+                           defense->pattern.damage, true);
+            defense->gravity_thorns_created = true;
+        }
+        if (defense->gravity_thorns_created && defense->special_timer >=
+            escape + BALANCE_GRAVITY_THORN_ACTIVE_TIME + BALANCE_GRAVITY_THORN_FADE_TIME) {
+            defense->gravity_repeat++;
+            if (defense->gravity_repeat < defense->gravity_repeats) StartGravityCycle(defense);
+            else defense->pattern_timer = defense->pattern.duration;
+        }
+    }
+    const int hp_before = player->hp;
+    HazardsUpdate(&defense->hazards, player, defense->soul_position, defense->soul_radius, delta_time,
+                  1.0f, defense->debug_invincible || defense->invincibility_timer > 0.0f);
+    if (player->hp < hp_before) {
+        defense->last_damage = hp_before - player->hp;
+        defense->last_damage_multiplier = type_effectiveness(defense->pattern.type, player->defense_type);
+        defense->damage_popup_timer = 0.75f;
+        defense->invincibility_timer = 1.0f;
+    }
 }
 
 static void UpdateBullets(DefenseState *defense, PlayerStats *player, float delta_time)
@@ -251,8 +356,56 @@ static void UpdateBullets(DefenseState *defense, PlayerStats *player, float delt
 
         if (!bullet->active) continue;
 
-        bullet->position = Vector2Add(bullet->position, Vector2Scale(bullet->velocity, delta_time));
         bullet->lifetime += delta_time;
+        if (defense->pattern_id == PATTERN_BOUNCE_ORBS) {
+            const float next_x = bullet->position.x + bullet->velocity.x * delta_time;
+            const float next_y = bullet->position.y + bullet->velocity.y * delta_time;
+            if (next_x < defense->box.x + bullet->radius ||
+                next_x > defense->box.x + defense->box.width - bullet->radius) bullet->velocity.x *= -1.0f;
+            if (next_y < defense->box.y + bullet->radius ||
+                next_y > defense->box.y + defense->box.height - bullet->radius) bullet->velocity.y *= -1.0f;
+        } else if (defense->pattern_id == PATTERN_PAUSE_DARTS) {
+            if (bullet->lifetime > 0.42f && bullet->lifetime < 0.82f) {
+                bullet->velocity = Vector2Scale(bullet->velocity, 0.82f);
+            } else if (bullet->lifetime >= 0.82f) {
+                Vector2 direction = Vector2Subtract(defense->soul_position, bullet->position);
+                if (Vector2Length(direction) > 0.01f) {
+                    direction = Vector2Normalize(direction);
+                    bullet->velocity = Vector2Scale(direction, defense->pattern.speed * 1.65f);
+                }
+            }
+        } else if (defense->pattern_id == PATTERN_CHASE_WAVE) {
+            Vector2 direction = Vector2Subtract(defense->soul_position, bullet->position);
+            if (Vector2Length(direction) > 0.01f) {
+                direction = Vector2Normalize(direction);
+                bullet->velocity = Vector2Lerp(bullet->velocity,
+                    Vector2Scale(direction, defense->pattern.speed), 0.025f);
+            }
+        } else if (defense->pattern_id == PATTERN_PETAL_ORBIT) {
+            const Vector2 center = {defense->box.x + defense->box.width * 0.5f,
+                                    defense->box.y + defense->box.height * 0.5f};
+            Vector2 radial = Vector2Subtract(bullet->position, center);
+            if (Vector2Length(radial) > 0.01f) {
+                radial = Vector2Normalize(radial);
+                bullet->velocity = Vector2Scale((Vector2){-radial.y, radial.x}, defense->pattern.speed);
+            }
+        }
+        bullet->position = Vector2Add(bullet->position, Vector2Scale(bullet->velocity, delta_time));
+
+        if (defense->pattern_id == PATTERN_SPLIT_SHOTS && !bullet->split_done &&
+            bullet->lifetime >= 0.65f) {
+            const float base_angle = atan2f(bullet->velocity.y, bullet->velocity.x);
+            bullet->split_done = true;
+            for (int shard = -1; shard <= 1; shard++) {
+                const float angle = base_angle + (float)shard * 0.42f;
+                Bullet *shard_bullet = SpawnBullet(defense, bullet->position,
+                    (Vector2){cosf(angle) * defense->pattern.speed,
+                              sinf(angle) * defense->pattern.speed});
+                if (shard_bullet != NULL) shard_bullet->split_done = true;
+            }
+            bullet->active = false;
+            continue;
+        }
         if (bullet->position.x < defense->box.x - 24.0f ||
             bullet->position.x > defense->box.x + defense->box.width + 24.0f ||
             bullet->position.y < defense->box.y - 24.0f ||
@@ -261,6 +414,12 @@ static void UpdateBullets(DefenseState *defense, PlayerStats *player, float delt
             continue;
         }
 
+        const float soul_distance = Vector2Distance(defense->soul_position, bullet->position);
+        if (soul_distance <= bullet->radius + defense->soul_radius + 5.0f &&
+            soul_distance > bullet->radius + defense->soul_radius) {
+            defense->graze_popup_timer = 0.22f;
+            defense->graze_count++;
+        }
         if (!defense->debug_invincible && defense->invincibility_timer <= 0.0f &&
             CheckCollisionCircles(defense->soul_position, defense->soul_radius,
                                   bullet->position, bullet->radius)) {
@@ -284,6 +443,7 @@ DefenseResult DefenseUpdate(DefenseState *defense, PlayerStats *player, float de
     defense->phase_timer += delta_time;
     if (defense->invincibility_timer > 0.0f) defense->invincibility_timer -= delta_time;
     if (defense->damage_popup_timer > 0.0f) defense->damage_popup_timer -= delta_time;
+    if (defense->graze_popup_timer > 0.0f) defense->graze_popup_timer -= delta_time;
 
     if (defense->phase == DEFENSE_ENTERING) {
         const float progress = Clamp(defense->phase_timer / 0.25f, 0.0f, 1.0f);
@@ -291,12 +451,17 @@ DefenseResult DefenseUpdate(DefenseState *defense, PlayerStats *player, float de
         if (progress >= 1.0f) {
             defense->phase = DEFENSE_ACTIVE;
             defense->phase_timer = 0.0f;
+            StartSpecialPattern(defense);
         }
     } else if (defense->phase == DEFENSE_ACTIVE) {
         defense->pattern_timer += delta_time;
         defense->spawn_timer += delta_time;
         UpdateSoul(defense, delta_time);
-        while (defense->spawn_timer >= defense->pattern.spawn_interval) {
+        if (defense->pattern_id == PATTERN_GRAVITY_FLIP || defense->pattern_id == PATTERN_SHADOW_BLOOM) {
+            UpdateSpecialPattern(defense, player, delta_time);
+        }
+        while (defense->pattern_id != PATTERN_GRAVITY_FLIP && defense->pattern_id != PATTERN_SHADOW_BLOOM &&
+               defense->spawn_timer >= defense->pattern.spawn_interval) {
             defense->spawn_timer -= defense->pattern.spawn_interval;
             SpawnPatternShot(defense);
         }
@@ -304,11 +469,13 @@ DefenseResult DefenseUpdate(DefenseState *defense, PlayerStats *player, float de
 
         if (player->hp == 0) {
             ClearBullets(defense);
+            HazardsClear(&defense->hazards);
             defense->phase = DEFENSE_FINISHED;
             return DEFENSE_PLAYER_DEFEATED;
         }
         if (defense->pattern_timer >= defense->pattern.duration) {
             ClearBullets(defense);
+            HazardsClear(&defense->hazards);
             defense->phase = DEFENSE_EXITING;
             defense->phase_timer = 0.0f;
         }
@@ -326,15 +493,28 @@ DefenseResult DefenseUpdate(DefenseState *defense, PlayerStats *player, float de
 
 void DefenseDraw(const DefenseState *defense, bool draw_effects, const SpriteSystem *sprites)
 {
-    DrawRectangleRec(defense->box, BLACK);
-    DrawRectangleLinesEx(defense->box, 4.0f, RAYWHITE);
+    if (sprite_get(sprites, SPRITE_ARENA_BG) != NULL) {
+        SpriteDrawFit(sprites, SPRITE_ARENA_BG, defense->box, WHITE);
+    } else {
+        DrawRectangleRec(defense->box, BLACK);
+    }
+    if (sprite_get(sprites, SPRITE_ARENA_BORDER) != NULL) {
+        SpriteDrawFit(sprites, SPRITE_ARENA_BORDER, defense->box, WHITE);
+    } else {
+        DrawRectangleLinesEx(defense->box, 4.0f, RAYWHITE);
+    }
 
     if (defense->phase == DEFENSE_ACTIVE) {
+        HazardsDraw(&defense->hazards, !draw_effects, sprites, sprites->debug_bounds);
         if (defense->pattern_timer < 0.40f && defense->pattern.radius >= 6.0f) {
             const Vector2 warning = {defense->box.x + defense->box.width * 0.5f,
                                      defense->box.y + defense->box.height * 0.5f};
             DrawCircleLines((int)warning.x, (int)warning.y, 18, (Color){245, 90, 82, 255});
             DrawText("!", (int)warning.x - 3, (int)warning.y - 10, 18, (Color){245, 90, 82, 255});
+            if (sprite_get(sprites, SPRITE_WARN_DANGER) != NULL) {
+                SpriteDrawCentered(sprites, SPRITE_WARN_DANGER, warning, WHITE,
+                                   defense->pattern_timer, sprites->debug_bounds);
+            }
         }
         for (int bullet_index = 0; bullet_index < MAX_BULLETS; bullet_index++) {
             const Bullet *bullet = &defense->bullets[bullet_index];
@@ -346,7 +526,8 @@ void DefenseDraw(const DefenseState *defense, bool draw_effects, const SpriteSys
                 const float angle = defense->pattern.rotate ?
                     atan2f(bullet->velocity.y, bullet->velocity.x) * 57.2958f : 0.0f;
                 SpriteDrawCenteredRotated(sprites, sprite_id, bullet->position, WHITE,
-                                          bullet->lifetime, angle, sprites->debug_bounds);
+                                          bullet->lifetime, angle, defense->pattern.visual_scale,
+                                          sprites->debug_bounds);
                 DrawCircleLines((int)bullet->position.x, (int)bullet->position.y,
                                 bullet->radius + 1.0f, Fade(type_color(bullet->type), 0.65f));
             } else {
@@ -364,6 +545,10 @@ void DefenseDraw(const DefenseState *defense, bool draw_effects, const SpriteSys
             const Color color = defense->last_damage_multiplier >= 2.0f ? RED : MAROON;
             DrawText(TextFormat("-%d", defense->last_damage), (int)defense->soul_position.x + 9,
                      (int)defense->soul_position.y - 18, font_size, color);
+        }
+        if (draw_effects && defense->graze_popup_timer > 0.0f) {
+            DrawText("RASPOU", (int)defense->soul_position.x + 10,
+                     (int)defense->soul_position.y + 9, 10, (Color){125, 220, 205, 255});
         }
 
         if (draw_effects) {
@@ -383,6 +568,15 @@ void DefenseDraw(const DefenseState *defense, bool draw_effects, const SpriteSys
                 DrawCircle((int)soul.x + 3, (int)soul.y - 2, 4, heart);
                 DrawTriangle((Vector2){soul.x - 7, soul.y}, (Vector2){soul.x + 7, soul.y},
                              (Vector2){soul.x, soul.y + 8}, heart);
+            }
+        }
+        if (draw_effects && defense->damage_popup_timer > 0.0f) {
+            const float radius = 9.0f + (0.75f - defense->damage_popup_timer) * 18.0f;
+            DrawCircleLines((int)defense->soul_position.x, (int)defense->soul_position.y,
+                            radius, Fade(RED, 0.75f));
+            if (sprite_get(sprites, SPRITE_FX_HIT_SOUL) != NULL) {
+                SpriteDrawCentered(sprites, SPRITE_FX_HIT_SOUL, defense->soul_position, WHITE,
+                                   defense->pattern_timer, sprites->debug_bounds);
             }
         }
     }

@@ -57,4 +57,34 @@ pelo jogo.
 Um padrao especifico pode sobrescrever o sprite do tipo com `bullet_<padrao>.png`. Os IDs sao:
 `rain`, `side_wave`, `spiral`, `fast_rain`, `wide_wave`, `tight_spiral`, `petal_orbit`,
 `bounce_orbs`, `moving_wall`, `split_shots`, `cross_lasers`, `pause_darts`, `ring_burst`,
-`diagonal_rain`, `chase_wave` e `pinwheel`.
+`diagonal_rain`, `chase_wave`, `pinwheel`, `gravity_flip` e `shadow_bloom`.
+
+### Ataques especiais do Sineiro
+
+`gravity_flip` e `shadow_bloom` usam zonas de perigo, e portanto nao dependem do pool normal de
+balas. Todos os arquivos abaixo sao opcionais:
+
+| Arquivo | Tamanho / metadado |
+|---|---|
+| `warn_gravity.png` | 32x32 |
+| `fx_hit_soul_sheet.png` | 4 frames de 32x32; `fx_hit_soul.txt` |
+| `gravity_wall_glow_sheet.png` | 4 frames de 16x16; `gravity_wall_glow.txt` |
+| `thorn_wall_sheet.png` | 4 frames de 16x48; `thorn_wall.txt` |
+| `thorn_wall_warn.png` | 16x48 |
+| `shadow_orb_sheet.png` | 4 frames de 32x32; `shadow_orb.txt` |
+| `shadow_bloom_warn.png` | 64x64 |
+| `shadow_burst_sheet.png` | 6 frames de 96x96; `shadow_burst.txt` |
+
+Exemplo de metadado: `frames=4 fps=12 frame_w=32 frame_h=32`. Espinhos devem apontar para cima;
+a versao por codigo usa triangulos claros sobre fundo escuro quando o PNG nao estiver presente.
+
+Os sprites de projeteis especificos tambem podem ser animados: por exemplo,
+`bullet_pause_darts_sheet.png` usa `bullet_pause_darts.txt` com
+`frames=4 fps=10 frame_w=16 frame_h=16`. A ordem de busca e sempre
+`bullet_<padrao>` -> `bullet_<tipo>` -> forma desenhada pelo jogo. A colisao continua usando o
+circulo logico, nao o tamanho do PNG.
+
+Para ataques grandes, use `warn_danger.png` (32x32) como marcador opcional. Use
+`fx_hit_soul.png` (32x32, ou sheet) para o impacto na alma. `arena_bg_pastel.png` e um fundo
+opcional da caixa (320x180 recomendado); `arena_border.png` e uma textura de borda simples de
+16x16. Ambos sao esticados para a arena atual e possuem fallback para fundo preto e borda branca.

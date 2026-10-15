@@ -6,7 +6,7 @@
 #include "player.h"
 #include "bullets.h"
 
-#define MAX_ENEMY_PATTERNS 8
+#define MAX_ENEMY_PATTERNS 10
 #define MAX_ENEMY_ACTIONS 4
 
 typedef enum {

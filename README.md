@@ -241,11 +241,33 @@ usos e cooldown. Os cinco estilos de efeito sao `IMPACT`, `PROJECTILE`, `SLASH`,
 Todo efeito procura primeiro `fx_<ataque>_sheet.png`, depois `fx_type_<tipo>_sheet.png`; se nenhum
 PNG estiver instalado, um efeito geometricamente desenhado por codigo ocupa o lugar.
 
-`F8`, em build de depuracao, abre o teste de efeitos: A/D escolhe o ataque, W/S escolhe o resultado
-do QTE e Espaco toca o efeito. `F6` recarrega sprites. A lista completa de nomes de imagem e
+`F8`, em build de depuracao, abre o teste de padroes de defesa: A/D escolhe o padrao, W/S escolhe
+o inimigo e Espaco reinicia a rodada sem dano. `F7` mostra hitboxes e `F6` recarrega sprites. A lista completa de nomes de imagem e
 dimensoes fica em `assets/sprites/README.md`.
 
 Status: Queimar causa dano no inicio do turno inimigo; Molhar aumenta em 25% ataques de Planta e
 Luz; Enraizar reduz a velocidade da defesa; Cegar reduz o dano; Atordoar faz o inimigo perder um
 turno. Usos e cooldowns impedem repetir ataques pesados sem custo. Rode
 `cmake --build build --target test_phase10` ou `make test-phase10` para validar essa logica.
+
+### Defesa: padroes e sprites
+
+Os 16 padroes de defesa ficam em `src/bullets.c`. Cada um define a caixa, dano, velocidade,
+tipo, hitbox e visual de forma data-driven. Os comportamentos especiais incluem orbes que quicam,
+petalas orbitais, tiros que se dividem, dardos que param e perseguem, chuva diagonal e ondas
+perseguidoras. `test_bullets` valida, sem abrir janela, a configuracao de todos os padroes.
+
+Para artes opcionais, use `bullet_<padrao>.png` antes de `bullet_<tipo>.png`. PNGs podem ter
+spritesheet horizontal acompanhado por um `.txt` de metadados. `F8` permite testar a fase de
+defesa sem perder vida; `F7` revela as hitboxes, que permanecem circulares e independentes da arte.
+
+O Sineiro tambem possui `gravity_flip`: a alma e puxada contra uma parede e precisa escapar da
+faixa de espinhos antes que ela ative; e `shadow_bloom`: orbes de sombra mostram o raio final e
+explodem uma vez ao terminar de crescer. Ambos usam o pool independente de zonas em `hazards.c`.
+Os valores de fuga, espinhos, raio e dano ficam centralizados em `balance.h`.
+
+Distribuicao atual: Mariposa (rain, side_wave, spiral); Sapo (side_wave, spiral, rain);
+Passaro de Cinza (fast_rain, spiral, diagonal_rain); Limo de Menta (wide_wave, petal_orbit,
+pinwheel); Fagulha de Lanterna (fast_rain, tight_spiral, spiral); Lebre de Espinho (wide_wave,
+side_wave, fast_rain); Gato de Sombra (tight_spiral, spiral, side_wave); Cavaleiro de Petalas
+(wide_wave, fast_rain, tight_spiral). O Sineiro e a Ultima Torre possuem oito padroes cada.

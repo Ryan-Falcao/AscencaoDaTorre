@@ -92,7 +92,7 @@ Enemy EnemyCreate(EnemyId id)
             snprintf(enemy.name, sizeof(enemy.name), "Passaro de Cinza");
             enemy.hp_max = 38; enemy.hp = enemy.hp_max; enemy.type = TYPE_FLAME; enemy.aggression = 48;
             enemy.pattern_ids[0] = PATTERN_FAST_RAIN; enemy.pattern_ids[1] = PATTERN_SPIRAL;
-            enemy.pattern_ids[2] = PATTERN_RAIN; enemy.pattern_count = 3;
+            enemy.pattern_ids[2] = PATTERN_DIAGONAL_RAIN; enemy.pattern_count = 3;
             snprintf(enemy.description, sizeof(enemy.description), "Uma ave quente demais para pousar.");
             enemy.actions[0] = MakeAction("Analisar", "", ENEMY_ACTION_ANALYZE, 0, 0, 0, 0, 1.0f, 100);
             enemy.actions[1] = MakeAction("Assobiar", "O canto perde a pressa.", ENEMY_ACTION_SOCIAL, 25, -15, 2, 1, .5f, 100);
@@ -102,8 +102,8 @@ Enemy EnemyCreate(EnemyId id)
         case ENEMY_MINT_SLIME:
             snprintf(enemy.name, sizeof(enemy.name), "Limo de Menta");
             enemy.hp_max = 34; enemy.hp = enemy.hp_max; enemy.type = TYPE_PLANT; enemy.aggression = 28;
-            enemy.pattern_ids[0] = PATTERN_RAIN; enemy.pattern_ids[1] = PATTERN_WIDE_WAVE;
-            enemy.pattern_ids[2] = PATTERN_SIDE_WAVE; enemy.pattern_count = 3;
+            enemy.pattern_ids[0] = PATTERN_WIDE_WAVE; enemy.pattern_ids[1] = PATTERN_PETAL_ORBIT;
+            enemy.pattern_ids[2] = PATTERN_PINWHEEL; enemy.pattern_count = 3;
             snprintf(enemy.description, sizeof(enemy.description), "Ele cresce onde ninguem olha.");
             enemy.actions[0] = MakeAction("Analisar", "", ENEMY_ACTION_ANALYZE, 0, 0, 0, 0, 1.0f, 100);
             enemy.actions[1] = MakeAction("Regar", "O limo balanca contente.", ENEMY_ACTION_SOCIAL, 28, -8, 2, 1, .5f, 100);
@@ -166,7 +166,9 @@ Enemy EnemyCreate(EnemyId id)
             enemy.pattern_ids[5] = PATTERN_SIDE_WAVE;
             enemy.pattern_ids[6] = PATTERN_SPIRAL;
             enemy.pattern_ids[7] = PATTERN_PINWHEEL;
-            enemy.pattern_count = 8;
+            enemy.pattern_ids[8] = PATTERN_GRAVITY_FLIP;
+            enemy.pattern_ids[9] = PATTERN_SHADOW_BLOOM;
+            enemy.pattern_count = 10;
             snprintf(enemy.description, sizeof(enemy.description), "Um sino sem som guarda o quinto andar.");
             enemy.actions[0] = MakeAction("Analisar", "", ENEMY_ACTION_ANALYZE, 0, 0, 0, 0, 1.0f, 100);
             enemy.actions[1] = MakeAction("Escutar", "O metal para de tremer.", ENEMY_ACTION_SOCIAL, 28, -16, 3, 1, .5f, 100);
