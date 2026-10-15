@@ -1,0 +1,5 @@
+build/
+save.dat
+AscencaoDaTorre/
+*.exe
+test_save_temp.dat

@@ -1,0 +1,22 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Executar Ascensao da Torre",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/ascensao_torre.exe",
+            "cwd": "${workspaceFolder}",
+            "MIMode": "gdb",
+            "miDebuggerPath": "C:/msys64/ucrt64/bin/gdb.exe",
+            "preLaunchTask": "Compilar Ascensao da Torre",
+            "externalConsole": false,
+            "environment": [
+                {
+                    "name": "PATH",
+                    "value": "C:/msys64/ucrt64/bin;${env:PATH}"
+                }
+            ]
+        }
+    ]
+}
