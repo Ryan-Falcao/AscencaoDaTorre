@@ -3,62 +3,59 @@
 
 #include "raylib.h"
 
-#define QTE_MAX_SEQUENCE 5
+typedef enum {
+    QTE_IMPACTO,
+    QTE_RITMO,
+    QTE_CARGA
+} TipoQte;
 
 typedef enum {
-    QTE_TIMING,
-    QTE_SEQUENCE,
-    QTE_HOLD
-} QteKind;
-
-typedef enum {
-    QTE_PERFECT,
-    QTE_GOOD,
-    QTE_BAD,
-    QTE_ERROR
-} QteResult;
+    QTE_PERFEITO,
+    QTE_BOM,
+    QTE_RUIM,
+    QTE_ERRO
+} ResultadoQte;
 
 typedef struct {
-    bool confirm_pressed;
-    bool confirm_down;
-    bool confirm_released;
-    int direction_pressed;
-} QteInput;
+    bool confirmar_pressionado;
+    bool confirmar_mantido;
+    bool confirmar_solto;
+} EntradaQte;
 
 typedef struct {
-    bool active;
-    bool result_ready;
-    QteKind kind;
-    QteResult result;
-    int difficulty;
-    float elapsed;
-    float guard_timer;
-    float result_timer;
-    float duration;
-    float target_time;
-    int sequence[QTE_MAX_SEQUENCE];
-    int sequence_length;
-    int sequence_index;
-    bool hold_started;
-    bool hold_ready;
-    float hold_charge;
-    float released_charge;
-    float feedback_timer;
-    bool feedback_success;
+    bool ativo;
+    bool resultado_pronto;
+    TipoQte categoria;
+    ResultadoQte resultado;
+    int dificuldade;
+    float decorrido;
+    float temporizador_guarda;
+    float temporizador_resultado;
+    float duracao;
+    float tempo_alvo;
+    int total_batidas;
+    int indice_batida;
+    int pontos_ritmo;
+    bool segurar_iniciado;
+    bool segurar_pronto;
+    float carga_segurada;
+    float carga_solta;
+    float temporizador_retorno;
+    bool retorno_sucesso;
 } Qte;
 
-void qte_start(Qte *qte, QteKind kind, int difficulty);
-void qte_update(Qte *qte, float delta_time);
-void qte_update_with_input(Qte *qte, float delta_time, QteInput input);
-void qte_draw(const Qte *qte);
-bool qte_is_finished(const Qte *qte);
-float qte_multiplier(QteResult result);
-const char *qte_result_name(QteResult result);
-QteResult qte_result_from_timing_distance(float distance, int difficulty);
-QteResult qte_result_from_sequence(int correct, int total, float elapsed, float limit);
-bool qte_is_in_guard(const Qte *qte);
-void qte_resume_with_guard(Qte *qte);
-QteInput qte_input_for_test(bool confirm_pressed, bool confirm_down, bool confirm_released,
-                            int direction_pressed);
+void qte_iniciar(Qte *qte, TipoQte categoria, int dificuldade);
+void qte_atualizar(Qte *qte, float tempo_delta);
+void qte_atualizar_com_entrada(Qte *qte, float tempo_delta, EntradaQte entrada);
+void qte_desenhar(const Qte *qte);
+bool qte_terminou(const Qte *qte);
+float qte_multiplicador(ResultadoQte resultado);
+const char *qte_nome_resultado(ResultadoQte resultado);
+ResultadoQte qte_resultado_por_distancia_tempo(float distancia, int dificuldade);
+ResultadoQte qte_resultado_por_ritmo(int pontos, int total_batidas);
+bool qte_esta_em_guarda(const Qte *qte);
+void qte_retomar_com_guarda(Qte *qte);
+EntradaQte qte_entrada_para_teste(bool confirmar_pressionado, bool confirmar_mantido,
+                                  bool confirmar_solto);
 
 #endif

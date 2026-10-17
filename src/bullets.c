@@ -4,579 +4,678 @@
 #include "ui.h"
 #include "sprites.h"
 #include "balance.h"
+#include "patterns.h"
+#include "motion_patterns.h"
 #include "raymath.h"
 
 #include <math.h>
 #include <string.h>
 
-#define AGGRESSION_LOW_MAX 33
-#define AGGRESSION_HIGH_MIN 67
-#define HIGH_AGGRESSION_SPEED_MULTIPLIER 1.15f
-#define HIGH_AGGRESSION_DAMAGE_MULTIPLIER 1.25f
-#define DEFENSE_START_GRACE_SECONDS 0.35f
-#define SPIRAL_SAFE_SPAWN_RADIUS 34.0f
+#define AGRESSIVIDADE_BAIXA_MAXIMO 33
+#define AGRESSIVIDADE_ALTA_MIN 67
+#define ALTA_AGRESSIVIDADE_VELOCIDADE_MULTIPLICADOR 1.15f
+#define ALTA_AGRESSIVIDADE_DANO_MULTIPLICADOR 1.25f
+#define DEFESA_INICIO_TOLERANCIA_SEGUNDOS 0.35f
+#define RAIO_CRIACAO_SEGURA_ESPIRAL 34.0f
 
-static const BulletPattern PATTERNS[PATTERN_COUNT] = {
-    [PATTERN_RAIN] = {
-        6.0f, 300.0f, 154.0f, 0.34f, 2, 106.0f, 6.0f, 0.0f, 0.0f,
-        TYPE_WATER, 3, 1, SPAWN_RAIN
+static const PadraoProjetil PADROES[PADRAO_TOTAL] = {
+#define CARACTERISTICO(id, element, power) [id] = { .duracao = 10.8f, .largura_caixa = 320, \
+    .altura_caixa = 200, .intervalo_criacao = 99, .projeteis_por_criacao = 1, .raio = 5, \
+    .tipo = element, .dano = power, .dificuldade = 2 }
+    CARACTERISTICO(PADRAO_MARIPOSA_ASAS, TIPO_SOMBRA, 3),
+    CARACTERISTICO(PADRAO_SAPO_SALTOS, TIPO_AGUA, 4),
+    CARACTERISTICO(PADRAO_PASSARO_MERGULHO, TIPO_FOGO, 4),
+    CARACTERISTICO(PADRAO_LIMO_CRESCIMENTO, TIPO_PLANTA, 3),
+    CARACTERISTICO(PADRAO_FAGULHA_LUZ, TIPO_LUZ, 4),
+    CARACTERISTICO(PADRAO_LEBRE_PULOS, TIPO_PLANTA, 4),
+    CARACTERISTICO(PADRAO_GATO_EMBOSCADA, TIPO_SOMBRA, 4),
+    CARACTERISTICO(PADRAO_CAVALEIRO_DUELO, TIPO_LUZ, 4),
+    CARACTERISTICO(PADRAO_SINO_ECO, TIPO_LUZ, 5),
+    CARACTERISTICO(PADRAO_TORRE_ESMAGAMENTO, TIPO_NEUTRO, 5),
+    CARACTERISTICO(PADRAO_MARIPOSA_TRAMA, TIPO_SOMBRA, 3),
+    CARACTERISTICO(PADRAO_MARIPOSA_CORRENTE, TIPO_SOMBRA, 3),
+    CARACTERISTICO(PADRAO_SAPO_BARREIRAS, TIPO_AGUA, 4),
+    CARACTERISTICO(PADRAO_SAPO_VITORIAS_REGIAS, TIPO_AGUA, 4),
+    CARACTERISTICO(PADRAO_PASSARO_FOGO_CRUZADO, TIPO_FOGO, 4),
+    CARACTERISTICO(PADRAO_PASSARO_TUNEL, TIPO_FOGO, 4),
+    CARACTERISTICO(PADRAO_LIMO_MARE, TIPO_PLANTA, 3),
+    CARACTERISTICO(PADRAO_LIMO_BALSAS, TIPO_PLANTA, 3),
+    CARACTERISTICO(PADRAO_FAGULHA_CANHOES, TIPO_LUZ, 4),
+    CARACTERISTICO(PADRAO_FAGULHA_ORBITA, TIPO_LUZ, 4),
+    CARACTERISTICO(PADRAO_LEBRE_BARREIRAS, TIPO_PLANTA, 4),
+    CARACTERISTICO(PADRAO_LEBRE_PARKOUR, TIPO_PLANTA, 4),
+    CARACTERISTICO(PADRAO_GATO_IMPACTO, TIPO_SOMBRA, 4),
+    CARACTERISTICO(PADRAO_GATO_PERSEGUICAO, TIPO_SOMBRA, 4),
+    CARACTERISTICO(PADRAO_CAVALEIRO_LANCAS, TIPO_LUZ, 4),
+    CARACTERISTICO(PADRAO_CAVALEIRO_DESAFIO, TIPO_LUZ, 4),
+    CARACTERISTICO(PADRAO_SINO_CANHOES, TIPO_LUZ, 5),
+    CARACTERISTICO(PADRAO_SINO_IMPACTO, TIPO_SOMBRA, 5),
+    CARACTERISTICO(PADRAO_SINO_DESAFIO, TIPO_LUZ, 5),
+    CARACTERISTICO(PADRAO_TORRE_PARKOUR, TIPO_NEUTRO, 5),
+    CARACTERISTICO(PADRAO_TORRE_CANHOES, TIPO_NEUTRO, 5),
+    CARACTERISTICO(PADRAO_TORRE_DESAFIO, TIPO_NEUTRO, 5),
+    CARACTERISTICO(PADRAO_SINO_GAS_SOMBRA, TIPO_SOMBRA, 5),
+    CARACTERISTICO(PADRAO_CHUVA_FOGO, TIPO_FOGO, 4),
+#undef CARACTERISTICO
+    [PADRAO_CHUVA] = {
+        6.0f, 300.0f, 154.0f, 0.34f, 2, 106.0f, 6.0f, 0.0f,
+        TIPO_AGUA, 3, 1, CRIACAO_CHUVA
     },
-    [PATTERN_SIDE_WAVE] = {
-        7.0f, 320.0f, 168.0f, 0.88f, 7, 126.0f, 7.0f, 0.0f, 42.0f,
-        TYPE_SHADOW, 4, 2, SPAWN_SIDE_WAVE
+    [PADRAO_LATERAL_ONDA] = {
+        7.0f, 320.0f, 168.0f, 0.88f, 7, 126.0f, 7.0f, 0.0f,
+        TIPO_SOMBRA, 4, 2, CRIACAO_LATERAL_ONDA
     },
-    [PATTERN_SPIRAL] = {
-        7.0f, 286.0f, 172.0f, 0.42f, 4, 92.0f, 6.0f, 1.57f, 0.0f,
-        TYPE_FLAME, 3, 3, SPAWN_SPIRAL
+    [PADRAO_ESPIRAL] = {
+        7.0f, 310.0f, 190.0f, 0.62f, 4, 82.0f, 5.0f, 1.57f,
+        TIPO_FOGO, 3, 3, CRIACAO_ESPIRAL
     },
-    [PATTERN_FAST_RAIN] = {
-        6.0f, 300.0f, 154.0f, 0.24f, 3, 135.0f, 5.0f, 0.0f, 0.0f,
-        TYPE_LIGHT, 4, 3, SPAWN_RAIN
+    [PADRAO_RAPIDA_CHUVA] = {
+        6.0f, 300.0f, 154.0f, 0.24f, 3, 135.0f, 5.0f, 0.0f,
+        TIPO_LUZ, 4, 3, CRIACAO_CHUVA
     },
-    [PATTERN_WIDE_WAVE] = {
-        7.0f, 330.0f, 180.0f, 0.62f, 9, 145.0f, 6.0f, 0.0f, 52.0f,
-        TYPE_PLANT, 4, 2, SPAWN_SIDE_WAVE
+    [PADRAO_LARGA_ONDA] = {
+        7.0f, 330.0f, 180.0f, 0.62f, 9, 145.0f, 6.0f, 0.0f,
+        TIPO_PLANTA, 4, 2, CRIACAO_LATERAL_ONDA
     },
-    [PATTERN_TIGHT_SPIRAL] = {
-        7.0f, 270.0f, 160.0f, 0.30f, 5, 120.0f, 5.0f, 1.25f, 0.0f,
-        TYPE_SHADOW, 5, 3, SPAWN_SPIRAL
+    [PADRAO_FECHADA_ESPIRAL] = {
+        7.0f, 270.0f, 160.0f, 0.30f, 5, 120.0f, 5.0f, 1.25f,
+        TIPO_SOMBRA, 5, 3, CRIACAO_ESPIRAL
     },
-    [PATTERN_PETAL_ORBIT] = {
-        6.5f, 300.0f, 175.0f, 0.36f, 6, 82.0f, 5.0f, 1.05f, 0.0f,
-        TYPE_PLANT, 4, 2, SPAWN_SPIRAL
+    [PADRAO_PETALA_ORBITA] = {
+        6.5f, 300.0f, 175.0f, 0.36f, 6, 82.0f, 5.0f, 1.05f,
+        TIPO_PLANTA, 4, 2, CRIACAO_ESPIRAL
     },
-    [PATTERN_BOUNCE_ORBS] = {
-        6.5f, 310.0f, 170.0f, 0.55f, 4, 116.0f, 7.0f, 0.75f, 0.0f,
-        TYPE_WATER, 4, 2, SPAWN_SPIRAL
+    [PADRAO_REBOTE_ORBES] = {
+        6.5f, 310.0f, 170.0f, 0.55f, 4, 116.0f, 7.0f, 0.75f,
+        TIPO_AGUA, 4, 2, CRIACAO_ESPIRAL
     },
-    [PATTERN_MOVING_WALL] = {
-        7.0f, 335.0f, 180.0f, 0.72f, 10, 130.0f, 6.0f, 0.0f, 58.0f,
-        TYPE_NEUTRAL, 5, 3, SPAWN_SIDE_WAVE
+    [PADRAO_MOVEL_PAREDE] = {
+        7.0f, 335.0f, 180.0f, 0.72f, 10, 130.0f, 6.0f, 0.0f,
+        TIPO_NEUTRO, 5, 3, CRIACAO_LATERAL_ONDA
     },
-    [PATTERN_SPLIT_SHOTS] = {
-        6.5f, 300.0f, 170.0f, 0.30f, 3, 138.0f, 5.0f, 0.48f, 0.0f,
-        TYPE_FLAME, 5, 3, SPAWN_RAIN
+    [PADRAO_DIVISAO_DISPAROS] = {
+        6.5f, 320.0f, 190.0f, 0.65f, 2, 112.0f, 5.0f, 0.48f,
+        TIPO_FOGO, 5, 3, CRIACAO_CHUVA
     },
-    [PATTERN_CROSS_LASERS] = {
-        6.0f, 320.0f, 170.0f, 0.90f, 8, 158.0f, 5.0f, 0.0f, 48.0f,
-        TYPE_LIGHT, 6, 3, SPAWN_SIDE_WAVE
+    [PADRAO_CRUZADOS_LASERS] = {
+        6.0f, 320.0f, 170.0f, 0.90f, 8, 158.0f, 5.0f, 0.0f,
+        TIPO_LUZ, 6, 3, CRIACAO_LATERAL_ONDA
     },
-    [PATTERN_PAUSE_DARTS] = {
-        6.5f, 290.0f, 165.0f, 0.46f, 5, 72.0f, 6.0f, 1.26f, 0.0f,
-        TYPE_SHADOW, 5, 2, SPAWN_SPIRAL
+    [PADRAO_PAUSA_DARDOS] = {
+        6.5f, 290.0f, 165.0f, 0.46f, 5, 72.0f, 6.0f, 1.26f,
+        TIPO_SOMBRA, 5, 2, CRIACAO_ESPIRAL
     },
-    [PATTERN_RING_BURST] = {
-        6.0f, 300.0f, 170.0f, 0.58f, 8, 110.0f, 5.0f, 0.78f, 0.0f,
-        TYPE_LIGHT, 5, 2, SPAWN_SPIRAL
+    [PADRAO_ANEL_EXPLOSAO] = {
+        6.0f, 300.0f, 170.0f, 0.58f, 8, 110.0f, 5.0f, 0.78f,
+        TIPO_LUZ, 5, 2, CRIACAO_ESPIRAL
     },
-    [PATTERN_DIAGONAL_RAIN] = {
-        6.5f, 305.0f, 175.0f, 0.28f, 4, 150.0f, 5.0f, 0.0f, 0.0f,
-        TYPE_FLAME, 4, 2, SPAWN_RAIN
+    [PADRAO_DIAGONAL_CHUVA] = {
+        6.5f, 320.0f, 190.0f, 0.48f, 3, 120.0f, 5.0f, 0.0f,
+        TIPO_FOGO, 4, 2, CRIACAO_CHUVA
     },
-    [PATTERN_CHASE_WAVE] = {
-        7.0f, 320.0f, 176.0f, 0.66f, 8, 152.0f, 6.0f, 0.0f, 46.0f,
-        TYPE_WATER, 5, 3, SPAWN_SIDE_WAVE
+    [PADRAO_PERSEGUICAO_ONDA] = {
+        7.0f, 320.0f, 176.0f, 0.66f, 8, 152.0f, 6.0f, 0.0f,
+        TIPO_AGUA, 5, 3, CRIACAO_LATERAL_ONDA
     },
-    [PATTERN_PINWHEEL] = {
-        7.0f, 285.0f, 165.0f, 0.34f, 6, 126.0f, 5.0f, 1.05f, 0.0f,
-        TYPE_PLANT, 5, 3, SPAWN_SPIRAL
+    [PADRAO_CATA_VENTO] = {
+        7.0f, 285.0f, 165.0f, 0.34f, 6, 126.0f, 5.0f, 1.05f,
+        TIPO_PLANTA, 5, 3, CRIACAO_ESPIRAL
     },
-    [PATTERN_GRAVITY_FLIP] = {
-        8.0f, 300.0f, 175.0f, 99.0f, 1, 0.0f, 1.0f, 0.0f, 0.0f,
-        TYPE_PLANT, BALANCE_GRAVITY_DAMAGE, 3, SPAWN_SPIRAL
+    [PADRAO_GRAVIDADE_INVERSAO] = {
+        8.0f, 300.0f, 175.0f, 99.0f, 1, 0.0f, 1.0f, 0.0f,
+        TIPO_PLANTA, BALANCEAMENTO_GRAVIDADE_DANO, 3, CRIACAO_ESPIRAL
     },
-    [PATTERN_SHADOW_BLOOM] = {
-        7.0f, 300.0f, 175.0f, 99.0f, 1, 0.0f, 1.0f, 0.0f, 0.0f,
-        TYPE_SHADOW, BALANCE_SHADOW_BLOOM_DAMAGE, 3, SPAWN_SPIRAL
+    [PADRAO_SOMBRA_FLORACAO] = {
+        7.0f, 300.0f, 175.0f, 99.0f, 1, 0.0f, 1.0f, 0.0f,
+        TIPO_SOMBRA, BALANCEAMENTO_SOMBRA_FLORACAO_DANO, 3, CRIACAO_ESPIRAL
     }
 };
 
-static Rectangle LerpRectangle(Rectangle from, Rectangle to, float amount)
+static Rectangle InterpolarRetangulo(Rectangle origem, Rectangle destino, float quantidade)
 {
     return (Rectangle){
-        from.x + (to.x - from.x) * amount,
-        from.y + (to.y - from.y) * amount,
-        from.width + (to.width - from.width) * amount,
-        from.height + (to.height - from.height) * amount
+        origem.x + (destino.x - origem.x) * quantidade,
+        origem.y + (destino.y - origem.y) * quantidade,
+        origem.width + (destino.width - origem.width) * quantidade,
+        origem.height + (destino.height - origem.height) * quantidade
     };
 }
 
-static void ClearBullets(DefenseState *defense)
+static void LimparProjeteis(EstadoDefesa *defesa)
 {
-    for (int bullet_index = 0; bullet_index < MAX_BULLETS; bullet_index++) {
-        defense->bullets[bullet_index].active = false;
+    for (int indice_projetil = 0; indice_projetil < MAXIMO_PROJETEIS; indice_projetil++) {
+        defesa->projeteis[indice_projetil].ativo = false;
     }
 }
 
-static Rectangle GravityThornRect(const DefenseState *defense)
+static Rectangle RetanguloEspinhoGravidade(const EstadoDefesa *defesa)
 {
-    const Rectangle box = defense->box;
-    const float depth = BALANCE_GRAVITY_THORN_DEPTH;
-    switch (defense->gravity_wall) {
-        case 0: return (Rectangle){box.x, box.y, box.width, depth};
-        case 1: return (Rectangle){box.x, box.y + box.height - depth, box.width, depth};
-        case 2: return (Rectangle){box.x, box.y, depth, box.height};
-        default: return (Rectangle){box.x + box.width - depth, box.y, depth, box.height};
+    const Rectangle caixa = defesa->caixa;
+    const float depth = BALANCEAMENTO_GRAVIDADE_ESPINHO_PROFUNDIDADE;
+    switch (defesa->parede_gravidade) {
+        case 0: return (Rectangle){caixa.x, caixa.y, caixa.width, depth};
+        case 1: return (Rectangle){caixa.x, caixa.y + caixa.height - depth, caixa.width, depth};
+        case 2: return (Rectangle){caixa.x, caixa.y, depth, caixa.height};
+        default: return (Rectangle){caixa.x + caixa.width - depth, caixa.y, depth, caixa.height};
     }
 }
 
-static void StartGravityCycle(DefenseState *defense)
+static void IniciarCicloGravidade(EstadoDefesa *defesa)
 {
-    defense->gravity_wall = GetRandomValue(0, 3);
-    defense->gravity_thorns_created = false;
-    defense->special_timer = 0.0f;
+    defesa->parede_gravidade = GetRandomValue(0, 3);
+    defesa->espinhos_gravidade_criados = false;
+    defesa->temporizador_especial = 0.0f;
 }
 
-static void StartShadowBloom(DefenseState *defense)
+static void IniciarFloracaoSombria(EstadoDefesa *defesa)
 {
-    const int count = defense->gravity_repeats > 2 ? 7 : 5;
-    for (int index = 0; index < count; index++) {
-        Vector2 position;
+    const int total = defesa->repeticoes_gravidade > 2 ? 7 : 5;
+    for (int indice = 0; indice < total; indice++) {
+        Vector2 posicao;
         do {
-            position = (Vector2){(float)GetRandomValue((int)defense->box.x + 34,
-                                                         (int)(defense->box.x + defense->box.width - 34)),
-                                 (float)GetRandomValue((int)defense->box.y + 34,
-                                                         (int)(defense->box.y + defense->box.height - 34))};
-        } while (Vector2Distance(position, defense->soul_position) < 72.0f);
-        HazardsAddCircle(&defense->hazards, position,
-                         BALANCE_SHADOW_BLOOM_RADIUS + (float)(index % 2) * 8.0f,
-                         BALANCE_SHADOW_BLOOM_GROW_TIME + (float)index * BALANCE_SHADOW_BLOOM_STAGGER,
-                         0.10f, 0.15f, TYPE_SHADOW, BALANCE_SHADOW_BLOOM_DAMAGE, true);
+            posicao = (Vector2){(float)GetRandomValue((int)defesa->caixa.x + 34,
+                                                         (int)(defesa->caixa.x + defesa->caixa.width - 34)),
+                                 (float)GetRandomValue((int)defesa->caixa.y + 34,
+                                                         (int)(defesa->caixa.y + defesa->caixa.height - 34))};
+        } while (Vector2Distance(posicao, defesa->posicao_alma) < 72.0f);
+        PerigosAdicionarCirculo(&defesa->perigos, posicao,
+                         BALANCEAMENTO_SOMBRA_FLORACAO_RAIO + (float)(indice % 2) * 8.0f,
+                         BALANCEAMENTO_SOMBRA_FLORACAO_TEMPO_CRESCIMENTO + (float)indice * BALANCEAMENTO_SOMBRA_FLORACAO_ATRASO,
+                         0.10f, 0.15f, TIPO_SOMBRA, BALANCEAMENTO_SOMBRA_FLORACAO_DANO, true);
     }
 }
 
-static void StartSpecialPattern(DefenseState *defense)
+static void IniciarPadraoEspecial(EstadoDefesa *defesa)
 {
-    defense->special_timer = 0.0f;
-    if (defense->pattern_id == PATTERN_GRAVITY_FLIP) StartGravityCycle(defense);
-    else if (defense->pattern_id == PATTERN_SHADOW_BLOOM) StartShadowBloom(defense);
+    defesa->temporizador_especial = 0.0f;
+    if (defesa->id_padrao == PADRAO_GRAVIDADE_INVERSAO) IniciarCicloGravidade(defesa);
+    else if (defesa->id_padrao == PADRAO_SOMBRA_FLORACAO) IniciarFloracaoSombria(defesa);
 }
 
-static Bullet *SpawnBullet(DefenseState *defense, Vector2 position, Vector2 velocity)
+static Projetil *CriarProjetil(EstadoDefesa *defesa, Vector2 posicao, Vector2 velocidade)
 {
-    for (int bullet_index = 0; bullet_index < MAX_BULLETS; bullet_index++) {
-        Bullet *bullet = &defense->bullets[bullet_index];
+    for (int indice_projetil = 0; indice_projetil < MAXIMO_PROJETEIS; indice_projetil++) {
+        Projetil *projetil = &defesa->projeteis[indice_projetil];
 
-        if (!bullet->active) {
-            *bullet = (Bullet){
+        if (!projetil->ativo) {
+            *projetil = (Projetil){
                 true,
-                position,
-                velocity,
-                defense->pattern.hitbox_radius,
-                defense->pattern.type,
-                defense->pattern.damage,
+                posicao,
+                velocidade,
+                defesa->padrao.raio_colisao,
+                defesa->padrao.tipo,
+                defesa->padrao.dano,
                 0.0f,
                 false
             };
-            return bullet;
+            return projetil;
         }
     }
     return NULL;
 }
 
-static void SpawnPatternShot(DefenseState *defense)
+static void CriarDisparoPadrao(EstadoDefesa *defesa)
 {
-    const Rectangle box = defense->box;
-    const BulletPattern *pattern = &defense->pattern;
+    const Rectangle caixa = defesa->caixa;
+    const PadraoProjetil *padrao = &defesa->padrao;
 
-    if (pattern->spawn_mode == SPAWN_RAIN) {
-        for (int bullet_index = 0; bullet_index < pattern->bullets_per_spawn; bullet_index++) {
-            const float x = (float)GetRandomValue((int)box.x + 8, (int)(box.x + box.width - 8));
-            const float diagonal = defense->pattern_id == PATTERN_DIAGONAL_RAIN ?
-                (bullet_index % 2 == 0 ? pattern->speed * 0.42f : -pattern->speed * 0.42f) : 0.0f;
-            SpawnBullet(defense, (Vector2){x, box.y - pattern->radius},
-                        (Vector2){diagonal, pattern->speed});
+    if (padrao->modo_criacao == CRIACAO_CHUVA) {
+        for (int indice_projetil = 0; indice_projetil < padrao->projeteis_por_criacao; indice_projetil++) {
+            const float x = (float)GetRandomValue((int)caixa.x + 8, (int)(caixa.x + caixa.width - 8));
+            const float diagonal = defesa->id_padrao == PADRAO_DIAGONAL_CHUVA ?
+                (indice_projetil % 2 == 0 ? padrao->velocidade * 0.42f : -padrao->velocidade * 0.42f) : 0.0f;
+            CriarProjetil(defesa, (Vector2){x, caixa.y - padrao->raio},
+                        (Vector2){diagonal, padrao->velocidade});
         }
-    } else if (pattern->spawn_mode == SPAWN_SIDE_WAVE) {
-        const int gap = defense->spawn_count % pattern->bullets_per_spawn;
-        const float spacing = box.height / (float)(pattern->bullets_per_spawn + 1);
+    } else if (padrao->modo_criacao == CRIACAO_LATERAL_ONDA) {
+        const int abertura = defesa->total_criacoes % padrao->projeteis_por_criacao;
+        const float espacamento = caixa.height / (float)(padrao->projeteis_por_criacao + 1);
 
-        for (int bullet_index = 0; bullet_index < pattern->bullets_per_spawn; bullet_index++) {
-            if (bullet_index == gap || bullet_index == gap + 1) continue;
-            SpawnBullet(defense,
-                        (Vector2){box.x - pattern->radius,
-                                  box.y + spacing * (float)(bullet_index + 1)},
-                        (Vector2){pattern->speed, 0.0f});
+        for (int indice_projetil = 0; indice_projetil < padrao->projeteis_por_criacao; indice_projetil++) {
+            if (indice_projetil == abertura || indice_projetil == abertura + 1) continue;
+            CriarProjetil(defesa,
+                        (Vector2){caixa.x - padrao->raio,
+                                  caixa.y + espacamento * (float)(indice_projetil + 1)},
+                        (Vector2){padrao->velocidade, 0.0f});
         }
-    } else if (pattern->spawn_mode == SPAWN_SPIRAL) {
-        const Vector2 center = {box.x + box.width * 0.5f, box.y + box.height * 0.5f};
+    } else if (padrao->modo_criacao == CRIACAO_ESPIRAL) {
+        const Vector2 centro = {caixa.x + caixa.width * 0.5f, caixa.y + caixa.height * 0.5f};
 
-        for (int bullet_index = 0; bullet_index < pattern->bullets_per_spawn; bullet_index++) {
-            const float angle = defense->spiral_angle + pattern->angle_spread * (float)bullet_index;
-            const Vector2 velocity = {cosf(angle) * pattern->speed, sinf(angle) * pattern->speed};
-            const Vector2 position = {
-                center.x + cosf(angle) * SPIRAL_SAFE_SPAWN_RADIUS,
-                center.y + sinf(angle) * SPIRAL_SAFE_SPAWN_RADIUS
+        for (int indice_projetil = 0; indice_projetil < padrao->projeteis_por_criacao; indice_projetil++) {
+            const float angulo = defesa->angulo_espiral + padrao->abertura_angular * (float)indice_projetil;
+            /* Mantem uma abertura de fuga larga e fixa a direita durante toda a espiral de fogo. */
+            if (defesa->id_padrao == PADRAO_ESPIRAL && cosf(angulo) > 0.70710678f) continue;
+            const Vector2 velocidade = {cosf(angulo) * padrao->velocidade, sinf(angulo) * padrao->velocidade};
+            const Vector2 posicao = {
+                centro.x + cosf(angulo) * RAIO_CRIACAO_SEGURA_ESPIRAL,
+                centro.y + sinf(angulo) * RAIO_CRIACAO_SEGURA_ESPIRAL
             };
 
-            /* The soul begins in the centre: never spawn a spiral bullet inside its hitbox. */
-            SpawnBullet(defense, position, velocity);
+            /* A alma comeca no centro: nunca cria um projetil espiral dentro da sua colisao. */
+            CriarProjetil(defesa, posicao, velocidade);
         }
-        defense->spiral_angle += 0.48f;
+        defesa->angulo_espiral += 0.48f;
     }
 
-    defense->spawn_count++;
+    defesa->total_criacoes++;
 }
 
-void DefenseInit(DefenseState *defense)
+void DefesaInicializar(EstadoDefesa *defesa)
 {
-    memset(defense, 0, sizeof(*defense));
-    defense->phase = DEFENSE_FINISHED;
-    defense->soul_radius = 4.0f;
+    memset(defesa, 0, sizeof(*defesa));
+    defesa->fase = DEFESA_FINALIZADA;
+    defesa->raio_alma = 4.0f;
 }
 
-void DefenseStart(DefenseState *defense, BulletPatternId pattern_id, Rectangle menu_box,
-                  int aggression, int damage_bonus, float damage_multiplier, float speed_multiplier)
+void DefesaIniciar(EstadoDefesa *defesa, IdPadraoProjetil id_padrao, Rectangle caixa_menu,
+                  int agressividade, int bonus_dano, float multiplicador_dano, float multiplicador_velocidade)
 {
-    if (pattern_id < PATTERN_RAIN || pattern_id >= PATTERN_COUNT) pattern_id = PATTERN_RAIN;
+    if (id_padrao < PADRAO_CHUVA || id_padrao >= PADRAO_TOTAL) id_padrao = PADRAO_CHUVA;
 
-    ClearBullets(defense);
-    HazardsClear(&defense->hazards);
-    defense->pattern = PATTERNS[pattern_id];
-    defense->pattern_id = pattern_id;
-    if (defense->pattern.visual_scale <= 0.0f) defense->pattern.visual_scale = 1.0f;
-    if (defense->pattern.hitbox_radius <= 0.0f) defense->pattern.hitbox_radius = defense->pattern.radius;
-    /* Defaults keep old data compatible while still giving every new pattern a clear look. */
-    defense->pattern.rotate = pattern_id == PATTERN_DIAGONAL_RAIN ||
-                               pattern_id == PATTERN_PAUSE_DARTS ||
-                               pattern_id == PATTERN_CHASE_WAVE;
-    defense->pattern.trail = pattern_id == PATTERN_SPIRAL || pattern_id == PATTERN_TIGHT_SPIRAL ||
-                             pattern_id == PATTERN_PETAL_ORBIT || pattern_id == PATTERN_PINWHEEL;
-    if (pattern_id == PATTERN_CROSS_LASERS || pattern_id == PATTERN_MOVING_WALL) {
-        defense->pattern.visual_scale = 1.35f;
+    LimparProjeteis(defesa);
+    PerigosLimpar(&defesa->perigos);
+    defesa->padrao = PADROES[id_padrao];
+    defesa->id_padrao = id_padrao;
+    if (id_padrao == PADRAO_SINO_DESAFIO || id_padrao == PADRAO_TORRE_DESAFIO)
+        defesa->padrao.duracao = 12.6f;
+    defesa->temporizador_especial = 0;
+    defesa->aviso_ataque = agressividade >= 67 ? .62f : (agressividade <= 33 ? .72f : .67f);
+    if (multiplicador_velocidade < 1.0f) defesa->aviso_ataque += .2f;
+    defesa->ataque_segunda_fase = false;
+    /* Encerra cada recuperacao logo apos seu ultimo impacto. Cada inimigo possui
+       sua propria pausa e um perigo ainda ativo nunca e removido antes da hora. */
+    float cauda = .95f;
+    if (id_padrao == PADRAO_SAPO_SALTOS) cauda = 1.15f;
+    else if (id_padrao == PADRAO_GATO_EMBOSCADA) cauda = .65f;
+    else if (id_padrao == PADRAO_FAGULHA_LUZ || id_padrao == PADRAO_TORRE_ESMAGAMENTO) cauda = .70f;
+    else if (id_padrao == PADRAO_SINO_ECO) cauda = 1.0f;
+    defesa->ciclo_ataque = defesa->aviso_ataque + cauda;
+    defesa->origem_ataque = defesa->alvo_ataque = (Vector2){320, 248};
+    if (defesa->padrao.escala_visual <= 0.0f) defesa->padrao.escala_visual = 1.0f;
+    if (defesa->padrao.raio_colisao <= 0.0f) defesa->padrao.raio_colisao = defesa->padrao.raio;
+    /* Valores padrao preservam dados antigos e dao uma aparencia clara a cada padrao novo. */
+    defesa->padrao.rotacionar = id_padrao == PADRAO_DIAGONAL_CHUVA ||
+                               id_padrao == PADRAO_PAUSA_DARDOS ||
+                               id_padrao == PADRAO_PERSEGUICAO_ONDA;
+    defesa->padrao.rastro = id_padrao == PADRAO_ESPIRAL || id_padrao == PADRAO_FECHADA_ESPIRAL ||
+                             id_padrao == PADRAO_PETALA_ORBITA || id_padrao == PADRAO_CATA_VENTO;
+    if (id_padrao == PADRAO_CRUZADOS_LASERS || id_padrao == PADRAO_MOVEL_PAREDE) {
+        defesa->padrao.escala_visual = 1.35f;
     }
-    defense->pattern.damage += damage_bonus;
-    defense->pattern.damage = (int)ceilf((float)defense->pattern.damage * damage_multiplier);
-    defense->pattern.speed *= speed_multiplier;
-    if (aggression >= AGGRESSION_HIGH_MIN) {
-        defense->pattern.speed *= HIGH_AGGRESSION_SPEED_MULTIPLIER;
-        defense->pattern.damage = (int)ceilf((float)defense->pattern.damage *
-                                             HIGH_AGGRESSION_DAMAGE_MULTIPLIER);
-    } else if (aggression <= AGGRESSION_LOW_MAX) {
-        defense->pattern.speed *= 0.90f;
+    defesa->padrao.dano += bonus_dano;
+    defesa->padrao.dano = (int)ceilf((float)defesa->padrao.dano * multiplicador_dano);
+    defesa->padrao.velocidade *= multiplicador_velocidade;
+    if (agressividade >= AGRESSIVIDADE_ALTA_MIN) {
+        defesa->padrao.velocidade *= ALTA_AGRESSIVIDADE_VELOCIDADE_MULTIPLICADOR;
+        defesa->padrao.dano = (int)ceilf((float)defesa->padrao.dano *
+                                             ALTA_AGRESSIVIDADE_DANO_MULTIPLICADOR);
+    } else if (agressividade <= AGRESSIVIDADE_BAIXA_MAXIMO) {
+        defesa->padrao.velocidade *= 0.90f;
     }
-    defense->start_box = menu_box;
-    defense->target_box = (Rectangle){
-        (640.0f - defense->pattern.box_width) * 0.5f,
+    defesa->caixa_inicial = caixa_menu;
+    defesa->caixa_alvo = (Rectangle){
+        (640.0f - defesa->padrao.largura_caixa) * 0.5f,
         148.0f,
-        defense->pattern.box_width,
-        defense->pattern.box_height
+        defesa->padrao.largura_caixa,
+        defesa->padrao.altura_caixa
     };
-    defense->box = menu_box;
-    defense->soul_position = (Vector2){
-        defense->target_box.x + defense->target_box.width * 0.5f,
-        defense->target_box.y + defense->target_box.height * 0.5f
+    defesa->caixa = caixa_menu;
+    defesa->posicao_alma = (Vector2){
+        defesa->caixa_alvo.x + defesa->caixa_alvo.width * 0.5f,
+        defesa->caixa_alvo.y + defesa->caixa_alvo.height * 0.5f
     };
-    for (int index = 0; index < 6; index++) defense->soul_trail[index] = defense->soul_position;
-    /* A short readable gap after the box opens prevents an unavoidable first hit. */
-    defense->invincibility_timer = DEFENSE_START_GRACE_SECONDS + 0.25f;
-    defense->phase_timer = 0.0f;
-    defense->pattern_timer = 0.0f;
-    defense->spawn_timer = -DEFENSE_START_GRACE_SECONDS;
-    defense->spiral_angle = 0.0f;
-    defense->spawn_count = 0;
-    defense->gravity_repeats = 2;
-    defense->phase = DEFENSE_ENTERING;
+    for (int indice = 0; indice < 6; indice++) defesa->rastro_alma[indice] = defesa->posicao_alma;
+    /* Uma pausa curta apos a abertura da caixa evita um primeiro acerto inevitavel. */
+    defesa->temporizador_invencibilidade = DEFESA_INICIO_TOLERANCIA_SEGUNDOS + 0.25f;
+    defesa->temporizador_fase = 0.0f;
+    defesa->temporizador_padrao = 0.0f;
+    defesa->temporizador_criacao = -DEFESA_INICIO_TOLERANCIA_SEGUNDOS;
+    defesa->temporizador_recarga_dash = 0.0f;
+    defesa->angulo_espiral = 0.0f;
+    defesa->total_criacoes = 0;
+    defesa->repeticoes_gravidade = 2;
+    defesa->fase = DEFESA_ENTRANDO;
 }
 
-int BulletPatternDifficulty(BulletPatternId pattern_id)
+int DificuldadePadraoProjetil(IdPadraoProjetil id_padrao)
 {
-    if (pattern_id < PATTERN_RAIN || pattern_id >= PATTERN_COUNT) return 1;
-    return PATTERNS[pattern_id].difficulty;
+    if (id_padrao < PADRAO_CHUVA || id_padrao >= PADRAO_TOTAL) return 1;
+    return PADROES[id_padrao].dificuldade;
 }
 
-void DefenseResizeBox(DefenseState *defense, float width, float height)
+void DefesaRedimensionarCaixa(EstadoDefesa *defesa, float width, float height)
 {
-    defense->target_box.width = width;
-    defense->target_box.height = height;
-    defense->target_box.x = (640.0f - width) * 0.5f;
+    defesa->caixa_alvo.width = width;
+    defesa->caixa_alvo.height = height;
+    defesa->caixa_alvo.x = (640.0f - width) * 0.5f;
 }
 
-static void UpdateSoul(DefenseState *defense, float delta_time)
+static void AtualizarAlma(EstadoDefesa *defesa, EntradaDefesa entrada, float tempo_delta)
 {
-    Vector2 movement = {0.0f, 0.0f};
-    const float speed = 135.0f;
+    Vector2 movimento = entrada.movimento;
+    const float velocidade = VELOCIDADE_MOVIMENTO_DEFESA;
 
-    if (input_left_down()) movement.x -= 1.0f;
-    if (input_right_down()) movement.x += 1.0f;
-    if (input_up_down()) movement.y -= 1.0f;
-    if (input_down_down()) movement.y += 1.0f;
-    if (movement.x != 0.0f && movement.y != 0.0f) movement = Vector2Scale(movement, 0.7071f);
+    if (movimento.x != 0.0f && movimento.y != 0.0f) movimento = Vector2Scale(movimento, 0.7071f);
 
-    for (int index = 5; index > 0; index--) defense->soul_trail[index] = defense->soul_trail[index - 1];
-    defense->soul_trail[0] = defense->soul_position;
-    defense->soul_position = Vector2Add(defense->soul_position, Vector2Scale(movement, speed * delta_time));
-    if (defense->pattern_id == PATTERN_GRAVITY_FLIP && !defense->gravity_thorns_created) {
-        const float pull = BALANCE_GRAVITY_STRENGTH * delta_time;
-        if (defense->gravity_wall == 0) defense->soul_position.y -= pull;
-        else if (defense->gravity_wall == 1) defense->soul_position.y += pull;
-        else if (defense->gravity_wall == 2) defense->soul_position.x -= pull;
-        else defense->soul_position.x += pull;
+    for (int indice = 5; indice > 0; indice--) defesa->rastro_alma[indice] = defesa->rastro_alma[indice - 1];
+    defesa->rastro_alma[0] = defesa->posicao_alma;
+    defesa->posicao_alma = Vector2Add(defesa->posicao_alma, Vector2Scale(movimento, velocidade * tempo_delta));
+    if (defesa->id_padrao == PADRAO_GRAVIDADE_INVERSAO && !defesa->espinhos_gravidade_criados) {
+        const float puxao = BALANCEAMENTO_GRAVIDADE_FORCA * tempo_delta;
+        if (defesa->parede_gravidade == 0) defesa->posicao_alma.y -= puxao;
+        else if (defesa->parede_gravidade == 1) defesa->posicao_alma.y += puxao;
+        else if (defesa->parede_gravidade == 2) defesa->posicao_alma.x -= puxao;
+        else defesa->posicao_alma.x += puxao;
     }
-    defense->soul_position.x = Clamp(defense->soul_position.x, defense->box.x + defense->soul_radius,
-                                     defense->box.x + defense->box.width - defense->soul_radius);
-    defense->soul_position.y = Clamp(defense->soul_position.y, defense->box.y + defense->soul_radius,
-                                     defense->box.y + defense->box.height - defense->soul_radius);
+    defesa->posicao_alma.x = Clamp(defesa->posicao_alma.x, defesa->caixa.x + defesa->raio_alma,
+                                     defesa->caixa.x + defesa->caixa.width - defesa->raio_alma);
+    defesa->posicao_alma.y = Clamp(defesa->posicao_alma.y, defesa->caixa.y + defesa->raio_alma,
+                                     defesa->caixa.y + defesa->caixa.height - defesa->raio_alma);
 }
 
-static void UpdateSpecialPattern(DefenseState *defense, PlayerStats *player, float delta_time)
+static void AtualizarPadraoEspecial(EstadoDefesa *defesa, AtributosJogador *jogador, float tempo_delta)
 {
-    if (defense->pattern_id == PATTERN_GRAVITY_FLIP) {
-        const float escape = defense->gravity_repeats > 2 ? BALANCE_GRAVITY_ESCAPE_TIME_PHASE_TWO :
-                                                            BALANCE_GRAVITY_ESCAPE_TIME;
-        defense->special_timer += delta_time;
-        if (!defense->gravity_thorns_created && defense->special_timer >= escape) {
-            HazardsAddRect(&defense->hazards, GravityThornRect(defense), 0.0f,
-                           BALANCE_GRAVITY_THORN_ACTIVE_TIME, BALANCE_GRAVITY_THORN_FADE_TIME, defense->pattern.type,
-                           defense->pattern.damage, true);
-            defense->gravity_thorns_created = true;
+    if (defesa->id_padrao == PADRAO_GRAVIDADE_INVERSAO) {
+        const float fuga = defesa->repeticoes_gravidade > 2 ? BALANCEAMENTO_GRAVIDADE_FUGA_TEMPO_FASE_DOIS :
+                                                            BALANCEAMENTO_GRAVIDADE_FUGA_TEMPO;
+        defesa->temporizador_especial += tempo_delta;
+        if (!defesa->espinhos_gravidade_criados && defesa->temporizador_especial >= fuga) {
+            PerigosAdicionarRetangulo(&defesa->perigos, RetanguloEspinhoGravidade(defesa), 0.0f,
+                           BALANCEAMENTO_GRAVIDADE_ESPINHO_ATIVA_TEMPO, BALANCEAMENTO_GRAVIDADE_ESPINHO_DESVANECER_TEMPO, defesa->padrao.tipo,
+                           defesa->padrao.dano, true);
+            defesa->espinhos_gravidade_criados = true;
         }
-        if (defense->gravity_thorns_created && defense->special_timer >=
-            escape + BALANCE_GRAVITY_THORN_ACTIVE_TIME + BALANCE_GRAVITY_THORN_FADE_TIME) {
-            defense->gravity_repeat++;
-            if (defense->gravity_repeat < defense->gravity_repeats) StartGravityCycle(defense);
-            else defense->pattern_timer = defense->pattern.duration;
+        if (defesa->espinhos_gravidade_criados && defesa->temporizador_especial >=
+            fuga + BALANCEAMENTO_GRAVIDADE_ESPINHO_ATIVA_TEMPO + BALANCEAMENTO_GRAVIDADE_ESPINHO_DESVANECER_TEMPO) {
+            defesa->repeticao_gravidade++;
+            if (defesa->repeticao_gravidade < defesa->repeticoes_gravidade) IniciarCicloGravidade(defesa);
+            else defesa->temporizador_padrao = defesa->padrao.duracao;
         }
     }
-    const int hp_before = player->hp;
-    HazardsUpdate(&defense->hazards, player, defense->soul_position, defense->soul_radius, delta_time,
-                  1.0f, defense->debug_invincible || defense->invincibility_timer > 0.0f);
-    if (player->hp < hp_before) {
-        defense->last_damage = hp_before - player->hp;
-        defense->last_damage_multiplier = type_effectiveness(defense->pattern.type, player->defense_type);
-        defense->damage_popup_timer = 0.75f;
-        defense->invincibility_timer = 1.0f;
+    const int vida_antes = jogador->hp;
+    PerigosAtualizar(&defesa->perigos, jogador, defesa->posicao_alma, defesa->raio_alma, tempo_delta,
+                  1.0f, defesa->depurar_invencivel || defesa->temporizador_invencibilidade > 0.0f);
+    if (jogador->hp < vida_antes) {
+        defesa->ultimo_dano = vida_antes - jogador->hp;
+        defesa->multiplicador_ultimo_dano = efetividade_tipo(defesa->padrao.tipo, jogador->tipo_defesa);
+        defesa->temporizador_popup_dano = 0.75f;
+        defesa->temporizador_invencibilidade = 1.0f;
     }
 }
 
-static void UpdateBullets(DefenseState *defense, PlayerStats *player, float delta_time)
+static void AtualizarProjeteis(EstadoDefesa *defesa, AtributosJogador *jogador, float tempo_delta)
 {
-    for (int bullet_index = 0; bullet_index < MAX_BULLETS; bullet_index++) {
-        Bullet *bullet = &defense->bullets[bullet_index];
+    for (int indice_projetil = 0; indice_projetil < MAXIMO_PROJETEIS; indice_projetil++) {
+        Projetil *projetil = &defesa->projeteis[indice_projetil];
 
-        if (!bullet->active) continue;
+        if (!projetil->ativo) continue;
 
-        bullet->lifetime += delta_time;
-        if (defense->pattern_id == PATTERN_BOUNCE_ORBS) {
-            const float next_x = bullet->position.x + bullet->velocity.x * delta_time;
-            const float next_y = bullet->position.y + bullet->velocity.y * delta_time;
-            if (next_x < defense->box.x + bullet->radius ||
-                next_x > defense->box.x + defense->box.width - bullet->radius) bullet->velocity.x *= -1.0f;
-            if (next_y < defense->box.y + bullet->radius ||
-                next_y > defense->box.y + defense->box.height - bullet->radius) bullet->velocity.y *= -1.0f;
-        } else if (defense->pattern_id == PATTERN_PAUSE_DARTS) {
-            if (bullet->lifetime > 0.42f && bullet->lifetime < 0.82f) {
-                bullet->velocity = Vector2Scale(bullet->velocity, 0.82f);
-            } else if (bullet->lifetime >= 0.82f) {
-                Vector2 direction = Vector2Subtract(defense->soul_position, bullet->position);
-                if (Vector2Length(direction) > 0.01f) {
-                    direction = Vector2Normalize(direction);
-                    bullet->velocity = Vector2Scale(direction, defense->pattern.speed * 1.65f);
+        projetil->tempo_vida += tempo_delta;
+        if (defesa->id_padrao == PADRAO_REBOTE_ORBES) {
+            const float next_x = projetil->posicao.x + projetil->velocidade.x * tempo_delta;
+            const float next_y = projetil->posicao.y + projetil->velocidade.y * tempo_delta;
+            if (next_x < defesa->caixa.x + projetil->raio ||
+                next_x > defesa->caixa.x + defesa->caixa.width - projetil->raio) projetil->velocidade.x *= -1.0f;
+            if (next_y < defesa->caixa.y + projetil->raio ||
+                next_y > defesa->caixa.y + defesa->caixa.height - projetil->raio) projetil->velocidade.y *= -1.0f;
+        } else if (defesa->id_padrao == PADRAO_PAUSA_DARDOS) {
+            if (projetil->tempo_vida > 0.42f && projetil->tempo_vida < 0.82f) {
+                projetil->velocidade = Vector2Scale(projetil->velocidade, 0.82f);
+            } else if (projetil->tempo_vida >= 0.82f) {
+                Vector2 direcao = Vector2Subtract(defesa->posicao_alma, projetil->posicao);
+                if (Vector2Length(direcao) > 0.01f) {
+                    direcao = Vector2Normalize(direcao);
+                    projetil->velocidade = Vector2Scale(direcao, defesa->padrao.velocidade * 1.65f);
                 }
             }
-        } else if (defense->pattern_id == PATTERN_CHASE_WAVE) {
-            Vector2 direction = Vector2Subtract(defense->soul_position, bullet->position);
-            if (Vector2Length(direction) > 0.01f) {
-                direction = Vector2Normalize(direction);
-                bullet->velocity = Vector2Lerp(bullet->velocity,
-                    Vector2Scale(direction, defense->pattern.speed), 0.025f);
+        } else if (defesa->id_padrao == PADRAO_PERSEGUICAO_ONDA) {
+            Vector2 direcao = Vector2Subtract(defesa->posicao_alma, projetil->posicao);
+            if (Vector2Length(direcao) > 0.01f) {
+                direcao = Vector2Normalize(direcao);
+                projetil->velocidade = Vector2Lerp(projetil->velocidade,
+                    Vector2Scale(direcao, defesa->padrao.velocidade), 0.025f);
             }
-        } else if (defense->pattern_id == PATTERN_PETAL_ORBIT) {
-            const Vector2 center = {defense->box.x + defense->box.width * 0.5f,
-                                    defense->box.y + defense->box.height * 0.5f};
-            Vector2 radial = Vector2Subtract(bullet->position, center);
+        } else if (defesa->id_padrao == PADRAO_PETALA_ORBITA) {
+            const Vector2 centro = {defesa->caixa.x + defesa->caixa.width * 0.5f,
+                                    defesa->caixa.y + defesa->caixa.height * 0.5f};
+            Vector2 radial = Vector2Subtract(projetil->posicao, centro);
             if (Vector2Length(radial) > 0.01f) {
                 radial = Vector2Normalize(radial);
-                bullet->velocity = Vector2Scale((Vector2){-radial.y, radial.x}, defense->pattern.speed);
+                projetil->velocidade = Vector2Scale((Vector2){-radial.y, radial.x}, defesa->padrao.velocidade);
             }
         }
-        bullet->position = Vector2Add(bullet->position, Vector2Scale(bullet->velocity, delta_time));
+        projetil->posicao = Vector2Add(projetil->posicao, Vector2Scale(projetil->velocidade, tempo_delta));
 
-        if (defense->pattern_id == PATTERN_SPLIT_SHOTS && !bullet->split_done &&
-            bullet->lifetime >= 0.65f) {
-            const float base_angle = atan2f(bullet->velocity.y, bullet->velocity.x);
-            bullet->split_done = true;
-            for (int shard = -1; shard <= 1; shard++) {
-                const float angle = base_angle + (float)shard * 0.42f;
-                Bullet *shard_bullet = SpawnBullet(defense, bullet->position,
-                    (Vector2){cosf(angle) * defense->pattern.speed,
-                              sinf(angle) * defense->pattern.speed});
-                if (shard_bullet != NULL) shard_bullet->split_done = true;
+        if (defesa->id_padrao == PADRAO_DIVISAO_DISPAROS && !projetil->divisao_feita &&
+            projetil->tempo_vida >= 0.65f) {
+            const float angulo_base = atan2f(projetil->velocidade.y, projetil->velocidade.x);
+            projetil->divisao_feita = true;
+            for (int fragmento = -1; fragmento <= 1; fragmento++) {
+                const float angulo = angulo_base + (float)fragmento * 0.42f;
+                Projetil *projetil_fragmento = CriarProjetil(defesa, projetil->posicao,
+                    (Vector2){cosf(angulo) * defesa->padrao.velocidade,
+                              sinf(angulo) * defesa->padrao.velocidade});
+                if (projetil_fragmento != NULL) projetil_fragmento->divisao_feita = true;
             }
-            bullet->active = false;
+            projetil->ativo = false;
             continue;
         }
-        if (bullet->position.x < defense->box.x - 24.0f ||
-            bullet->position.x > defense->box.x + defense->box.width + 24.0f ||
-            bullet->position.y < defense->box.y - 24.0f ||
-            bullet->position.y > defense->box.y + defense->box.height + 24.0f) {
-            bullet->active = false;
+        if (projetil->posicao.x < defesa->caixa.x - 24.0f ||
+            projetil->posicao.x > defesa->caixa.x + defesa->caixa.width + 24.0f ||
+            projetil->posicao.y < defesa->caixa.y - 24.0f ||
+            projetil->posicao.y > defesa->caixa.y + defesa->caixa.height + 24.0f) {
+            projetil->ativo = false;
             continue;
         }
 
-        const float soul_distance = Vector2Distance(defense->soul_position, bullet->position);
-        if (soul_distance <= bullet->radius + defense->soul_radius + 5.0f &&
-            soul_distance > bullet->radius + defense->soul_radius) {
-            defense->graze_popup_timer = 0.22f;
-            defense->graze_count++;
+        const float soul_distance = Vector2Distance(defesa->posicao_alma, projetil->posicao);
+        if (soul_distance <= projetil->raio + defesa->raio_alma + 5.0f &&
+            soul_distance > projetil->raio + defesa->raio_alma) {
+            defesa->temporizador_popup_raspar = 0.22f;
         }
-        if (!defense->debug_invincible && defense->invincibility_timer <= 0.0f &&
-            CheckCollisionCircles(defense->soul_position, defense->soul_radius,
-                                  bullet->position, bullet->radius)) {
-            const float multiplier = type_effectiveness(bullet->type, player->defense_type);
-            int damage = (int)ceilf((float)bullet->damage * multiplier *
-                                    player->incoming_damage_multiplier);
+        if (!defesa->depurar_invencivel && defesa->temporizador_invencibilidade <= 0.0f &&
+            CheckCollisionCircles(defesa->posicao_alma, defesa->raio_alma,
+                                  projetil->posicao, projetil->raio)) {
+            const float multiplicador = efetividade_tipo(projetil->tipo, jogador->tipo_defesa);
+            int dano = (int)ceilf((float)projetil->dano * multiplicador *
+                                    jogador->multiplicador_dano_recebido);
 
-            if (damage < 1) damage = 1;
-            player->hp -= damage;
-            if (player->hp < 0) player->hp = 0;
-            defense->invincibility_timer = 1.0f;
-            defense->last_damage = damage;
-            defense->last_damage_multiplier = multiplier;
-            defense->damage_popup_timer = 0.75f;
+            if (dano < 1) dano = 1;
+            jogador->hp -= dano;
+            if (jogador->hp < 0) jogador->hp = 0;
+            defesa->temporizador_invencibilidade = 1.0f;
+            defesa->ultimo_dano = dano;
+            defesa->multiplicador_ultimo_dano = multiplicador;
+            defesa->temporizador_popup_dano = 0.75f;
         }
     }
 }
 
-DefenseResult DefenseUpdate(DefenseState *defense, PlayerStats *player, float delta_time)
+static ResultadoDefesa PassoDefesa(EstadoDefesa *defesa, AtributosJogador *jogador, float tempo_delta,
+                                 EntradaDefesa entrada)
 {
-    defense->phase_timer += delta_time;
-    if (defense->invincibility_timer > 0.0f) defense->invincibility_timer -= delta_time;
-    if (defense->damage_popup_timer > 0.0f) defense->damage_popup_timer -= delta_time;
-    if (defense->graze_popup_timer > 0.0f) defense->graze_popup_timer -= delta_time;
+    defesa->temporizador_fase += tempo_delta;
+    if (defesa->temporizador_invencibilidade > 0.0f) defesa->temporizador_invencibilidade -= tempo_delta;
+    if (defesa->temporizador_popup_dano > 0.0f) defesa->temporizador_popup_dano -= tempo_delta;
+    if (defesa->temporizador_popup_raspar > 0.0f) defesa->temporizador_popup_raspar -= tempo_delta;
+    if (defesa->temporizador_recarga_dash > 0.0f)
+        defesa->temporizador_recarga_dash -= tempo_delta;
 
-    if (defense->phase == DEFENSE_ENTERING) {
-        const float progress = Clamp(defense->phase_timer / 0.25f, 0.0f, 1.0f);
-        defense->box = LerpRectangle(defense->start_box, defense->target_box, progress);
-        if (progress >= 1.0f) {
-            defense->phase = DEFENSE_ACTIVE;
-            defense->phase_timer = 0.0f;
-            StartSpecialPattern(defense);
+    if (defesa->fase == DEFESA_ENTRANDO) {
+        const float progresso = Clamp(defesa->temporizador_fase / 0.25f, 0.0f, 1.0f);
+        defesa->caixa = InterpolarRetangulo(defesa->caixa_inicial, defesa->caixa_alvo, progresso);
+        if (progresso >= 1.0f) {
+            defesa->fase = DEFESA_ATIVA;
+            defesa->temporizador_fase = 0.0f;
+            IniciarPadraoEspecial(defesa);
+            if (PadraoMovimentoEh(defesa->id_padrao)) PadraoMovimentoIniciar(defesa);
         }
-    } else if (defense->phase == DEFENSE_ACTIVE) {
-        defense->pattern_timer += delta_time;
-        defense->spawn_timer += delta_time;
-        UpdateSoul(defense, delta_time);
-        if (defense->pattern_id == PATTERN_GRAVITY_FLIP || defense->pattern_id == PATTERN_SHADOW_BLOOM) {
-            UpdateSpecialPattern(defense, player, delta_time);
+    } else if (defesa->fase == DEFESA_ATIVA) {
+        defesa->temporizador_padrao += tempo_delta;
+        defesa->temporizador_criacao += tempo_delta;
+        if (entrada.dash_pressionado && defesa->temporizador_recarga_dash <= 0.0f &&
+            Vector2Length(entrada.movimento) > 0.01f) {
+            Vector2 direcao_dash = Vector2Normalize(entrada.movimento);
+            defesa->posicao_alma = Vector2Add(
+                defesa->posicao_alma,
+                Vector2Scale(direcao_dash, DISTANCIA_DASH_DEFESA));
+            defesa->temporizador_recarga_dash = RECARGA_DASH_DEFESA;
         }
-        while (defense->pattern_id != PATTERN_GRAVITY_FLIP && defense->pattern_id != PATTERN_SHADOW_BLOOM &&
-               defense->spawn_timer >= defense->pattern.spawn_interval) {
-            defense->spawn_timer -= defense->pattern.spawn_interval;
-            SpawnPatternShot(defense);
+        if (PadraoMovimentoEh(defesa->id_padrao)) PadraoMovimentoAtualizar(defesa, jogador, entrada, tempo_delta);
+        else {
+            AtualizarAlma(defesa, entrada, tempo_delta);
+            if (PadraoEhCaracteristico(defesa->id_padrao)) PadraoAtualizar(defesa, tempo_delta);
         }
-        UpdateBullets(defense, player, delta_time);
+        if (PadraoEhCaracteristico(defesa->id_padrao) || defesa->id_padrao == PADRAO_GRAVIDADE_INVERSAO || defesa->id_padrao == PADRAO_SOMBRA_FLORACAO) {
+            AtualizarPadraoEspecial(defesa, jogador, tempo_delta);
+        }
+        while (!PadraoEhCaracteristico(defesa->id_padrao) && defesa->id_padrao != PADRAO_GRAVIDADE_INVERSAO && defesa->id_padrao != PADRAO_SOMBRA_FLORACAO &&
+               defesa->temporizador_criacao >= defesa->padrao.intervalo_criacao) {
+            defesa->temporizador_criacao -= defesa->padrao.intervalo_criacao;
+            CriarDisparoPadrao(defesa);
+        }
+        AtualizarProjeteis(defesa, jogador, tempo_delta);
 
-        if (player->hp == 0) {
-            ClearBullets(defense);
-            HazardsClear(&defense->hazards);
-            defense->phase = DEFENSE_FINISHED;
-            return DEFENSE_PLAYER_DEFEATED;
+        if (jogador->hp == 0) {
+            LimparProjeteis(defesa);
+            PerigosLimpar(&defesa->perigos);
+            defesa->fase = DEFESA_FINALIZADA;
+            return DEFESA_JOGADOR_DERROTADO;
         }
-        if (defense->pattern_timer >= defense->pattern.duration) {
-            ClearBullets(defense);
-            HazardsClear(&defense->hazards);
-            defense->phase = DEFENSE_EXITING;
-            defense->phase_timer = 0.0f;
+        if (defesa->temporizador_padrao >= defesa->padrao.duracao) {
+            LimparProjeteis(defesa);
+            PerigosLimpar(&defesa->perigos);
+            defesa->fase = DEFESA_SAINDO;
+            defesa->temporizador_fase = 0.0f;
         }
-    } else if (defense->phase == DEFENSE_EXITING) {
-        const float progress = Clamp(defense->phase_timer / 0.25f, 0.0f, 1.0f);
-        defense->box = LerpRectangle(defense->target_box, defense->start_box, progress);
-        if (progress >= 1.0f) {
-            defense->phase = DEFENSE_FINISHED;
-            return DEFENSE_COMPLETE;
+    } else if (defesa->fase == DEFESA_SAINDO) {
+        const float progresso = Clamp(defesa->temporizador_fase / 0.25f, 0.0f, 1.0f);
+        defesa->caixa = InterpolarRetangulo(defesa->caixa_alvo, defesa->caixa_inicial, progresso);
+        if (progresso >= 1.0f) {
+            defesa->fase = DEFESA_FINALIZADA;
+            return DEFESA_CONCLUIDA;
         }
     }
 
-    return DEFENSE_RUNNING;
+    return DEFESA_EM_ANDAMENTO;
 }
 
-void DefenseDraw(const DefenseState *defense, bool draw_effects, const SpriteSystem *sprites)
+ResultadoDefesa DefesaAtualizarComEntrada(EstadoDefesa *d, AtributosJogador *p, float tempo_delta, EntradaDefesa entrada)
 {
-    if (sprite_get(sprites, SPRITE_ARENA_BG) != NULL) {
-        SpriteDrawFit(sprites, SPRITE_ARENA_BG, defense->box, WHITE);
-    } else {
-        DrawRectangleRec(defense->box, BLACK);
+    if (!PadraoMovimentoEh(d->id_padrao)) return PassoDefesa(d, p, tempo_delta, entrada);
+    /* Passos fisicos curtos mantem saltos e portoes finos consistentes em 30/60/144 FPS. */
+    ResultadoDefesa resultado = DEFESA_EM_ANDAMENTO;
+    while (tempo_delta > .000001f) {
+        float passo = fminf(tempo_delta, 1.0f / 120);
+        resultado = PassoDefesa(d, p, passo, entrada);
+        entrada.salto_pressionado = false;
+        entrada.dash_pressionado = false;
+        tempo_delta -= passo;
+        if (resultado != DEFESA_EM_ANDAMENTO) break;
     }
-    if (sprite_get(sprites, SPRITE_ARENA_BORDER) != NULL) {
-        SpriteDrawFit(sprites, SPRITE_ARENA_BORDER, defense->box, WHITE);
+    return resultado;
+}
+
+ResultadoDefesa DefesaAtualizar(EstadoDefesa *d, AtributosJogador *p, float tempo_delta)
+{
+    EntradaDefesa entrada = {
+        .movimento = {
+            (float)entrada_direita_mantida() - (float)entrada_esquerda_mantida(),
+            (float)entrada_baixo_mantida() - (float)entrada_cima_mantida()
+        },
+        .salto_pressionado = IsKeyPressed(KEY_SPACE) || IsKeyPressed(KEY_W) || IsKeyPressed(KEY_UP),
+        .dash_pressionado = IsKeyPressed(KEY_LEFT_SHIFT) || IsKeyPressed(KEY_RIGHT_SHIFT)
+    };
+    return DefesaAtualizarComEntrada(d, p, tempo_delta, entrada);
+}
+
+void DefesaDesenhar(const EstadoDefesa *defesa, bool desenhar_efeitos, const SistemaSprites *sprites)
+{
+    if (sprite_obter(sprites, SPRITE_ARENA_FUNDO) != NULL) {
+        SpriteDesenharAjustado(sprites, SPRITE_ARENA_FUNDO, defesa->caixa, WHITE);
     } else {
-        DrawRectangleLinesEx(defense->box, 4.0f, RAYWHITE);
+        DrawRectangleRec(defesa->caixa, BLACK);
+    }
+    if (sprite_obter(sprites, SPRITE_ARENA_BORDA) != NULL) {
+        SpriteDesenharAjustado(sprites, SPRITE_ARENA_BORDA, defesa->caixa, WHITE);
+    } else {
+        DrawRectangleLinesEx(defesa->caixa, 4.0f, RAYWHITE);
     }
 
-    if (defense->phase == DEFENSE_ACTIVE) {
-        HazardsDraw(&defense->hazards, !draw_effects, sprites, sprites->debug_bounds);
-        if (defense->pattern_timer < 0.40f && defense->pattern.radius >= 6.0f) {
-            const Vector2 warning = {defense->box.x + defense->box.width * 0.5f,
-                                     defense->box.y + defense->box.height * 0.5f};
-            DrawCircleLines((int)warning.x, (int)warning.y, 18, (Color){245, 90, 82, 255});
-            DrawText("!", (int)warning.x - 3, (int)warning.y - 10, 18, (Color){245, 90, 82, 255});
-            if (sprite_get(sprites, SPRITE_WARN_DANGER) != NULL) {
-                SpriteDrawCentered(sprites, SPRITE_WARN_DANGER, warning, WHITE,
-                                   defense->pattern_timer, sprites->debug_bounds);
+    if (defesa->fase == DEFESA_ATIVA) {
+        if (PadraoEhCaracteristico(defesa->id_padrao)) PadraoDesenhar(defesa);
+        else PerigosDesenhar(&defesa->perigos, !desenhar_efeitos, sprites, sprites->depurar_limites);
+        if (defesa->temporizador_padrao < 0.40f && defesa->padrao.raio >= 6.0f) {
+            const Vector2 aviso = {defesa->caixa.x + defesa->caixa.width * 0.5f,
+                                     defesa->caixa.y + defesa->caixa.height * 0.5f};
+            DrawCircleLines((int)aviso.x, (int)aviso.y, 18, (Color){245, 90, 82, 255});
+            DrawText("!", (int)aviso.x - 3, (int)aviso.y - 10, 18, (Color){245, 90, 82, 255});
+            if (sprite_obter(sprites, SPRITE_AVISO_PERIGO) != NULL) {
+                SpriteDesenharCentralizado(sprites, SPRITE_AVISO_PERIGO, aviso, WHITE,
+                                   defesa->temporizador_padrao, sprites->depurar_limites);
             }
         }
-        for (int bullet_index = 0; bullet_index < MAX_BULLETS; bullet_index++) {
-            const Bullet *bullet = &defense->bullets[bullet_index];
-            if (!bullet->active) continue;
-            const SpriteId pattern_sprite = SpriteBulletPatternId(defense->pattern_id);
-            const SpriteId sprite_id = sprite_get(sprites, pattern_sprite) != NULL ? pattern_sprite :
-                                       SpriteBulletId(bullet->type);
-            if (sprite_get(sprites, sprite_id) != NULL) {
-                const float angle = defense->pattern.rotate ?
-                    atan2f(bullet->velocity.y, bullet->velocity.x) * 57.2958f : 0.0f;
-                SpriteDrawCenteredRotated(sprites, sprite_id, bullet->position, WHITE,
-                                          bullet->lifetime, angle, defense->pattern.visual_scale,
-                                          sprites->debug_bounds);
-                DrawCircleLines((int)bullet->position.x, (int)bullet->position.y,
-                                bullet->radius + 1.0f, Fade(type_color(bullet->type), 0.65f));
+        for (int indice_projetil = 0; indice_projetil < MAXIMO_PROJETEIS; indice_projetil++) {
+            const Projetil *projetil = &defesa->projeteis[indice_projetil];
+            if (!projetil->ativo) continue;
+            const IdSprite pattern_sprite = SpriteIdPadraoProjetil(defesa->id_padrao);
+            const IdSprite id_sprite = sprite_obter(sprites, pattern_sprite) != NULL ? pattern_sprite :
+                                       SpriteIdProjetil(projetil->tipo);
+            if (sprite_obter(sprites, id_sprite) != NULL) {
+                const float angulo = defesa->padrao.rotacionar ?
+                    atan2f(projetil->velocidade.y, projetil->velocidade.x) * 57.2958f : 0.0f;
+                SpriteDesenharCentralizadoRotacionado(sprites, id_sprite, projetil->posicao, WHITE,
+                                          projetil->tempo_vida, angulo, defesa->padrao.escala_visual,
+                                          sprites->depurar_limites);
+                DrawCircleLines((int)projetil->posicao.x, (int)projetil->posicao.y,
+                                projetil->raio + 1.0f, Fade(cor_tipo(projetil->tipo), 0.65f));
             } else {
-                DrawCircleV(bullet->position, bullet->radius, type_color(bullet->type));
+                DrawCircleV(projetil->posicao, projetil->raio, cor_tipo(projetil->tipo));
             }
-            if (defense->pattern.trail && draw_effects) {
-                DrawCircleV((Vector2){bullet->position.x - bullet->velocity.x * 0.05f,
-                                      bullet->position.y - bullet->velocity.y * 0.05f},
-                            bullet->radius * 0.55f, Fade(type_color(bullet->type), 0.35f));
+            if (defesa->padrao.rastro && desenhar_efeitos) {
+                DrawCircleV((Vector2){projetil->posicao.x - projetil->velocidade.x * 0.05f,
+                                      projetil->posicao.y - projetil->velocidade.y * 0.05f},
+                            projetil->raio * 0.55f, Fade(cor_tipo(projetil->tipo), 0.35f));
             }
         }
 
-        if (defense->damage_popup_timer > 0.0f) {
-            const int font_size = defense->last_damage_multiplier >= 2.0f ? 25 : 19;
-            const Color color = defense->last_damage_multiplier >= 2.0f ? RED : MAROON;
-            DrawText(TextFormat("-%d", defense->last_damage), (int)defense->soul_position.x + 9,
-                     (int)defense->soul_position.y - 18, font_size, color);
+        if (defesa->temporizador_popup_dano > 0.0f) {
+            const int font_size = defesa->multiplicador_ultimo_dano >= 2.0f ? 25 : 19;
+            const Color cor = defesa->multiplicador_ultimo_dano >= 2.0f ? RED : MAROON;
+            DrawText(TextFormat("-%d", defesa->ultimo_dano), (int)defesa->posicao_alma.x + 9,
+                     (int)defesa->posicao_alma.y - 18, font_size, cor);
         }
-        if (draw_effects && defense->graze_popup_timer > 0.0f) {
-            DrawText("RASPOU", (int)defense->soul_position.x + 10,
-                     (int)defense->soul_position.y + 9, 10, (Color){125, 220, 205, 255});
+        if (desenhar_efeitos && defesa->temporizador_popup_raspar > 0.0f) {
+            DrawText("RASPOU", (int)defesa->posicao_alma.x + 10,
+                     (int)defesa->posicao_alma.y + 9, 10, (Color){125, 220, 205, 255});
         }
 
-        if (draw_effects) {
-            for (int index = 5; index > 0; index--) {
-                const unsigned char alpha = (unsigned char)(index * 18);
-                DrawCircleV(defense->soul_trail[index], 3.0f, (Color){231, 87, 112, alpha});
+        if (desenhar_efeitos) {
+            for (int indice = 5; indice > 0; indice--) {
+                const unsigned char alpha = (unsigned char)(indice * 18);
+                DrawCircleV(defesa->rastro_alma[indice], 3.0f, (Color){231, 87, 112, alpha});
             }
         }
-        if (defense->invincibility_timer <= 0.0f || ((int)(defense->invincibility_timer * 14.0f) % 2 == 0)) {
-            const Vector2 soul = defense->soul_position;
+        if (defesa->temporizador_invencibilidade <= 0.0f || ((int)(defesa->temporizador_invencibilidade * 14.0f) % 2 == 0)) {
+            const Vector2 alma = defesa->posicao_alma;
             const Color heart = {231, 87, 112, 255};
-            if (sprite_get(sprites, SPRITE_SOUL) != NULL) {
-                SpriteDrawCentered(sprites, SPRITE_SOUL, soul, heart, defense->pattern_timer,
-                                   sprites->debug_bounds);
+            if (sprite_obter(sprites, SPRITE_ALMA) != NULL) {
+                SpriteDesenharCentralizado(sprites, SPRITE_ALMA, alma, heart, defesa->temporizador_padrao,
+                                   sprites->depurar_limites);
             } else {
-                DrawCircle((int)soul.x - 3, (int)soul.y - 2, 4, heart);
-                DrawCircle((int)soul.x + 3, (int)soul.y - 2, 4, heart);
-                DrawTriangle((Vector2){soul.x - 7, soul.y}, (Vector2){soul.x + 7, soul.y},
-                             (Vector2){soul.x, soul.y + 8}, heart);
+                DrawCircle((int)alma.x - 3, (int)alma.y - 2, 4, heart);
+                DrawCircle((int)alma.x + 3, (int)alma.y - 2, 4, heart);
+                DrawTriangle((Vector2){alma.x - 7, alma.y}, (Vector2){alma.x + 7, alma.y},
+                             (Vector2){alma.x, alma.y + 8}, heart);
             }
         }
-        if (draw_effects && defense->damage_popup_timer > 0.0f) {
-            const float radius = 9.0f + (0.75f - defense->damage_popup_timer) * 18.0f;
-            DrawCircleLines((int)defense->soul_position.x, (int)defense->soul_position.y,
-                            radius, Fade(RED, 0.75f));
-            if (sprite_get(sprites, SPRITE_FX_HIT_SOUL) != NULL) {
-                SpriteDrawCentered(sprites, SPRITE_FX_HIT_SOUL, defense->soul_position, WHITE,
-                                   defense->pattern_timer, sprites->debug_bounds);
+        if (desenhar_efeitos && defesa->temporizador_popup_dano > 0.0f) {
+            const float raio = 9.0f + (0.75f - defesa->temporizador_popup_dano) * 18.0f;
+            DrawCircleLines((int)defesa->posicao_alma.x, (int)defesa->posicao_alma.y,
+                            raio, Fade(RED, 0.75f));
+            if (sprite_obter(sprites, SPRITE_EFEITO_ACERTO_ALMA) != NULL) {
+                SpriteDesenharCentralizado(sprites, SPRITE_EFEITO_ACERTO_ALMA, defesa->posicao_alma, WHITE,
+                                   defesa->temporizador_padrao, sprites->depurar_limites);
             }
         }
     }

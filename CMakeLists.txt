@@ -5,6 +5,7 @@ project(AscensaoDaTorre VERSION 0.1.0 LANGUAGES C)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS OFF)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 find_package(raylib CONFIG REQUIRED)
 
@@ -25,6 +26,7 @@ add_executable(ascensao_torre
     src/enemy.c
     src/types.c
     src/bullets.c
+    src/patterns.c src/motion_patterns.c
     src/hazards.c
     src/qte.c
     src/ui.c
@@ -36,6 +38,13 @@ target_link_libraries(ascensao_torre PRIVATE raylib)
 
 option(BUILD_TYPE_TESTS "Build the type matrix test" ON)
 if(BUILD_TYPE_TESTS)
+    add_executable(test_battle tests/test_battle.c src/battle.c src/player.c src/enemy.c
+        src/items.c src/types.c src/qte.c src/input.c src/audio.c src/fx.c src/ui.c
+        src/bullets.c src/patterns.c src/motion_patterns.c src/hazards.c src/sprites.c)
+    target_include_directories(test_battle PRIVATE include)
+    target_compile_options(test_battle PRIVATE -Wall -Wextra)
+    target_link_libraries(test_battle PRIVATE raylib)
+
     add_executable(test_types tests/test_types.c src/types.c)
     target_include_directories(test_types PRIVATE include)
     target_compile_options(test_types PRIVATE -Wall -Wextra)
@@ -73,10 +82,21 @@ if(BUILD_TYPE_TESTS)
     target_compile_options(test_phase10 PRIVATE -Wall -Wextra)
     target_link_libraries(test_phase10 PRIVATE raylib)
 
-    add_executable(test_bullets tests/test_bullets.c src/bullets.c src/hazards.c src/player.c src/types.c src/input.c src/ui.c src/sprites.c src/items.c src/enemy.c)
+    add_executable(test_bullets tests/test_bullets.c src/bullets.c src/patterns.c src/motion_patterns.c src/hazards.c src/player.c src/types.c src/input.c src/ui.c src/sprites.c src/items.c src/enemy.c)
     target_include_directories(test_bullets PRIVATE include)
     target_compile_options(test_bullets PRIVATE -Wall -Wextra)
     target_link_libraries(test_bullets PRIVATE raylib)
+
+    get_target_property(PATTERN_TEST_SOURCES test_bullets SOURCES)
+    list(REMOVE_ITEM PATTERN_TEST_SOURCES tests/test_bullets.c)
+    add_executable(test_patterns tests/test_patterns.c ${PATTERN_TEST_SOURCES})
+    target_include_directories(test_patterns PRIVATE include)
+    target_compile_options(test_patterns PRIVATE -Wall -Wextra)
+    target_link_libraries(test_patterns PRIVATE raylib)
+    add_executable(test_motion tests/test_motion.c ${PATTERN_TEST_SOURCES})
+    target_include_directories(test_motion PRIVATE include)
+    target_compile_options(test_motion PRIVATE -Wall -Wextra)
+    target_link_libraries(test_motion PRIVATE raylib)
 
     add_executable(test_hazards tests/test_hazards.c src/hazards.c src/player.c src/items.c src/types.c src/sprites.c)
     target_include_directories(test_hazards PRIVATE include)

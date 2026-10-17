@@ -2,13 +2,13 @@
 
 #include <string.h>
 
-static Rectangle GetLetterboxDestination(void)
+static Rectangle ObterDestinoLetterbox(void)
 {
-    const float horizontal_scale = (float)GetScreenWidth() / LOGICAL_WIDTH;
-    const float vertical_scale = (float)GetScreenHeight() / LOGICAL_HEIGHT;
-    const float scale = horizontal_scale < vertical_scale ? horizontal_scale : vertical_scale;
-    const float width = LOGICAL_WIDTH * scale;
-    const float height = LOGICAL_HEIGHT * scale;
+    const float horizontal_scale = (float)GetScreenWidth() / LOGICO_LARGURA;
+    const float vertical_scale = (float)GetScreenHeight() / LOGICO_ALTURA;
+    const float escala = horizontal_scale < vertical_scale ? horizontal_scale : vertical_scale;
+    const float width = LOGICO_LARGURA * escala;
+    const float height = LOGICO_ALTURA * escala;
 
     return (Rectangle){
         ((float)GetScreenWidth() - width) * 0.5f,
@@ -18,64 +18,64 @@ static Rectangle GetLetterboxDestination(void)
     };
 }
 
-static Vector2 GetLogicalMousePosition(void)
+static Vector2 ObterPosicaoLogicaMouse(void)
 {
-    const Rectangle destination = GetLetterboxDestination();
-    const Vector2 mouse_position = GetMousePosition();
+    const Rectangle destino = ObterDestinoLetterbox();
+    const Vector2 posicao_mouse = GetMousePosition();
 
     return (Vector2){
-        (mouse_position.x - destination.x) * LOGICAL_WIDTH / destination.width,
-        (mouse_position.y - destination.y) * LOGICAL_HEIGHT / destination.height
+        (posicao_mouse.x - destino.x) * LOGICO_LARGURA / destino.width,
+        (posicao_mouse.y - destino.y) * LOGICO_ALTURA / destino.height
     };
 }
 
 int main(int argc, char **argv)
 {
-    GameState game;
+    EstadoJogo jogo;
 
     SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_VSYNC_HINT);
     InitWindow(960, 720, "Ascensao da Torre");
-    SetWindowMinSize(LOGICAL_WIDTH, LOGICAL_HEIGHT);
+    SetWindowMinSize(LOGICO_LARGURA, LOGICO_ALTURA);
     SetTargetFPS(60);
 
-    RenderTexture2D canvas = LoadRenderTexture(LOGICAL_WIDTH, LOGICAL_HEIGHT);
-    GameInit(&game);
-    for (int index = 1; index < argc; index++) {
-        if (strcmp(argv[index], "--telemetry") == 0) game.telemetry_enabled = true;
-        if (strcmp(argv[index], "--export-placeholders") == 0) {
-            SpritesExportPlaceholders();
-            SpritesUnload(&game.sprites);
-            AudioUnload(&game.audio);
-            UnloadRenderTexture(canvas);
+    RenderTexture2D tela_virtual = LoadRenderTexture(LOGICO_LARGURA, LOGICO_ALTURA);
+    JogoInicializar(&jogo);
+    for (int indice = 1; indice < argc; indice++) {
+        if (strcmp(argv[indice], "--telemetry") == 0) jogo.telemetria_ativada = true;
+        if (strcmp(argv[indice], "--export-placeholders") == 0) {
+            SpritesExportarModelos();
+            SpritesDescarregar(&jogo.sprites);
+            AudioDescarregar(&jogo.audio);
+            UnloadRenderTexture(tela_virtual);
             CloseWindow();
             return 0;
         }
     }
 
-    while (!WindowShouldClose() && !game.quit_requested) {
-        game.mouse_position = GetLogicalMousePosition();
-        game.mouse_pressed = IsMouseButtonPressed(MOUSE_BUTTON_LEFT);
-        GameUpdate(&game);
+    while (!WindowShouldClose() && !jogo.saida_solicitada) {
+        jogo.posicao_mouse = ObterPosicaoLogicaMouse();
+        jogo.mouse_pressionado = IsMouseButtonPressed(MOUSE_BUTTON_LEFT);
+        JogoAtualizar(&jogo);
 
-        BeginTextureMode(canvas);
+        BeginTextureMode(tela_virtual);
         ClearBackground((Color){248, 241, 229, 255});
-        GameDraw(&game);
+        JogoDesenhar(&jogo);
         EndTextureMode();
 
         BeginDrawing();
         ClearBackground((Color){24, 25, 30, 255});
 
-        /* Draw through a fixed-size canvas so every window size keeps the same layout. */
-        DrawTexturePro(canvas.texture,
-                       (Rectangle){0.0f, 0.0f, LOGICAL_WIDTH, -LOGICAL_HEIGHT},
-                       GetLetterboxDestination(), (Vector2){0.0f, 0.0f}, 0.0f, WHITE);
+        /* Desenha em uma tela virtual fixa para manter o layout em qualquer tamanho de janela. */
+        DrawTexturePro(tela_virtual.texture,
+                       (Rectangle){0.0f, 0.0f, LOGICO_LARGURA, -LOGICO_ALTURA},
+                       ObterDestinoLetterbox(), (Vector2){0.0f, 0.0f}, 0.0f, WHITE);
         EndDrawing();
     }
 
-    SaveWrite(&game.save);
-    SpritesUnload(&game.sprites);
-    AudioUnload(&game.audio);
-    UnloadRenderTexture(canvas);
+    SalvamentoGravar(&jogo.salvamento);
+    SpritesDescarregar(&jogo.sprites);
+    AudioDescarregar(&jogo.audio);
+    UnloadRenderTexture(tela_virtual);
     CloseWindow();
     return 0;
 }

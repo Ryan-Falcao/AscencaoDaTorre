@@ -1,55 +1,55 @@
-#ifndef SAVE_H
-#define SAVE_H
+#ifndef SALVAMENTO_H
+#define SALVAMENTO_H
 
 #include <stdbool.h>
 #include <stdint.h>
 
 #include "items.h"
 
-#define SAVE_VERSION 3u
-#define SAVE_ATTACK_BITS 16
+#define SALVAMENTO_VERSAO 3u
+#define SALVAMENTO_ATAQUE_BITS 16
 
 typedef enum {
-    RELIC_NONE,
-    RELIC_ITEM,
-    RELIC_ATTACK
-} RelicChoiceKind;
+    RELIQUIA_NENHUM,
+    RELIQUIA_ITEM,
+    RELIQUIA_ATAQUE
+} TipoEscolhaReliquia;
 
 typedef enum {
-    DIFFICULTY_CALM,
-    DIFFICULTY_NORMAL,
-    DIFFICULTY_HARD
-} GameDifficulty;
+    DIFICULDADE_CALMA,
+    DIFICULDADE_NORMAL,
+    DIFICULDADE_DIFICIL
+} DificuldadeJogo;
 
 typedef struct {
-    int best_floor;
+    int melhor_andar;
     int total_runs;
-    int victories;
-    int mercy_wins;
-    int damage_wins;
-    int fragments;
-    uint32_t unlocked_items;
-    uint32_t unlocked_attacks;
-    float music_volume;
-    float effects_volume;
-    bool fullscreen;
-    bool line_tremor;
-    bool reduced_effects;
-    unsigned int tutorial_seen;
-    GameDifficulty difficulty;
-    RelicChoiceKind relic_kind;
-    int relic_id;
-    bool tutorial_done;
-} SaveData;
+    int vitorias;
+    int vitorias_misericordia;
+    int vitorias_dano;
+    int fragmentos;
+    uint32_t itens_desbloqueados;
+    uint32_t ataques_desbloqueados;
+    float volume_musica;
+    float volume_efeitos;
+    bool tela_cheia;
+    bool tremor_linha;
+    bool efeitos_reduzidos;
+    unsigned int tutorial_visto;
+    DificuldadeJogo dificuldade;
+    TipoEscolhaReliquia tipo_reliquia;
+    int id_reliquia;
+    bool tutorial_concluido;
+} DadosSalvos;
 
-void SaveSetDefaults(SaveData *save);
-bool SaveLoad(SaveData *save);
-bool SaveLoadPath(SaveData *save, const char *path);
-bool SaveWrite(const SaveData *save);
-bool SaveWritePath(const SaveData *save, const char *path);
-void SaveApplyUnlocks(SaveData *save);
-bool SaveIsItemUnlocked(const SaveData *save, ItemId id);
-bool SaveIsAttackUnlocked(const SaveData *save, int attack_id);
-bool SaveBuyRelic(SaveData *save, RelicChoiceKind kind, int id, int price);
+void SalvamentoDefinirPadroes(DadosSalvos *salvamento);
+bool SalvamentoCarregar(DadosSalvos *salvamento);
+bool SalvamentoCarregarCaminho(DadosSalvos *salvamento, const char *caminho);
+bool SalvamentoGravar(const DadosSalvos *salvamento);
+bool SalvamentoGravarCaminho(const DadosSalvos *salvamento, const char *caminho);
+void SalvamentoAplicarDesbloqueios(DadosSalvos *salvamento);
+bool SalvamentoItemDesbloqueado(const DadosSalvos *salvamento, IdItem id);
+bool SalvamentoAtaqueDesbloqueado(const DadosSalvos *salvamento, int id_ataque);
+bool SalvamentoComprarReliquia(DadosSalvos *salvamento, TipoEscolhaReliquia categoria, int id, int preco);
 
 #endif

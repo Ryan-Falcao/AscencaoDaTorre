@@ -1,5 +1,5 @@
-#ifndef PLAYER_H
-#define PLAYER_H
+#ifndef JOGADOR_H
+#define JOGADOR_H
 
 #include <stdbool.h>
 
@@ -7,79 +7,76 @@
 #include "qte.h"
 #include "items.h"
 
-#define MAX_EQUIPPED_ATTACKS 4
-#define MAX_INVENTORY_ITEMS 8
-#define PLAYER_ATTACK_COUNT 16
+#define MAXIMO_EQUIPADOS_ATAQUES 4
+#define MAXIMO_INVENTARIO_ITENS 8
+#define JOGADOR_ATAQUE_TOTAL 16
 
 typedef enum {
-    FX_IMPACT, FX_PROJECTILE, FX_SLASH, FX_RAIN, FX_BEAM
-} AttackFxStyle;
+    EFEITO_IMPACTO, EFEITO_PROJETIL, EFEITO_CORTE, EFEITO_CHUVA, EFEITO_FEIXE
+} EstiloEfeitoAtaque;
 
 typedef enum {
-    STATUS_NONE, STATUS_BURN, STATUS_WET, STATUS_ROOT, STATUS_BLIND, STATUS_STUN
-} StatusEffect;
+    STATUS_NENHUM, STATUS_QUEIMAR, STATUS_MOLHADO, STATUS_ENRAIZAR, STATUS_CEGAR, STATUS_ATORDOAR
+} EfeitoStatus;
 
 typedef enum {
-    ATTACK_BRASA, ATTACK_GOTA_CLARA, ATTACK_RAIZ_RAPIDA, ATTACK_RAIO_MANSO,
-    ATTACK_ECO_SOMBRIO, ATTACK_GOLPE_NEUTRO, ATTACK_CHAMA_ALTA, ATTACK_MARE_CURTA,
-    ATTACK_VINHA_FINA, ATTACK_LUZ_GUIA, ATTACK_SOMBRA_FRIA, ATTACK_PULSO_CALMO,
-    ATTACK_FAGULHA, ATTACK_ORVALHO, ATTACK_ESPINHO_LUNAR, ATTACK_SINO_VAZIO
-} AttackId;
+    ATAQUE_BRASA, ATAQUE_GOTA_CLARA, ATAQUE_RAIZ_RAPIDA, ATAQUE_RAIO_MANSO,
+    ATAQUE_ECO_SOMBRIO, ATAQUE_GOLPE_NEUTRO, ATAQUE_CHAMA_ALTA, ATAQUE_MARE_CURTA,
+    ATAQUE_VINHA_FINA, ATAQUE_LUZ_GUIA, ATAQUE_SOMBRA_FRIA, ATAQUE_PULSO_CALMO,
+    ATAQUE_FAGULHA, ATAQUE_ORVALHO, ATAQUE_ESPINHO_LUNAR, ATAQUE_SINO_VAZIO
+} IdAtaque;
 
 typedef struct {
-    AttackId id;
-    char name[24];
-    Type type;
-    QteKind qte_kind;
-    int base_damage;
-    AttackFxStyle fx_style;
-    int hits;
-    StatusEffect status;
-    int status_duration;
-    int max_uses;
-    int cooldown_turns;
-    bool crit_on_perfect;
-} Attack;
+    IdAtaque id;
+    char nome[24];
+    Tipo tipo;
+    TipoQte tipo_qte;
+    int dano_base;
+    EstiloEfeitoAtaque estilo_efeito;
+    int golpes;
+    EfeitoStatus status;
+    int duracao_status;
+    int turnos_recarga;
+    bool critico_no_perfeito;
+} Ataque;
 
 typedef struct {
-    ItemId id;
-    int quantity;
-} InventoryItem;
+    IdItem id;
+    int quantidade;
+} ItemInventario;
 
 typedef struct {
-    char name[24];
+    char nome[24];
     int hp;
-    int hp_max;
-    int level;
-    Type defense_type;
-    Attack attacks[MAX_EQUIPPED_ATTACKS];
-    int attack_count;
-    InventoryItem inventory[MAX_INVENTORY_ITEMS];
-    int damage_buff_percent;
-    int damage_buff_turns;
-    int permanent_damage_bonus;
+    int vida_maxima;
+    int nivel;
+    Tipo tipo_defesa;
+    Ataque ataques[MAXIMO_EQUIPADOS_ATAQUES];
+    int total_ataques;
+    ItemInventario inventario[MAXIMO_INVENTARIO_ITENS];
+    int percentual_buff_dano;
+    int turnos_buff_dano;
+    int bonus_dano_permanente;
     int xp;
-    float incoming_damage_multiplier;
-    int attack_uses[PLAYER_ATTACK_COUNT];
-    int attack_cooldowns[PLAYER_ATTACK_COUNT];
-} PlayerStats;
+    float multiplicador_dano_recebido;
+    int recargas_ataques[JOGADOR_ATAQUE_TOTAL];
+} AtributosJogador;
 
-void PlayerInit(PlayerStats *player);
-int PlayerHeal(PlayerStats *player, int amount);
-bool PlayerUseItem(PlayerStats *player, int inventory_index, const ItemDefinition **used_item,
-                   int *applied_value);
-float PlayerAttackBuffMultiplier(const PlayerStats *player);
-void PlayerConsumeAttackBuff(PlayerStats *player);
-bool PlayerAddItem(PlayerStats *player, ItemId id, int quantity);
-bool PlayerHasAttack(const PlayerStats *player, Attack attack);
-int PlayerRewardAttackCount(void);
-Attack PlayerRewardAttack(int index);
-bool PlayerAddAttack(PlayerStats *player, Attack attack, int replace_index);
-bool PlayerGainXp(PlayerStats *player, int xp);
-bool PlayerAttackAvailable(const PlayerStats *player, const Attack *attack, char *reason, int reason_size);
-void PlayerUseAttack(PlayerStats *player, const Attack *attack);
-void PlayerAdvanceAttackCooldowns(PlayerStats *player);
-const char *PlayerAttackIdName(AttackId id);
-const char *PlayerStatusName(StatusEffect status);
+void JogadorInicializar(AtributosJogador *jogador);
+int JogadorCurar(AtributosJogador *jogador, int quantidade);
+bool JogadorUsarItem(AtributosJogador *jogador, int indice_inventario, const DefinicaoItem **item_usado,
+                   int *valor_aplicado);
+float JogadorMultiplicadorBuffAtaque(const AtributosJogador *jogador);
+void JogadorConsumirBuffAtaque(AtributosJogador *jogador);
+bool JogadorAdicionarItem(AtributosJogador *jogador, IdItem id, int quantidade);
+bool JogadorPossuiAtaque(const AtributosJogador *jogador, Ataque ataque);
+int JogadorTotalAtaquesRecompensa(void);
+Ataque JogadorAtaqueRecompensa(int indice);
+bool JogadorAdicionarAtaque(AtributosJogador *jogador, Ataque ataque, int indice_substituicao);
+bool JogadorGanharXp(AtributosJogador *jogador, int xp);
+bool JogadorAtaqueDisponivel(const AtributosJogador *jogador, const Ataque *ataque, char *motivo, int tamanho_motivo);
+void JogadorUsarAtaque(AtributosJogador *jogador, const Ataque *ataque);
+void JogadorAvancarRecargasAtaques(AtributosJogador *jogador);
+const char *JogadorNomeStatus(EfeitoStatus status);
 
 #endif

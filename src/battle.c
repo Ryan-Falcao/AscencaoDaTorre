@@ -1,538 +1,511 @@
 #include "battle.h"
 #include "input.h"
+#include "patterns.h"
 #include "raymath.h"
 
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
 
-#define SHOW_ENEMY_HP_BEFORE_ANALYZE false
-
-static bool ConfirmPressed(void)
+static bool ConfirmacaoPressionada(void)
 {
-    return input_confirm_pressed();
+    return entrada_confirmar_pressionada();
 }
 
-static Rectangle GetTextBox(void)
+static Rectangle ObterCaixaTexto(void)
 {
     return (Rectangle){42.0f, 228.0f, 556.0f, 94.0f};
 }
 
-static Rectangle GetMainButton(int button_index)
+static Rectangle ObterBotaoPrincipal(int indice_botao)
 {
-    return (Rectangle){38.0f + button_index * 143.0f, 398.0f, 132.0f, 40.0f};
+    return (Rectangle){38.0f + indice_botao * 143.0f, 398.0f, 132.0f, 40.0f};
 }
 
-static Rectangle GetActionButton(int option_index)
+static Rectangle ObterBotaoAcao(int indice_opcao)
 {
-    return (Rectangle){72.0f, 260.0f + option_index * 20.0f, 390.0f, 20.0f};
+    return (Rectangle){54.0f, 237.0f + indice_opcao * 21.0f, 532.0f, 20.0f};
 }
 
-static Rectangle GetItemButton(int option_index)
+static Rectangle ObterBotaoItem(int indice_opcao)
 {
-    return (Rectangle){64.0f + (option_index / 4) * 260.0f,
-                       257.0f + (option_index % 4) * 19.0f, 240.0f, 18.0f};
+    return (Rectangle){54.0f + (indice_opcao / 4) * 268.0f,
+                       237.0f + (indice_opcao % 4) * 21.0f, 260.0f, 20.0f};
 }
 
-static void ShowMessage(Battle *battle, TypewriterText *dialogue, const char *message,
-                        BattlePhase next_phase);
+static void MostrarMensagem(Batalha *batalha, TextoDigitado *dialogo, const char *mensagem,
+                        FaseBatalha proxima_fase);
 
-static float EffectivenessAgainstEnemy(Type attack_type, const Enemy *enemy)
+static float EfetividadeContraInimigo(Tipo tipo_ataque, const Inimigo *inimigo)
 {
-    float multiplier = type_effectiveness(attack_type, enemy->type);
+    float multiplicador = efetividade_tipo(tipo_ataque, inimigo->tipo);
 
-    if (enemy->has_type2) multiplier *= type_effectiveness(attack_type, enemy->type2);
-    return multiplier;
+    if (inimigo->possui_tipo2) multiplicador *= efetividade_tipo(tipo_ataque, inimigo->tipo2);
+    return multiplicador;
 }
 
-static Type FindEnemyWeakness(const Enemy *enemy)
+static void ResolverAtaqueJogador(Batalha *batalha, AtributosJogador *jogador, Inimigo *inimigo,
+                                TextoDigitado *dialogo, ResultadoQte resultado_qte, EstadoAudio *audio)
 {
-    Type best_type = TYPE_NEUTRAL;
-    float best_multiplier = 1.0f;
-
-    for (Type candidate = TYPE_FLAME; candidate < TYPE_COUNT; candidate++) {
-        const float multiplier = EffectivenessAgainstEnemy(candidate, enemy);
-        if (multiplier > best_multiplier) {
-            best_multiplier = multiplier;
-            best_type = candidate;
-        }
+    const Ataque *ataque = &jogador->ataques[batalha->indice_ataque_qte];
+    float multiplicador_tipo = EfetividadeContraInimigo(ataque->tipo, inimigo);
+    const float multiplicador_buff = JogadorMultiplicadorBuffAtaque(jogador);
+    if (inimigo->status == STATUS_MOLHADO && (ataque->tipo == TIPO_PLANTA || ataque->tipo == TIPO_LUZ)) {
+        multiplicador_tipo *= 1.25f;
     }
-    return best_type;
-}
+    const float multiplicador_total = multiplicador_tipo * qte_multiplicador(resultado_qte) * multiplicador_buff;
+    const int dano = (int)ceilf((float)(ataque->dano_base + jogador->bonus_dano_permanente) *
+                                  ataque->golpes * multiplicador_total);
+    const bool era_poupavel = inimigo->poupavel;
+    const bool estava_segunda_fase = inimigo->segunda_fase;
+    char mensagem[DIALOGO_CAPACIDADE];
 
-static void ResolvePlayerAttack(Battle *battle, PlayerStats *player, Enemy *enemy,
-                                TypewriterText *dialogue, QteResult qte_result, AudioState *audio)
-{
-    const Attack *attack = &player->attacks[battle->qte_attack_index];
-    float type_multiplier = EffectivenessAgainstEnemy(attack->type, enemy);
-    const float buff_multiplier = PlayerAttackBuffMultiplier(player);
-    if (enemy->status == STATUS_WET && (attack->type == TYPE_PLANT || attack->type == TYPE_LIGHT)) {
-        type_multiplier *= 1.25f;
-    }
-    const float total_multiplier = type_multiplier * qte_multiplier(qte_result) * buff_multiplier;
-    const int damage = (int)ceilf((float)(attack->base_damage + player->permanent_damage_bonus) *
-                                  attack->hits * total_multiplier);
-    const bool was_spareable = enemy->spareable;
-    const bool was_phase_two = enemy->phase_two;
-    char message[DIALOGUE_CAPACITY];
-
-    EnemyTakeDamage(enemy, damage, type_multiplier);
-    if (attack->status != STATUS_NONE && qte_result != QTE_ERROR) {
-        const bool apply_status = !attack->crit_on_perfect || qte_result == QTE_PERFECT ||
+    InimigoReceberDano(inimigo, dano, multiplicador_tipo);
+    if (ataque->status != STATUS_NENHUM && resultado_qte != QTE_ERRO) {
+        const bool apply_status = !ataque->critico_no_perfeito || resultado_qte == QTE_PERFEITO ||
                                   GetRandomValue(0, 99) < 45;
-        if (apply_status) EnemyApplyStatus(enemy, attack->status, attack->status_duration);
+        if (apply_status) InimigoAplicarStatus(inimigo, ataque->status, ataque->duracao_status);
     }
-    FxStart(&battle->attack_fx, attack, qte_result);
-    battle->floating_damage = damage;
-    battle->floating_damage_timer = 0.85f;
-    battle->last_effectiveness = type_multiplier;
-    if (qte_result == QTE_PERFECT) battle->screen_shake_timer = 0.18f;
-    if (qte_result == QTE_PERFECT || type_multiplier >= 2.0f) battle->hitstop_timer = 0.055f;
-    for (int index = 0; index < MAX_BATTLE_PARTICLES; index++) {
-        BattleParticle *particle = &battle->particles[index];
-        if (!particle->active) {
-            particle->active = true;
-            particle->position = (Vector2){320.0f, 132.0f};
-            particle->velocity = (Vector2){(float)GetRandomValue(-70, 70), (float)GetRandomValue(-95, -20)};
-            particle->color = type_color(attack->type);
-            particle->lifetime = 0.45f;
+    EfeitoIniciar(&batalha->efeito_ataque, ataque, resultado_qte);
+    batalha->dano_flutuante = dano;
+    batalha->temporizador_dano_flutuante = 0.85f;
+    batalha->ultima_efetividade = multiplicador_tipo;
+    if (resultado_qte == QTE_PERFEITO) batalha->temporizador_tremor_tela = 0.18f;
+    if (resultado_qte == QTE_PERFEITO || multiplicador_tipo >= 2.0f) batalha->temporizador_pausa_impacto = 0.055f;
+    for (int indice = 0; indice < MAXIMO_BATALHA_PARTICULAS; indice++) {
+        ParticulaBatalha *particle = &batalha->particulas[indice];
+        if (!particle->ativo) {
+            particle->ativo = true;
+            particle->posicao = (Vector2){320.0f, 132.0f};
+            particle->velocidade = (Vector2){(float)GetRandomValue(-70, 70), (float)GetRandomValue(-95, -20)};
+            particle->cor = cor_tipo(ataque->tipo);
+            particle->tempo_vida = 0.45f;
         }
     }
-    PlayerConsumeAttackBuff(player);
-    PlayerUseAttack(player, attack);
-    AudioPlay(audio, AUDIO_DAMAGE_DEALT);
-    if (type_multiplier >= 2.0f) AudioPlay(audio, AUDIO_SUPER_EFFECTIVE);
-    else if (type_multiplier <= 0.5f) AudioPlay(audio, AUDIO_NOT_EFFECTIVE);
+    JogadorConsumirBuffAtaque(jogador);
+    JogadorUsarAtaque(jogador, ataque);
+    AudioTocar(audio, AUDIO_DANO_CAUSADO);
+    if (multiplicador_tipo >= 2.0f) AudioTocar(audio, AUDIO_SUPER_EFETIVO);
+    else if (multiplicador_tipo <= 0.5f) AudioTocar(audio, AUDIO_NAO_EFETIVO);
 
-    if (type_multiplier >= 2.0f) {
-        snprintf(message, sizeof(message), "%s %s! %d dano. Super efetivo!", qte_result_name(qte_result),
-                 attack->name, damage);
-    } else if (type_multiplier <= 0.5f) {
-        snprintf(message, sizeof(message), "%s %s! %d dano. Nao foi muito efetivo...",
-                 qte_result_name(qte_result), attack->name, damage);
+    if (multiplicador_tipo >= 2.0f) {
+        snprintf(mensagem, sizeof(mensagem), "%s %s! %d dano. Super efetivo!", qte_nome_resultado(resultado_qte),
+                 ataque->nome, dano);
+    } else if (multiplicador_tipo <= 0.5f) {
+        snprintf(mensagem, sizeof(mensagem), "%s %s! %d dano. Nao foi muito efetivo...",
+                 qte_nome_resultado(resultado_qte), ataque->nome, dano);
     } else {
-        snprintf(message, sizeof(message), "%s %s! %d dano.", qte_result_name(qte_result),
-                 attack->name, damage);
+        snprintf(mensagem, sizeof(mensagem), "%s %s! %d dano.", qte_nome_resultado(resultado_qte),
+                 ataque->nome, dano);
     }
-    if (!was_spareable && enemy->spareable && enemy->hp > 0) {
-        strncat(message, " O inimigo esta exausto.", sizeof(message) - strlen(message) - 1);
+    if (!era_poupavel && inimigo->poupavel && inimigo->hp > 0) {
+        strncat(mensagem, " O inimigo esta exausto.", sizeof(mensagem) - strlen(mensagem) - 1);
     }
-    if (!was_phase_two && enemy->phase_two && enemy->hp > 0) {
-        strncat(message, " O chefe mudou de fase!", sizeof(message) - strlen(message) - 1);
+    if (!estava_segunda_fase && inimigo->segunda_fase && inimigo->hp > 0) {
+        strncat(mensagem, " O chefe mudou de fase!", sizeof(mensagem) - strlen(mensagem) - 1);
     }
-    ShowMessage(battle, dialogue, message, enemy->hp == 0 ? BATTLE_VICTORY : BATTLE_ENEMY_TURN);
+    MostrarMensagem(batalha, dialogo, mensagem, inimigo->hp == 0 ? BATALHA_VITORIA : BATALHA_INIMIGO_TURNO);
 }
 
-static void EnterPlayerMenu(Battle *battle, TypewriterText *dialogue)
+static void EntrarMenuJogador(Batalha *batalha, TextoDigitado *dialogo)
 {
-    battle->phase = BATTLE_PLAYER_MENU;
-    battle->action_menu = ACTION_NONE;
-    battle->action_selection = 0;
-    UiSetText(dialogue, "O que voce fara?");
+    batalha->fase = BATALHA_JOGADOR_MENU;
+    batalha->menu_acao = ACAO_NENHUM;
+    batalha->selecao_acao = 0;
+    InterfaceDefinirTexto(dialogo, "O que voce fara?");
 }
 
-static void ShowMessage(Battle *battle, TypewriterText *dialogue, const char *message,
-                        BattlePhase next_phase)
+static void MostrarMensagem(Batalha *batalha, TextoDigitado *dialogo, const char *mensagem,
+                        FaseBatalha proxima_fase)
 {
-    battle->phase = BATTLE_PLAYER_ACTION;
-    battle->action_menu = ACTION_MESSAGE;
-    battle->next_phase = next_phase;
-    UiSetText(dialogue, message);
+    batalha->fase = BATALHA_JOGADOR_ACAO;
+    batalha->menu_acao = ACAO_MENSAGEM;
+    batalha->proxima_fase = proxima_fase;
+    InterfaceDefinirTexto(dialogo, mensagem);
 }
 
-static void StartEnemyTurn(Battle *battle, Enemy *enemy, TypewriterText *dialogue)
+static void IniciarTurnoInimigo(Batalha *batalha, Inimigo *inimigo, TextoDigitado *dialogo)
 {
-    BulletPatternId pattern_id = PATTERN_RAIN;
+    IdPadraoProjetil id_padrao = PADRAO_CHUVA;
     int burn_damage = 0;
-    const StatusEffect active_status = enemy->status;
-    float speed_multiplier = 1.0f;
-    float damage_multiplier = enemy->projectile_damage_multiplier;
+    const EfeitoStatus status_ativo = inimigo->status;
+    float multiplicador_velocidade = 1.0f;
+    float multiplicador_dano = inimigo->multiplicador_dano_projetil;
 
-    if (EnemyAdvanceStatus(enemy, &burn_damage) && enemy->hp == 0) {
-        ShowMessage(battle, dialogue, "As chamas consumiram o inimigo.", BATTLE_VICTORY);
+    if (InimigoAvancarStatus(inimigo, &burn_damage) && inimigo->hp == 0) {
+        MostrarMensagem(batalha, dialogo, "As chamas consumiram o inimigo.", BATALHA_VITORIA);
         return;
     }
-    if (active_status == STATUS_STUN) {
-        ShowMessage(battle, dialogue, "O inimigo ficou atordoado e perdeu o turno!", BATTLE_PLAYER_MENU);
+    if (status_ativo == STATUS_ATORDOAR) {
+        MostrarMensagem(batalha, dialogo, "O inimigo ficou atordoado e perdeu o turno!", BATALHA_JOGADOR_MENU);
         return;
     }
-    if (active_status == STATUS_ROOT) speed_multiplier = 0.70f;
-    if (active_status == STATUS_BLIND) damage_multiplier *= 0.75f;
+    if (status_ativo == STATUS_ENRAIZAR) multiplicador_velocidade = 0.70f;
+    if (status_ativo == STATUS_CEGAR) multiplicador_dano *= 0.75f;
 
-    const int desired_difficulty = enemy->aggression < 34 ? 1 :
-                                   (enemy->aggression < 67 ? 2 : 3);
-
-    if (enemy->pattern_count > 0) {
-        for (int index = 0; index < enemy->pattern_count; index++) {
-            const BulletPatternId candidate =
-                enemy->pattern_ids[(enemy->next_pattern_index + index) % enemy->pattern_count];
-
-            if (BulletPatternDifficulty(candidate) == desired_difficulty) {
-                pattern_id = candidate;
-                break;
-            }
-        }
-        enemy->next_pattern_index++;
+    if (inimigo->total_padroes > 0) {
+        id_padrao = inimigo->ids_padroes[inimigo->indice_proximo_padrao % inimigo->total_padroes];
+        inimigo->indice_proximo_padrao++;
     }
 
-    battle->phase = BATTLE_ENEMY_TURN;
-    battle->turn_count++;
-    battle->enemy_turn_timer = 0.0f;
-    DefenseStart(&battle->defense, pattern_id, (Rectangle){42.0f, 228.0f, 556.0f, 94.0f},
-                 enemy->aggression, enemy->projectile_damage_bonus,
-                 damage_multiplier, speed_multiplier);
-    if (enemy->boss && enemy->phase_two) {
-        DefenseResizeBox(&battle->defense, 250.0f, 140.0f);
-        if (pattern_id == PATTERN_GRAVITY_FLIP) {
-            battle->defense.gravity_repeats = 3;
-            battle->defense.pattern.duration = 11.0f;
+    batalha->fase = BATALHA_INIMIGO_TURNO;
+    batalha->total_turnos++;
+    DefesaIniciar(&batalha->defesa, id_padrao, (Rectangle){42.0f, 228.0f, 556.0f, 94.0f},
+                 inimigo->agressividade, inimigo->bonus_dano_projetil,
+                 multiplicador_dano, multiplicador_velocidade);
+    if (inimigo->chefe && inimigo->segunda_fase) {
+        if (PadraoEhCaracteristico(id_padrao)) PadraoDefinirSegundaFase(&batalha->defesa);
+        DefesaRedimensionarCaixa(&batalha->defesa, PadraoEhCaracteristico(id_padrao) ? 290.0f : 250.0f,
+                          PadraoEhCaracteristico(id_padrao) ? 190.0f : 140.0f);
+        if (id_padrao == PADRAO_GRAVIDADE_INVERSAO) {
+            batalha->defesa.repeticoes_gravidade = 3;
+            batalha->defesa.padrao.duracao = 11.0f;
         }
-        if (pattern_id == PATTERN_SHADOW_BLOOM) battle->defense.gravity_repeats = 3;
+        if (id_padrao == PADRAO_SOMBRA_FLORACAO) batalha->defesa.repeticoes_gravidade = 3;
     }
-    if (enemy->id == ENEMY_BOSS_BELLKEEPER && pattern_id == PATTERN_GRAVITY_FLIP) {
-        UiSetText(dialogue, "O chao nao e seu.");
-    } else if (enemy->id == ENEMY_BOSS_BELLKEEPER && pattern_id == PATTERN_SHADOW_BLOOM) {
-        UiSetText(dialogue, "A sombra cresce.");
-    } else UiSetText(dialogue, enemy->aggression >= 67 ? "Ela avanca furiosa!" :
-                        (enemy->aggression <= 33 ? "Ela parece calma." : "Ela observa, irritada."));
+    if (PadraoEhCaracteristico(id_padrao)) {
+        InterfaceDefinirTexto(dialogo, InstrucaoPadrao(id_padrao));
+    } else if (inimigo->id == INIMIGO_CHEFE_SINEIRO && id_padrao == PADRAO_GRAVIDADE_INVERSAO) {
+        InterfaceDefinirTexto(dialogo, "O chao nao e seu.");
+    } else if (inimigo->id == INIMIGO_CHEFE_SINEIRO && id_padrao == PADRAO_SOMBRA_FLORACAO) {
+        InterfaceDefinirTexto(dialogo, "A sombra cresce.");
+    } else InterfaceDefinirTexto(dialogo, inimigo->agressividade >= 67 ? "Ela avanca furiosa!" :
+                        (inimigo->agressividade <= 33 ? "Ela parece calma." : "Ela observa, irritada."));
 }
 
-static BattleResult MakeResult(const Battle *battle, const PlayerStats *player, BattleOutcome outcome,
-                               int coins, int xp)
+static ResultadoBatalha MontarResultado(const Batalha *batalha, const AtributosJogador *jogador, DesfechoBatalha desfecho,
+                               int moedas, int xp)
 {
-    BattleResult result = {0};
-    result.outcome = outcome;
-    result.coins = coins;
-    result.xp = xp;
-    result.hp_lost = battle->starting_player_hp - player->hp;
-    result.turns = battle->turn_count;
-    result.duration_seconds = battle->elapsed_time;
-    for (int index = 0; index < 4; index++) result.qte_results[index] = battle->qte_results[index];
-    return result;
+    ResultadoBatalha resultado = {0};
+    resultado.desfecho = desfecho;
+    resultado.moedas = moedas;
+    resultado.xp = xp;
+    resultado.vida_perdida = batalha->vida_inicial_jogador - jogador->hp;
+    resultado.turnos = batalha->total_turnos;
+    resultado.duracao_segundos = batalha->tempo_decorrido;
+    for (int indice = 0; indice < 4; indice++) resultado.resultados_qte[indice] = batalha->resultados_qte[indice];
+    return resultado;
 }
 
-void BattleInit(Battle *battle, TypewriterText *dialogue, int floor)
+void BatalhaInicializar(Batalha *batalha, TextoDigitado *dialogo, int andar)
 {
-    memset(battle, 0, sizeof(*battle));
-    battle->phase = BATTLE_INTRO;
-    battle->next_phase = BATTLE_PLAYER_MENU;
-    battle->action_menu = ACTION_NONE;
-    battle->main_selection = MENU_ATTACK;
-    battle->floor = floor;
-    battle->qte_difficulty = floor;
-    battle->action_selection = 0;
-    battle->enemy_turn_timer = 0.0f;
-    battle->elapsed_time = 0.0f;
-    battle->floating_damage = 0;
-    battle->floating_damage_timer = 0.0f;
-    battle->last_effectiveness = 1.0f;
-    battle->qte_attack_index = 0;
-    battle->screen_shake_timer = 0.0f;
-    battle->hitstop_timer = 0.0f;
-    battle->starting_player_hp = 0;
-    battle->displayed_enemy_hp = -1.0f;
-    battle->enemy_hp_trail = -1.0f;
-    battle->displayed_player_hp = -1.0f;
-    battle->player_hp_trail = -1.0f;
-    battle->displayed_mercy = 0.0f;
-    battle->displayed_aggression = 0.0f;
-    battle->stat_change_timer = 0.0f;
-    battle->mercy_change_popup = 0;
-    battle->aggression_change_popup = 0;
-    battle->victory_by_mercy = false;
-    battle->result = (BattleResult){0};
-    DefenseInit(&battle->defense);
-    UiSetText(dialogue, "Um inimigo bloqueia a subida.");
+    memset(batalha, 0, sizeof(*batalha));
+    batalha->fase = BATALHA_INTRODUCAO;
+    batalha->proxima_fase = BATALHA_JOGADOR_MENU;
+    batalha->menu_acao = ACAO_NENHUM;
+    batalha->selecao_principal = MENU_ATAQUE;
+    batalha->andar = andar;
+    batalha->dificuldade_qte = andar;
+    batalha->selecao_acao = 0;
+    batalha->tempo_decorrido = 0.0f;
+    batalha->dano_flutuante = 0;
+    batalha->temporizador_dano_flutuante = 0.0f;
+    batalha->ultima_efetividade = 1.0f;
+    batalha->indice_ataque_qte = 0;
+    batalha->temporizador_tremor_tela = 0.0f;
+    batalha->temporizador_pausa_impacto = 0.0f;
+    batalha->vida_inicial_jogador = 0;
+    batalha->vida_inimigo_exibida = -1.0f;
+    batalha->rastro_vida_inimigo = -1.0f;
+    batalha->vida_jogador_exibida = -1.0f;
+    batalha->rastro_vida_jogador = -1.0f;
+    batalha->misericordia_exibida = 0.0f;
+    batalha->agressividade_exibida = 0.0f;
+    batalha->temporizador_mudanca_status = 0.0f;
+    batalha->popup_mudanca_misericordia = 0;
+    batalha->popup_mudanca_agressividade = 0;
+    batalha->vitoria_por_misericordia = false;
+    batalha->resultado = (ResultadoBatalha){0};
+    DefesaInicializar(&batalha->defesa);
+    InterfaceDefinirTexto(dialogo, "Um inimigo bloqueia a subida.");
 }
 
-static void UpdatePlayerMenu(Battle *battle, PlayerStats *player, Enemy *enemy,
-                             TypewriterText *dialogue, Vector2 mouse_position,
-                             bool mouse_pressed)
+static void AtualizarMenuJogador(Batalha *batalha, AtributosJogador *jogador, Inimigo *inimigo,
+                             TextoDigitado *dialogo, Vector2 posicao_mouse,
+                             bool mouse_pressionado)
 {
-    bool confirmed = ConfirmPressed();
+    bool confirmado = ConfirmacaoPressionada();
 
-    if (input_left_pressed()) {
-        battle->main_selection = (battle->main_selection + 3) % 4;
+    if (entrada_esquerda_pressionada()) {
+        batalha->selecao_principal = (batalha->selecao_principal + 3) % 4;
     }
-    if (input_right_pressed()) {
-        battle->main_selection = (battle->main_selection + 1) % 4;
+    if (entrada_direita_pressionada()) {
+        batalha->selecao_principal = (batalha->selecao_principal + 1) % 4;
     }
-    if (mouse_pressed) {
-        for (int button_index = 0; button_index < 4; button_index++) {
-            if (CheckCollisionPointRec(mouse_position, GetMainButton(button_index))) {
-                battle->main_selection = button_index;
-                confirmed = true;
-            }
+    for (int indice_botao = 0; indice_botao < 4; indice_botao++) {
+        if (CheckCollisionPointRec(posicao_mouse, ObterBotaoPrincipal(indice_botao))) {
+            batalha->selecao_principal = indice_botao;
+            if (mouse_pressionado) confirmado = true;
         }
     }
-    if (!confirmed) return;
+    if (!confirmado) return;
 
-    switch ((MainMenuOption)battle->main_selection) {
-        case MENU_ATTACK:
-            battle->phase = BATTLE_PLAYER_ACTION;
-            battle->action_menu = ACTION_ATTACKS;
-            battle->action_selection = 0;
-            UiSetText(dialogue, "Escolha um ataque.");
+    switch ((OpcaoMenuPrincipal)batalha->selecao_principal) {
+        case MENU_ATAQUE:
+            batalha->fase = BATALHA_JOGADOR_ACAO;
+            batalha->menu_acao = ACAO_ATAQUES;
+            batalha->selecao_acao = 0;
+            InterfaceDefinirTexto(dialogo, "Escolha um ataque.");
             break;
         case MENU_ACT:
-            battle->phase = BATTLE_PLAYER_ACTION;
-            battle->action_menu = ACTION_ACTS;
-            battle->action_selection = 0;
-            UiSetText(dialogue, "Como voce vai agir?");
+            batalha->fase = BATALHA_JOGADOR_ACAO;
+            batalha->menu_acao = ACAO_ACOES;
+            batalha->selecao_acao = 0;
+            InterfaceDefinirTexto(dialogo, "Como voce vai agir?");
             break;
         case MENU_ITEM:
-            battle->phase = BATTLE_PLAYER_ACTION;
-            battle->action_menu = ACTION_ITEMS;
-            battle->action_selection = 0;
-            UiSetText(dialogue, "Escolha um item.");
+            batalha->fase = BATALHA_JOGADOR_ACAO;
+            batalha->menu_acao = ACAO_ITENS;
+            batalha->selecao_acao = 0;
+            InterfaceDefinirTexto(dialogo, "Escolha um item.");
             break;
         case MENU_SPARE:
-            if (EnemyCanSpare(enemy)) {
-                battle->victory_by_mercy = true;
-                ShowMessage(battle, dialogue, "Voce poupou o inimigo com gentileza.", BATTLE_VICTORY);
-            } else if (enemy->spareable) {
-                ShowMessage(battle, dialogue, "Ele esta furioso demais para te ouvir.", BATTLE_ENEMY_TURN);
+            if (InimigoPodePoupar(inimigo)) {
+                batalha->vitoria_por_misericordia = true;
+                MostrarMensagem(batalha, dialogo, "Voce poupou o inimigo com gentileza.", BATALHA_VITORIA);
+            } else if (inimigo->poupavel) {
+                MostrarMensagem(batalha, dialogo, "Ele esta furioso demais para te ouvir.", BATALHA_INIMIGO_TURNO);
             } else {
-                ShowMessage(battle, dialogue, "Ainda nao confia em voce...", BATTLE_ENEMY_TURN);
+                MostrarMensagem(batalha, dialogo, "Ainda nao confia em voce...", BATALHA_INIMIGO_TURNO);
             }
             break;
         default:
-            (void)player;
+            (void)jogador;
             break;
     }
 }
 
-static void UpdateActionList(Battle *battle, PlayerStats *player, Enemy *enemy,
-                             TypewriterText *dialogue, Vector2 mouse_position,
-                             bool mouse_pressed, Qte *qte, AudioState *audio)
+static void AtualizarListaAcoes(Batalha *batalha, AtributosJogador *jogador, Inimigo *inimigo,
+                             TextoDigitado *dialogo, Vector2 posicao_mouse,
+                             bool mouse_pressionado, Qte *qte, EstadoAudio *audio)
 {
     int option_count = 0;
-    bool confirmed = ConfirmPressed();
+    bool confirmado = ConfirmacaoPressionada();
 
-    if (battle->action_menu == ACTION_ATTACKS) option_count = player->attack_count;
-    if (battle->action_menu == ACTION_ACTS) option_count = enemy->action_count;
-    if (battle->action_menu == ACTION_ITEMS) option_count = MAX_INVENTORY_ITEMS;
+    if (batalha->menu_acao == ACAO_ATAQUES) option_count = jogador->total_ataques;
+    if (batalha->menu_acao == ACAO_ACOES) option_count = inimigo->total_acoes;
+    if (batalha->menu_acao == ACAO_ITENS) option_count = MAXIMO_INVENTARIO_ITENS;
 
-    if (input_up_pressed()) {
-        battle->action_selection = (battle->action_selection + option_count - 1) % option_count;
+    if (entrada_cima_pressionada()) {
+        batalha->selecao_acao = (batalha->selecao_acao + option_count - 1) % option_count;
     }
-    if (input_down_pressed()) {
-        battle->action_selection = (battle->action_selection + 1) % option_count;
+    if (entrada_baixo_pressionada()) {
+        batalha->selecao_acao = (batalha->selecao_acao + 1) % option_count;
     }
-    if (input_cancel_pressed()) {
-        EnterPlayerMenu(battle, dialogue);
+    if (entrada_cancelar_pressionada()) {
+        EntrarMenuJogador(batalha, dialogo);
         return;
     }
-    if (mouse_pressed) {
-        for (int option_index = 0; option_index < option_count; option_index++) {
-            const Rectangle option = battle->action_menu == ACTION_ITEMS ?
-                                     GetItemButton(option_index) : GetActionButton(option_index);
-            if (CheckCollisionPointRec(mouse_position, option)) {
-                battle->action_selection = option_index;
-                confirmed = true;
-            }
+    for (int indice_opcao = 0; indice_opcao < option_count; indice_opcao++) {
+        const Rectangle option = batalha->menu_acao == ACAO_ITENS ?
+                                 ObterBotaoItem(indice_opcao) : ObterBotaoAcao(indice_opcao);
+        if (CheckCollisionPointRec(posicao_mouse, option)) {
+            batalha->selecao_acao = indice_opcao;
+            if (mouse_pressionado) confirmado = true;
         }
     }
-    if (!confirmed) return;
+    if (!confirmado) return;
 
-    if (battle->action_menu == ACTION_ATTACKS) {
-        const Attack *attack = &player->attacks[battle->action_selection];
-        char reason[32] = "";
+    if (batalha->menu_acao == ACAO_ATAQUES) {
+        const Ataque *ataque = &jogador->ataques[batalha->selecao_acao];
+        char motivo[32] = "";
 
-        if (!PlayerAttackAvailable(player, attack, reason, (int)sizeof(reason))) {
-            UiSetText(dialogue, reason);
-            battle->action_menu = ACTION_MESSAGE;
-            battle->next_phase = BATTLE_PLAYER_ACTION;
+        if (!JogadorAtaqueDisponivel(jogador, ataque, motivo, (int)sizeof(motivo))) {
+            InterfaceDefinirTexto(dialogo, motivo);
+            batalha->menu_acao = ACAO_MENSAGEM;
+            batalha->proxima_fase = BATALHA_JOGADOR_ACAO;
             return;
         }
 
-        battle->qte_attack_index = battle->action_selection;
-        battle->phase = BATTLE_PLAYER_QTE;
-        qte_start(qte, attack->qte_kind, battle->qte_difficulty);
-    } else if (battle->action_menu == ACTION_ACTS) {
-        const EnemyAction *action = &enemy->actions[battle->action_selection];
-        char message[DIALOGUE_CAPACITY];
+        batalha->indice_ataque_qte = batalha->selecao_acao;
+        batalha->fase = BATALHA_JOGADOR_QTE;
+        qte_iniciar(qte, ataque->tipo_qte, batalha->dificuldade_qte);
+    } else if (batalha->menu_acao == ACAO_ACOES) {
+        const AcaoInimigo *acao = &inimigo->acoes[batalha->selecao_acao];
+        char mensagem[DIALOGO_CAPACIDADE];
 
-        if (action->effect == ENEMY_ACTION_ANALYZE) {
-            const Type weakness = FindEnemyWeakness(enemy);
-            EnemyApplyAction(enemy, battle->action_selection, message, sizeof(message));
-            if (enemy->has_type2) {
-                snprintf(message, sizeof(message), "%s: %s/%s. Fraco contra: %s. %s", enemy->name,
-                         type_name(enemy->type), type_name(enemy->type2), type_name(weakness),
-                         enemy->description);
+        if (!InimigoAplicarAcao(inimigo, batalha->selecao_acao, mensagem, sizeof(mensagem))) {
+            MostrarMensagem(batalha, dialogo, mensagem, BATALHA_JOGADOR_MENU);
+            return;
+        }
+        if (acao->efeito == INIMIGO_ACAO_ANALISAR) {
+            if (inimigo->possui_tipo2) {
+                snprintf(mensagem, sizeof(mensagem), "Tipos revelados: %s e %s. Novas acoes de AGIR foram liberadas.",
+                         nome_tipo(inimigo->tipo), nome_tipo(inimigo->tipo2));
             } else {
-                snprintf(message, sizeof(message), "%s: %s. Fraco contra: %s. %s", enemy->name,
-                         type_name(enemy->type), type_name(weakness), enemy->description);
+                snprintf(mensagem, sizeof(mensagem), "Tipo revelado: %s. Novas acoes de AGIR foram liberadas.",
+                         nome_tipo(inimigo->tipo));
             }
-        } else if (EnemyApplyAction(enemy, battle->action_selection, message, sizeof(message))) {
-            battle->mercy_change_popup = enemy->last_mercy_delta;
-            battle->aggression_change_popup = enemy->last_aggression_delta;
-            battle->stat_change_timer = 0.8f;
         } else {
-            ShowMessage(battle, dialogue, message, BATTLE_PLAYER_MENU);
-            return;
+            batalha->popup_mudanca_misericordia = inimigo->ultima_variacao_misericordia;
+            batalha->popup_mudanca_agressividade = inimigo->ultima_variacao_agressividade;
+            batalha->temporizador_mudanca_status = 0.8f;
         }
-        ShowMessage(battle, dialogue, message, BATTLE_ENEMY_TURN);
-    } else if (battle->action_menu == ACTION_ITEMS) {
-        const ItemDefinition *item;
-        int applied_value;
-        char message[DIALOGUE_CAPACITY];
+        MostrarMensagem(batalha, dialogo, mensagem, BATALHA_INIMIGO_TURNO);
+    } else if (batalha->menu_acao == ACAO_ITENS) {
+        const DefinicaoItem *item;
+        int valor_aplicado;
+        char mensagem[DIALOGO_CAPACIDADE];
 
-        if (!PlayerUseItem(player, battle->action_selection, &item, &applied_value)) {
-            ShowMessage(battle, dialogue, "Nao sobrou nenhum desse item.", BATTLE_PLAYER_MENU);
+        if (!JogadorUsarItem(jogador, batalha->selecao_acao, &item, &valor_aplicado)) {
+            MostrarMensagem(batalha, dialogo, "Nao sobrou nenhum desse item.", BATALHA_JOGADOR_MENU);
             return;
         }
-        if (item->effect == ITEM_EFFECT_DEFENSE_TYPE) {
-            snprintf(message, sizeof(message), "Voce usou %s. Defesa agora: %s.", item->name,
-                     type_name(player->defense_type));
-        } else if (item->effect == ITEM_EFFECT_HEAL) {
-            AudioPlay(audio, AUDIO_HEAL);
-            snprintf(message, sizeof(message), "Voce usou %s e recuperou %d HP.", item->name,
-                     applied_value);
-        } else if (item->effect == ITEM_EFFECT_DAMAGE_BUFF) {
-            snprintf(message, sizeof(message), "%s: dano +%d%% por %d ataque(s).", item->name,
-                     item->value, item->duration);
+        if (item->efeito == ITEM_EFEITO_DEFESA_TIPO) {
+            snprintf(mensagem, sizeof(mensagem), "Voce usou %s. Defesa agora: %s.", item->nome,
+                     nome_tipo(jogador->tipo_defesa));
+        } else if (item->efeito == ITEM_EFEITO_CURAR) {
+            AudioTocar(audio, AUDIO_CURAR);
+            snprintf(mensagem, sizeof(mensagem), "Voce usou %s e recuperou %d HP.", item->nome,
+                     valor_aplicado);
+        } else if (item->efeito == ITEM_EFEITO_DANO_BUFF) {
+            snprintf(mensagem, sizeof(mensagem), "%s: dano +%d%% por %d ataque(s).", item->nome,
+                     item->valor, item->duracao);
         } else {
-            const bool was_spareable = enemy->spareable;
-            EnemyTakeDamage(enemy, applied_value, 1.0f);
-            battle->floating_damage = applied_value;
-            battle->floating_damage_timer = 0.85f;
-            battle->last_effectiveness = 1.0f;
-            snprintf(message, sizeof(message), "%s acertou e causou %d dano.", item->name, applied_value);
-            if (!was_spareable && enemy->spareable && enemy->hp > 0) {
-                strncat(message, " O inimigo esta exausto.", sizeof(message) - strlen(message) - 1);
+            const bool era_poupavel = inimigo->poupavel;
+            InimigoReceberDano(inimigo, valor_aplicado, 1.0f);
+            batalha->dano_flutuante = valor_aplicado;
+            batalha->temporizador_dano_flutuante = 0.85f;
+            batalha->ultima_efetividade = 1.0f;
+            snprintf(mensagem, sizeof(mensagem), "%s acertou e causou %d dano.", item->nome, valor_aplicado);
+            if (!era_poupavel && inimigo->poupavel && inimigo->hp > 0) {
+                strncat(mensagem, " O inimigo esta exausto.", sizeof(mensagem) - strlen(mensagem) - 1);
             }
         }
-        ShowMessage(battle, dialogue, message, enemy->hp == 0 ? BATTLE_VICTORY : BATTLE_ENEMY_TURN);
+        MostrarMensagem(batalha, dialogo, mensagem, inimigo->hp == 0 ? BATALHA_VITORIA : BATALHA_INIMIGO_TURNO);
     }
 }
 
-BattleResult BattleUpdate(Battle *battle, PlayerStats *player, Enemy *enemy,
-                          TypewriterText *dialogue, Vector2 mouse_position,
-                          bool mouse_pressed, Qte *qte, AudioState *audio)
+ResultadoBatalha BatalhaAtualizar(Batalha *batalha, AtributosJogador *jogador, Inimigo *inimigo,
+                          TextoDigitado *dialogo, Vector2 posicao_mouse,
+                          bool mouse_pressionado, Qte *qte, EstadoAudio *audio)
 {
-    const float delta_time = GetFrameTime();
+    const float tempo_delta = GetFrameTime();
 
-    battle->elapsed_time += delta_time;
-    FxUpdate(&battle->attack_fx, delta_time);
-    if (battle->starting_player_hp == 0) battle->starting_player_hp = player->hp;
-    if (enemy->hit_flash_timer > 0.0f) enemy->hit_flash_timer -= delta_time;
-    if (battle->floating_damage_timer > 0.0f) battle->floating_damage_timer -= delta_time;
-    if (battle->screen_shake_timer > 0.0f) battle->screen_shake_timer -= delta_time;
-    if (battle->displayed_enemy_hp < 0.0f) battle->displayed_enemy_hp = (float)enemy->hp;
-    if (battle->enemy_hp_trail < 0.0f) battle->enemy_hp_trail = (float)enemy->hp;
-    if (battle->displayed_player_hp < 0.0f) battle->displayed_player_hp = (float)player->hp;
-    if (battle->player_hp_trail < 0.0f) battle->player_hp_trail = (float)player->hp;
-    battle->displayed_enemy_hp = UiApproach(battle->displayed_enemy_hp, (float)enemy->hp, 95.0f, delta_time);
-    battle->displayed_player_hp = UiApproach(battle->displayed_player_hp, (float)player->hp, 110.0f, delta_time);
-    battle->enemy_hp_trail = UiApproach(battle->enemy_hp_trail, battle->displayed_enemy_hp, 35.0f, delta_time);
-    battle->player_hp_trail = UiApproach(battle->player_hp_trail, battle->displayed_player_hp, 42.0f, delta_time);
-    for (int index = 0; index < MAX_BATTLE_PARTICLES; index++) {
-        BattleParticle *particle = &battle->particles[index];
-        if (!particle->active) continue;
-        particle->position = Vector2Add(particle->position, Vector2Scale(particle->velocity, delta_time));
-        particle->velocity.y += 120.0f * delta_time;
-        particle->lifetime -= delta_time;
-        if (particle->lifetime <= 0.0f) particle->active = false;
+    batalha->tempo_decorrido += tempo_delta;
+    EfeitoAtualizar(&batalha->efeito_ataque, tempo_delta);
+    if (batalha->vida_inicial_jogador == 0) batalha->vida_inicial_jogador = jogador->hp;
+    if (inimigo->temporizador_flash_acerto > 0.0f) inimigo->temporizador_flash_acerto -= tempo_delta;
+    if (batalha->temporizador_dano_flutuante > 0.0f) batalha->temporizador_dano_flutuante -= tempo_delta;
+    if (batalha->temporizador_tremor_tela > 0.0f) batalha->temporizador_tremor_tela -= tempo_delta;
+    if (batalha->vida_inimigo_exibida < 0.0f) batalha->vida_inimigo_exibida = (float)inimigo->hp;
+    if (batalha->rastro_vida_inimigo < 0.0f) batalha->rastro_vida_inimigo = (float)inimigo->hp;
+    if (batalha->vida_jogador_exibida < 0.0f) batalha->vida_jogador_exibida = (float)jogador->hp;
+    if (batalha->rastro_vida_jogador < 0.0f) batalha->rastro_vida_jogador = (float)jogador->hp;
+    batalha->vida_inimigo_exibida = InterfaceAproximar(batalha->vida_inimigo_exibida, (float)inimigo->hp, 95.0f, tempo_delta);
+    batalha->vida_jogador_exibida = InterfaceAproximar(batalha->vida_jogador_exibida, (float)jogador->hp, 110.0f, tempo_delta);
+    batalha->rastro_vida_inimigo = InterfaceAproximar(batalha->rastro_vida_inimigo, batalha->vida_inimigo_exibida, 35.0f, tempo_delta);
+    batalha->rastro_vida_jogador = InterfaceAproximar(batalha->rastro_vida_jogador, batalha->vida_jogador_exibida, 42.0f, tempo_delta);
+    for (int indice = 0; indice < MAXIMO_BATALHA_PARTICULAS; indice++) {
+        ParticulaBatalha *particle = &batalha->particulas[indice];
+        if (!particle->ativo) continue;
+        particle->posicao = Vector2Add(particle->posicao, Vector2Scale(particle->velocidade, tempo_delta));
+        particle->velocidade.y += 120.0f * tempo_delta;
+        particle->tempo_vida -= tempo_delta;
+        if (particle->tempo_vida <= 0.0f) particle->ativo = false;
     }
-    battle->displayed_mercy = UiApproach(battle->displayed_mercy, (float)enemy->mercy, 145.0f, delta_time);
-    battle->displayed_aggression = UiApproach(battle->displayed_aggression,
-                                               (float)enemy->aggression, 145.0f, delta_time);
-    if (battle->stat_change_timer > 0.0f) battle->stat_change_timer -= delta_time;
-    UiUpdateText(dialogue, delta_time);
+    batalha->misericordia_exibida = InterfaceAproximar(batalha->misericordia_exibida, (float)inimigo->misericordia, 145.0f, tempo_delta);
+    batalha->agressividade_exibida = InterfaceAproximar(batalha->agressividade_exibida,
+                                               (float)inimigo->agressividade, 145.0f, tempo_delta);
+    if (batalha->temporizador_mudanca_status > 0.0f) batalha->temporizador_mudanca_status -= tempo_delta;
+    InterfaceAtualizarTexto(dialogo, tempo_delta);
 
-    if (battle->phase == BATTLE_INTRO) {
-        const bool confirm = ConfirmPressed() ||
-                             (mouse_pressed && CheckCollisionPointRec(mouse_position, GetTextBox()));
-        if (confirm && UiConfirmText(dialogue)) EnterPlayerMenu(battle, dialogue);
-    } else if (battle->phase == BATTLE_PLAYER_MENU) {
-        UpdatePlayerMenu(battle, player, enemy, dialogue, mouse_position, mouse_pressed);
-    } else if (battle->phase == BATTLE_PLAYER_ACTION) {
-        if (battle->action_menu == ACTION_MESSAGE) {
-            const bool confirm = ConfirmPressed() ||
-                                 (mouse_pressed && CheckCollisionPointRec(mouse_position, GetTextBox()));
-            if (confirm && UiConfirmText(dialogue)) {
-                if (battle->next_phase == BATTLE_ENEMY_TURN) {
-                    StartEnemyTurn(battle, enemy, dialogue);
-                } else if (battle->next_phase == BATTLE_PLAYER_MENU) {
-                    EnterPlayerMenu(battle, dialogue);
+    if (batalha->fase == BATALHA_INTRODUCAO) {
+        const bool confirm = ConfirmacaoPressionada() ||
+                             (mouse_pressionado && CheckCollisionPointRec(posicao_mouse, ObterCaixaTexto()));
+        if (confirm && InterfaceConfirmarTexto(dialogo)) EntrarMenuJogador(batalha, dialogo);
+    } else if (batalha->fase == BATALHA_JOGADOR_MENU) {
+        AtualizarMenuJogador(batalha, jogador, inimigo, dialogo, posicao_mouse, mouse_pressionado);
+    } else if (batalha->fase == BATALHA_JOGADOR_ACAO) {
+        if (batalha->menu_acao == ACAO_MENSAGEM) {
+            const bool confirm = ConfirmacaoPressionada() ||
+                                 (mouse_pressionado && CheckCollisionPointRec(posicao_mouse, ObterCaixaTexto()));
+            const bool retry_attack = batalha->proxima_fase == BATALHA_JOGADOR_ACAO;
+            if ((retry_attack && entrada_cancelar_pressionada()) || (confirm && InterfaceConfirmarTexto(dialogo))) {
+                if (batalha->proxima_fase == BATALHA_INIMIGO_TURNO) {
+                    IniciarTurnoInimigo(batalha, inimigo, dialogo);
+                } else if (batalha->proxima_fase == BATALHA_JOGADOR_MENU) {
+                    EntrarMenuJogador(batalha, dialogo);
+                } else if (retry_attack) {
+                    batalha->menu_acao = ACAO_ATAQUES;
+                    InterfaceDefinirTexto(dialogo, "Escolha outro ataque. X: voltar.");
                 } else {
-                    battle->phase = battle->next_phase;
+                    batalha->fase = batalha->proxima_fase;
                 }
             }
         } else {
-            UpdateActionList(battle, player, enemy, dialogue, mouse_position, mouse_pressed, qte, audio);
+            AtualizarListaAcoes(batalha, jogador, inimigo, dialogo, posicao_mouse, mouse_pressionado, qte, audio);
         }
-    } else if (battle->phase == BATTLE_PLAYER_QTE) {
-        qte_update(qte, delta_time);
-        if (qte_is_finished(qte)) {
-            battle->qte_results[qte->result]++;
-            AudioPlay(audio, qte->result == QTE_PERFECT ? AUDIO_QTE_PERFECT :
-                      (qte->result == QTE_ERROR ? AUDIO_QTE_ERROR : AUDIO_QTE_TICK));
-            ResolvePlayerAttack(battle, player, enemy, dialogue, qte->result, audio);
+    } else if (batalha->fase == BATALHA_JOGADOR_QTE) {
+        qte_atualizar(qte, tempo_delta);
+        if (qte_terminou(qte)) {
+            batalha->resultados_qte[qte->resultado]++;
+            AudioTocar(audio, qte->resultado == QTE_PERFEITO ? AUDIO_QTE_PERFEITO :
+                      (qte->resultado == QTE_ERRO ? AUDIO_QTE_ERRO : AUDIO_QTE_BATIDA));
+            ResolverAtaqueJogador(batalha, jogador, inimigo, dialogo, qte->resultado, audio);
         }
-    } else if (battle->phase == BATTLE_ENEMY_TURN) {
-        const int hp_before = player->hp;
-        const DefenseResult result = DefenseUpdate(&battle->defense, player, delta_time);
+    } else if (batalha->fase == BATALHA_INIMIGO_TURNO) {
+        const int vida_antes = jogador->hp;
+        const ResultadoDefesa resultado = DefesaAtualizar(&batalha->defesa, jogador, tempo_delta);
 
-        if (player->hp < hp_before) AudioPlay(audio, AUDIO_DAMAGE_TAKEN);
+        if (jogador->hp < vida_antes) AudioTocar(audio, AUDIO_DANO_RECEBIDO);
 
-        if (result == DEFENSE_PLAYER_DEFEATED) {
-            ShowMessage(battle, dialogue, "Sua alma se desfez no escuro.", BATTLE_DEFEAT);
-        } else if (result == DEFENSE_COMPLETE) {
-            EnemyAdvanceTurn(enemy);
-            PlayerAdvanceAttackCooldowns(player);
-            ShowMessage(battle, dialogue, "O turno da mariposa terminou.", BATTLE_PLAYER_MENU);
+        if (resultado == DEFESA_JOGADOR_DERROTADO) {
+            MostrarMensagem(batalha, dialogo, "Sua alma se desfez no escuro.", BATALHA_DERROTA);
+        } else if (resultado == DEFESA_CONCLUIDA) {
+            InimigoAvancarTurno(inimigo);
+            JogadorAvancarRecargasAtaques(jogador);
+            MostrarMensagem(batalha, dialogo, "O turno da mariposa terminou.", BATALHA_JOGADOR_MENU);
         }
-    } else if (battle->phase == BATTLE_VICTORY) {
-        const bool confirm = ConfirmPressed() ||
-                             (mouse_pressed && CheckCollisionPointRec(mouse_position, GetTextBox()));
-        if (confirm && UiConfirmText(dialogue)) {
-            return battle->victory_by_mercy ?
-                   MakeResult(battle, player, BATTLE_OUTCOME_MERCY, 10, 15) :
-                   MakeResult(battle, player, BATTLE_OUTCOME_DAMAGE, 5, 8);
+    } else if (batalha->fase == BATALHA_VITORIA) {
+        const bool confirm = ConfirmacaoPressionada() ||
+                             (mouse_pressionado && CheckCollisionPointRec(posicao_mouse, ObterCaixaTexto()));
+        if (confirm && InterfaceConfirmarTexto(dialogo)) {
+            return batalha->vitoria_por_misericordia ?
+                   MontarResultado(batalha, jogador, BATALHA_OUTCOME_MISERICORDIA, 10, 15) :
+                   MontarResultado(batalha, jogador, BATALHA_OUTCOME_DANO, 5, 8);
         }
-    } else if (battle->phase == BATTLE_DEFEAT) {
-        const bool confirm = ConfirmPressed() ||
-                             (mouse_pressed && CheckCollisionPointRec(mouse_position, GetTextBox()));
-        if (confirm && UiConfirmText(dialogue)) return MakeResult(battle, player, BATTLE_OUTCOME_DEFEAT, 0, 0);
+    } else if (batalha->fase == BATALHA_DERROTA) {
+        const bool confirm = ConfirmacaoPressionada() ||
+                             (mouse_pressionado && CheckCollisionPointRec(posicao_mouse, ObterCaixaTexto()));
+        if (confirm && InterfaceConfirmarTexto(dialogo)) return MontarResultado(batalha, jogador, BATALHA_OUTCOME_DERROTA, 0, 0);
     }
 
-    return (BattleResult){0};
+    return (ResultadoBatalha){0};
 }
 
-static void DrawEnemy(const Enemy *enemy, float time, float shake_timer, bool line_tremor,
-                      const SpriteSystem *sprites)
+static void DesenharInimigo(const Inimigo *inimigo, float tempo, float temporizador_tremor, bool tremor_linha,
+                      const SistemaSprites *sprites)
 {
-    const float y = 105.0f + sinf(time * 2.0f) * 4.0f;
-    const int shake_x = shake_timer > 0.0f ? (int)(sinf(time * 100.0f) * 3.0f) :
-                        (line_tremor ? ((int)(time * 8.0f) % 2) : 0);
-    const Color body = enemy->hit_flash_timer > 0.0f ? RAYWHITE : (Color){48, 43, 60, 255};
-    const Color accent = type_color(enemy->type);
-    SpriteId sprite_id = SpriteEnemyId(enemy->id, enemy->phase_two);
+    const float y = 105.0f + sinf(tempo * 2.0f) * 4.0f;
+    const int shake_x = temporizador_tremor > 0.0f ? (int)(sinf(tempo * 100.0f) * 3.0f) :
+                        (tremor_linha ? ((int)(tempo * 8.0f) % 2) : 0);
+    const Color body = inimigo->temporizador_flash_acerto > 0.0f ? RAYWHITE : (Color){48, 43, 60, 255};
+    const Color accent = cor_tipo(inimigo->tipo);
+    IdSprite id_sprite = SpriteIdInimigo(inimigo->id, inimigo->segunda_fase);
 
-    if (sprite_get(sprites, sprite_id) == NULL && enemy->boss && enemy->phase_two) {
-        sprite_id = SpriteEnemyId(enemy->id, false);
+    if (sprite_obter(sprites, id_sprite) == NULL && inimigo->chefe && inimigo->segunda_fase) {
+        id_sprite = SpriteIdInimigo(inimigo->id, false);
     }
 
-    if (sprite_get(sprites, sprite_id) != NULL) {
-        const Color tint = enemy->hit_flash_timer > 0.0f && enemy->hit_flash_strength >= 2.0f ? RED :
-                           (enemy->hit_flash_timer > 0.0f ? RAYWHITE : WHITE);
-        const float outline_radius = enemy->boss ? 76.0f : 49.0f;
+    if (sprite_obter(sprites, id_sprite) != NULL) {
+        const Color tingimento = inimigo->temporizador_flash_acerto > 0.0f && inimigo->forca_flash_acerto >= 2.0f ? RED :
+                           (inimigo->temporizador_flash_acerto > 0.0f ? RAYWHITE : WHITE);
+        const float outline_radius = inimigo->chefe ? 76.0f : 49.0f;
 
-        /* The thin type ring preserves the visual clue even when custom art is installed. */
+        /* O aro fino do tipo preserva a pista visual mesmo com arte personalizada. */
         DrawCircleLines((int)(320.0f + shake_x), (int)(y + 32.0f), outline_radius,
-                        type_color(enemy->type));
-        SpriteDrawCentered(sprites, sprite_id, (Vector2){320.0f + shake_x, y + 32.0f}, tint, time,
-                           sprites->debug_bounds);
+                        cor_tipo(inimigo->tipo));
+        SpriteDesenharCentralizado(sprites, id_sprite, (Vector2){320.0f + shake_x, y + 32.0f}, tingimento, tempo,
+                           sprites->depurar_limites);
         return;
     }
 
-    if (enemy->boss) {
+    if (inimigo->chefe) {
         const int x = 320 + shake_x;
-        const Color boss_body = enemy->hit_flash_timer > 0.0f ? RAYWHITE : (Color){35, 37, 43, 255};
+        const Color boss_body = inimigo->temporizador_flash_acerto > 0.0f ? RAYWHITE : (Color){35, 37, 43, 255};
 
-        if (enemy->id == ENEMY_BOSS_BELLKEEPER) {
+        if (inimigo->id == INIMIGO_CHEFE_SINEIRO) {
             DrawCircle(x, (int)(y + 34), 42, boss_body);
             DrawRectangle(x - 27, (int)(y + 34), 54, 38, boss_body);
             DrawCircleLines(x, (int)(y + 34), 42, BLACK);
@@ -547,7 +520,7 @@ static void DrawEnemy(const Enemy *enemy, float time, float shake_timer, bool li
             DrawLine(x, (int)(y - 55), x + 60, (int)(y - 5), BLACK);
             DrawRectangle(x - 9, (int)(y + 25), 18, 25, accent);
         }
-        if (enemy->phase_two) DrawCircleLines(x, (int)(y + 30), 50, accent);
+        if (inimigo->segunda_fase) DrawCircleLines(x, (int)(y + 30), 50, accent);
         return;
     }
 
@@ -557,10 +530,10 @@ static void DrawEnemy(const Enemy *enemy, float time, float shake_timer, bool li
     DrawEllipseLines(323 + shake_x, (int)(y + 25.0f), 47, 25, BLACK);
     DrawCircle(320 + shake_x, (int)(y + 32.0f), 30, body);
     DrawCircleLines(320 + shake_x, (int)(y + 32.0f), 30, BLACK);
-    if (enemy->has_type2) DrawCircleLines(320 + shake_x, (int)(y + 32.0f), 26, type_color(enemy->type2));
-    if (enemy->hit_flash_timer > 0.0f) {
+    if (inimigo->possui_tipo2) DrawCircleLines(320 + shake_x, (int)(y + 32.0f), 26, cor_tipo(inimigo->tipo2));
+    if (inimigo->temporizador_flash_acerto > 0.0f) {
         DrawCircleLines(320 + shake_x, (int)(y + 32.0f), 34,
-                        enemy->hit_flash_strength >= 2.0f ? RED : RAYWHITE);
+                        inimigo->forca_flash_acerto >= 2.0f ? RED : RAYWHITE);
     }
     DrawCircle(309 + shake_x, (int)(y + 27.0f), 4, RAYWHITE);
     DrawCircle(331 + shake_x, (int)(y + 27.0f), 4, RAYWHITE);
@@ -568,179 +541,316 @@ static void DrawEnemy(const Enemy *enemy, float time, float shake_timer, bool li
     DrawCircle(331 + shake_x, (int)(y + 27.0f), 2, BLACK);
 }
 
-static void DrawHealthBar(Rectangle bar, float current, float trail, int maximum, Color fill)
+static void DesenharBarraVida(Rectangle barra, float atual, float rastro, int maximo, Color preenchimento)
 {
-    const float ratio = maximum > 0 ? current / maximum : 0.0f;
-    const float trail_ratio = maximum > 0 ? trail / maximum : 0.0f;
+    const float ratio = maximo > 0 ? atual / maximo : 0.0f;
+    const float trail_ratio = maximo > 0 ? rastro / maximo : 0.0f;
 
-    DrawRectangleRec(bar, BLACK);
-    DrawRectangle((int)bar.x + 2, (int)bar.y + 2, (int)bar.width - 4, (int)bar.height - 4,
+    DrawRectangleRec(barra, BLACK);
+    DrawRectangle((int)barra.x + 2, (int)barra.y + 2, (int)barra.width - 4, (int)barra.height - 4,
                   (Color){211, 214, 210, 255});
-    DrawRectangle((int)bar.x + 2, (int)bar.y + 2, (int)((bar.width - 4) * trail_ratio),
-                  (int)bar.height - 4, (Color){211, 85, 82, 255});
-    DrawRectangle((int)bar.x + 2, (int)bar.y + 2, (int)((bar.width - 4) * ratio),
-                  (int)bar.height - 4, fill);
+    DrawRectangle((int)barra.x + 2, (int)barra.y + 2, (int)((barra.width - 4) * trail_ratio),
+                  (int)barra.height - 4, (Color){211, 85, 82, 255});
+    DrawRectangle((int)barra.x + 2, (int)barra.y + 2, (int)((barra.width - 4) * ratio),
+                  (int)barra.height - 4, preenchimento);
 }
 
-static void DrawActionList(const Battle *battle, const PlayerStats *player, const Enemy *enemy,
-                           const SpriteSystem *sprites)
+static void DesenharIconeLupa(Vector2 centro, Color cor)
 {
-    const int option_count = battle->action_menu == ACTION_ATTACKS ? player->attack_count :
-                             (battle->action_menu == ACTION_ACTS ? enemy->action_count :
-                                                                  MAX_INVENTORY_ITEMS);
+    DrawCircleLines((int)centro.x - 2, (int)centro.y - 2, 5.0f, cor);
+    DrawLineEx((Vector2){centro.x + 2.0f, centro.y + 2.0f},
+               (Vector2){centro.x + 7.0f, centro.y + 7.0f}, 2.5f, cor);
+}
 
-    for (int row = 0; row < option_count; row++) {
-        const Rectangle area = battle->action_menu == ACTION_ITEMS ? GetItemButton(row) :
-                               GetActionButton(row);
+static void DesenharIconeBalao(Vector2 centro, Color cor)
+{
+    Rectangle balao = {centro.x - 7.0f, centro.y - 6.0f, 14.0f, 11.0f};
+    DrawRectangleLinesEx(balao, 2.0f, cor);
+    DrawTriangle((Vector2){centro.x - 3.0f, centro.y + 5.0f},
+                 (Vector2){centro.x + 1.0f, centro.y + 5.0f},
+                 (Vector2){centro.x - 3.0f, centro.y + 9.0f}, cor);
+}
+
+static void DesenharIconeAcao(const AcaoInimigo *acao, Vector2 centro, bool habilitada)
+{
+    const Color cor = !habilitada ? GRAY :
+                      (acao->efeito == INIMIGO_ACAO_ANALISAR ? (Color){74, 109, 160, 255} :
+                       (acao->variacao_agressividade > 0 ? (Color){196, 62, 62, 255} :
+                                                          (Color){190, 145, 28, 255}));
+
+    if (acao->efeito == INIMIGO_ACAO_ANALISAR) DesenharIconeLupa(centro, cor);
+    else DesenharIconeBalao(centro, cor);
+}
+
+static void DesenharIconeAtaque(Vector2 centro, Color cor)
+{
+    DrawLineEx((Vector2){centro.x - 6.0f, centro.y + 6.0f},
+               (Vector2){centro.x + 5.0f, centro.y - 5.0f}, 3.0f, cor);
+    DrawTriangle((Vector2){centro.x + 3.0f, centro.y - 7.0f},
+                 (Vector2){centro.x + 8.0f, centro.y - 8.0f},
+                 (Vector2){centro.x + 7.0f, centro.y - 3.0f}, cor);
+    DrawLineEx((Vector2){centro.x - 7.0f, centro.y + 3.0f},
+               (Vector2){centro.x - 3.0f, centro.y + 7.0f}, 2.0f, cor);
+}
+
+static void DesenharIconeTipo(Tipo tipo, Vector2 centro, bool habilitado)
+{
+    const Color cor = habilitado ? cor_tipo(tipo) : GRAY;
+    const Color fundo = habilitado ? ColorLerp(RAYWHITE, cor, 0.18f) : (Color){225, 225, 225, 255};
+
+    DrawCircleV(centro, 8.0f, fundo);
+    DrawCircleLines((int)centro.x, (int)centro.y, 8.0f, habilitado ? DARKGRAY : GRAY);
+    switch (tipo) {
+        case TIPO_FOGO:
+            DrawTriangle((Vector2){centro.x, centro.y - 6.0f},
+                         (Vector2){centro.x - 5.0f, centro.y + 5.0f},
+                         (Vector2){centro.x + 5.0f, centro.y + 5.0f}, cor);
+            DrawCircle((int)centro.x, (int)centro.y + 2, 3.0f, fundo);
+            break;
+        case TIPO_AGUA:
+            DrawTriangle((Vector2){centro.x, centro.y - 6.0f},
+                         (Vector2){centro.x - 5.0f, centro.y + 2.0f},
+                         (Vector2){centro.x + 5.0f, centro.y + 2.0f}, cor);
+            DrawCircle((int)centro.x, (int)centro.y + 2, 5.0f, cor);
+            break;
+        case TIPO_PLANTA:
+            DrawEllipse((int)centro.x - 1, (int)centro.y - 1, 6.0f, 4.0f, cor);
+            DrawLine((int)centro.x - 5, (int)centro.y + 5,
+                     (int)centro.x + 4, (int)centro.y - 4, habilitado ? DARKGREEN : GRAY);
+            break;
+        case TIPO_LUZ:
+            DrawCircleV(centro, 3.5f, cor);
+            DrawLine((int)centro.x, (int)centro.y - 7, (int)centro.x, (int)centro.y - 5, cor);
+            DrawLine((int)centro.x, (int)centro.y + 5, (int)centro.x, (int)centro.y + 7, cor);
+            DrawLine((int)centro.x - 7, (int)centro.y, (int)centro.x - 5, (int)centro.y, cor);
+            DrawLine((int)centro.x + 5, (int)centro.y, (int)centro.x + 7, (int)centro.y, cor);
+            break;
+        case TIPO_SOMBRA:
+            DrawCircleV(centro, 5.5f, cor);
+            DrawCircle((int)centro.x + 3, (int)centro.y - 2, 4.5f, fundo);
+            break;
+        case TIPO_NEUTRO:
+        default:
+            DrawPoly(centro, 4, 5.5f, 45.0f, cor);
+            DrawPolyLines(centro, 4, 5.5f, 45.0f, DARKGRAY);
+            break;
+    }
+}
+
+static void DesenharIconeMenuPrincipal(int indice, Vector2 centro, Color cor)
+{
+    if (indice == 0) {
+        DesenharIconeAtaque(centro, cor);
+    } else if (indice == 1) {
+        DesenharIconeBalao(centro, cor);
+    } else if (indice == 2) {
+        Rectangle bolsa = {centro.x - 7.0f, centro.y - 5.0f, 14.0f, 12.0f};
+        DrawRectangleLinesEx(bolsa, 2.0f, cor);
+        DrawLine((int)centro.x - 4, (int)centro.y - 7,
+                 (int)centro.x + 4, (int)centro.y - 7, cor);
+        DrawLine((int)centro.x - 4, (int)centro.y - 7,
+                 (int)centro.x - 6, (int)centro.y - 4, cor);
+        DrawLine((int)centro.x + 4, (int)centro.y - 7,
+                 (int)centro.x + 6, (int)centro.y - 4, cor);
+    } else {
+        DrawCircle((int)centro.x - 4, (int)centro.y - 3, 5.0f, cor);
+        DrawCircle((int)centro.x + 4, (int)centro.y - 3, 5.0f, cor);
+        DrawTriangle((Vector2){centro.x - 9.0f, centro.y - 1.0f},
+                     (Vector2){centro.x + 9.0f, centro.y - 1.0f},
+                     (Vector2){centro.x, centro.y + 9.0f}, cor);
+    }
+}
+
+static void DesenharListaAcoes(const Batalha *batalha, const AtributosJogador *jogador, const Inimigo *inimigo,
+                           const SistemaSprites *sprites)
+{
+    const int option_count = batalha->menu_acao == ACAO_ATAQUES ? jogador->total_ataques :
+                             (batalha->menu_acao == ACAO_ACOES ? inimigo->total_acoes :
+                                                                  MAXIMO_INVENTARIO_ITENS);
+
+    for (int linha = 0; linha < option_count; linha++) {
+        const Rectangle area = batalha->menu_acao == ACAO_ITENS ? ObterBotaoItem(linha) :
+                               ObterBotaoAcao(linha);
         const int y = (int)area.y + 3;
-        const bool selected = battle->action_selection == row;
+        const bool selecionado = batalha->selecao_acao == linha;
 
-        if (selected) DrawText(">", (int)area.x + 2, y, 16, BLACK);
-        if (battle->action_menu == ACTION_ATTACKS) {
-            const Attack *attack = &player->attacks[row];
-            char reason[32] = "";
-            const bool available = PlayerAttackAvailable(player, attack, reason, (int)sizeof(reason));
-            if (sprite_get(sprites, SpriteTypeId(attack->type)) != NULL) {
-                SpriteDrawCentered(sprites, SpriteTypeId(attack->type), (Vector2){258, (float)y + 9},
-                                   WHITE, 0.0f, sprites->debug_bounds);
+        if (batalha->menu_acao == ACAO_ATAQUES) {
+            const Ataque *ataque = &jogador->ataques[linha];
+            char motivo[32] = "";
+            const bool disponivel = JogadorAtaqueDisponivel(jogador, ataque, motivo, (int)sizeof(motivo));
+            InterfaceDesenharLinhaOpcao(area, selecionado, disponivel, (Color){225, 95, 122, 255});
+            if (sprite_obter(sprites, SpriteIdAtaque(ataque->id)) != NULL) {
+                SpriteDesenharCentralizadoEscalado(sprites, SpriteIdAtaque(ataque->id),
+                    (Vector2){area.x + 19.0f, area.y + 10.0f}, WHITE, 0.0f, 0.70f,
+                    sprites->depurar_limites);
+            } else {
+                DesenharIconeAtaque((Vector2){area.x + 19.0f, area.y + 10.0f},
+                                    disponivel ? cor_tipo(ataque->tipo) : GRAY);
             }
-            if (sprite_get(sprites, SpriteAttackId(attack->id)) != NULL) {
-                SpriteDrawCentered(sprites, SpriteAttackId(attack->id), (Vector2){78, (float)y + 9},
-                                   WHITE, 0.0f, sprites->debug_bounds);
+            DesenharIconeTipo(ataque->tipo, (Vector2){area.x + 251.0f, area.y + 10.0f}, disponivel);
+            DrawText(ataque->nome, (int)area.x + 36, y, 14, disponivel ? BLACK : GRAY);
+            DrawText(nome_tipo(ataque->tipo), (int)area.x + 265, y + 1, 12,
+                     disponivel ? cor_tipo(ataque->tipo) : GRAY);
+            DrawText(TextFormat("DANO %d", ataque->dano_base), (int)area.x + 353, y + 1, 12,
+                     disponivel ? BLACK : GRAY);
+            if (!disponivel) {
+                const int largura = MeasureText(motivo, 10) + 12;
+                const int x_estado = (int)(area.x + area.width) - largura - 6;
+                DrawRectangle(x_estado, y, largura, 15, (Color){211, 207, 203, 255});
+                DrawRectangleLines(x_estado, y, largura, 15, GRAY);
+                DrawText(motivo, x_estado + 6, y + 2, 10, DARKGRAY);
             }
-            DrawText(attack->name, 94, y, 18, available ? BLACK : GRAY);
-            DrawText(type_name(attack->type), 275, y, 15, available ? type_color(attack->type) : GRAY);
-            DrawText(TextFormat("%d", attack->base_damage), 410, y, 16, available ? BLACK : GRAY);
-            if (!available) DrawText(reason, 455, y + 1, 11, GRAY);
-        } else if (battle->action_menu == ACTION_ACTS) {
-            char reason[48] = "";
-            const bool available = EnemyActionAvailable(enemy, row, reason, (int)sizeof(reason));
-            const Color color = available ? BLACK : GRAY;
+        } else if (batalha->menu_acao == ACAO_ACOES) {
+            char motivo[48] = "";
+            const bool disponivel = InimigoAcaoDisponivel(inimigo, linha, motivo, (int)sizeof(motivo));
+            const Color cor = disponivel ? BLACK : GRAY;
+            const AcaoInimigo *acao = &inimigo->acoes[linha];
 
-            DrawText(enemy->actions[row].name, 94, y, 18, color);
-            if (!available) DrawText(reason, 250, y + 2, 13, GRAY);
-        } else if (battle->action_menu == ACTION_ITEMS) {
-            const InventoryItem *item = &player->inventory[row];
-            const ItemDefinition *definition = ItemGetDefinition(item->id);
-
-            if (sprite_get(sprites, SpriteItemId(item->id)) != NULL) {
-                SpriteDrawCentered(sprites, SpriteItemId(item->id),
-                                   (Vector2){area.x + 13, (float)y + 8}, WHITE, 0.0f,
-                                   sprites->debug_bounds);
+            InterfaceDesenharLinhaOpcao(area, selecionado, disponivel, (Color){225, 95, 122, 255});
+            DesenharIconeAcao(acao, (Vector2){area.x + 19.0f, area.y + 10.0f}, disponivel);
+            DrawText(acao->nome, (int)area.x + 36, y, 14, cor);
+            if (acao->efeito == INIMIGO_ACAO_ANALISAR) {
+                DrawText("revela o tipo e libera as acoes", (int)area.x + 174, y + 2, 11, cor);
+            } else {
+                const Color cor_misericordia = disponivel ? (Color){175, 128, 16, 255} : GRAY;
+                const Color cor_estresse = disponivel ? (Color){181, 55, 55, 255} : GRAY;
+                DrawText(TextFormat("MERCI %+d", acao->variacao_misericordia),
+                         (int)area.x + 174, y + 1, 12, cor_misericordia);
+                DrawText(TextFormat("EST %+d", acao->variacao_agressividade),
+                         (int)area.x + 278, y + 1, 12, cor_estresse);
             }
-            DrawText(definition->name, (int)area.x + 22, y, 15, BLACK);
-            DrawText(TextFormat("x%d", item->quantity), (int)area.x + 190, y, 14, DARKGRAY);
+            if (!disponivel) DrawText(motivo, (int)area.x + 407, y + 2, 11, GRAY);
+        } else if (batalha->menu_acao == ACAO_ITENS) {
+            const ItemInventario *item = &jogador->inventario[linha];
+            const DefinicaoItem *definicao = ItemObterDefinicao(item->id);
+            const bool disponivel = item->quantidade > 0;
+
+            InterfaceDesenharLinhaOpcao(area, selecionado, disponivel,
+                                        (Color){225, 95, 122, 255});
+            if (sprite_obter(sprites, SpriteIdItem(item->id)) != NULL) {
+                SpriteDesenharCentralizadoEscalado(sprites, SpriteIdItem(item->id),
+                    (Vector2){area.x + 18.0f, area.y + 10.0f}, disponivel ? WHITE : GRAY,
+                    0.0f, 0.68f, sprites->depurar_limites);
+            } else {
+                DesenharIconeMenuPrincipal(2, (Vector2){area.x + 18.0f, area.y + 10.0f},
+                                           disponivel ? BLACK : GRAY);
+            }
+            DrawText(definicao->nome, (int)area.x + 34, y, 13, disponivel ? BLACK : GRAY);
+            DrawText(disponivel ? TextFormat("x%d", item->quantidade) : "VAZIO",
+                     (int)area.x + 215, y + 1, 12, disponivel ? DARKGRAY : GRAY);
         }
     }
 }
 
-void BattleDraw(const Battle *battle, const PlayerStats *player, const Enemy *enemy,
-                const TypewriterText *dialogue, const Qte *qte, bool line_tremor,
-                bool reduced_effects, const SpriteSystem *sprites)
+void BatalhaDesenhar(const Batalha *batalha, const AtributosJogador *jogador, const Inimigo *inimigo,
+                const TextoDigitado *dialogo, const Qte *qte, bool tremor_linha,
+                bool efeitos_reduzidos, const SistemaSprites *sprites)
 {
     const char *button_names[4] = {"ATACAR", "AGIR", "ITEM", "POUPAR"};
-    const Rectangle text_box = GetTextBox();
+    const Rectangle text_box = ObterCaixaTexto();
 
-    DrawEnemy(enemy, battle->elapsed_time, battle->screen_shake_timer, line_tremor, sprites);
-    FxDraw(&battle->attack_fx, sprites, reduced_effects);
-    if (!reduced_effects) {
-        for (int index = 0; index < MAX_BATTLE_PARTICLES; index++) {
-            const BattleParticle *particle = &battle->particles[index];
-            if (particle->active) DrawCircleV(particle->position, 3.0f, particle->color);
+    DesenharInimigo(inimigo, batalha->tempo_decorrido, batalha->temporizador_tremor_tela, tremor_linha, sprites);
+    EfeitoDesenhar(&batalha->efeito_ataque, sprites, efeitos_reduzidos);
+    if (!efeitos_reduzidos) {
+        for (int indice = 0; indice < MAXIMO_BATALHA_PARTICULAS; indice++) {
+            const ParticulaBatalha *particle = &batalha->particulas[indice];
+            if (particle->ativo) DrawCircleV(particle->posicao, 3.0f, particle->cor);
         }
     }
-    DrawText(TextFormat("ANDAR %d/10", battle->floor), 470, 28, 16, DARKGRAY);
-    if (battle->floating_damage_timer > 0.0f) {
-        const int y = (int)(102.0f - (0.85f - battle->floating_damage_timer) * 34.0f);
-        const int size = battle->last_effectiveness >= 2.0f ? 28 : 20;
-        const Color color = battle->last_effectiveness >= 2.0f ? RED :
-                            (battle->last_effectiveness <= 0.5f ? DARKBLUE : BLACK);
-        DrawText(TextFormat("-%d", battle->floating_damage), 344, y, size, color);
+    DrawText(TextFormat("ANDAR %d/10", batalha->andar), 470, 28, 16, DARKGRAY);
+    if (batalha->temporizador_dano_flutuante > 0.0f) {
+        const int y = (int)(102.0f - (0.85f - batalha->temporizador_dano_flutuante) * 34.0f);
+        const int tamanho = batalha->ultima_efetividade >= 2.0f ? 28 : 20;
+        const Color cor = batalha->ultima_efetividade >= 2.0f ? RED :
+                            (batalha->ultima_efetividade <= 0.5f ? DARKBLUE : BLACK);
+        DrawText(TextFormat("-%d", batalha->dano_flutuante), 344, y, tamanho, cor);
     }
-    DrawText(enemy->name, 54, 32, 21, BLACK);
-    DrawText(enemy->analyzed ? type_name(enemy->type) : "???", 54, 58, 16,
-             enemy->analyzed ? type_color(enemy->type) : DARKGRAY);
-    if (enemy->analyzed || SHOW_ENEMY_HP_BEFORE_ANALYZE) {
-        DrawHealthBar((Rectangle){54.0f, 80.0f, 170.0f, 14.0f}, battle->displayed_enemy_hp,
-                      battle->enemy_hp_trail, enemy->hp_max,
-                      type_color(enemy->type));
-    }
-    if (enemy->analyzed) {
-        UiDrawMeter((Rectangle){104.0f, 100.0f, 120.0f, 11.0f}, battle->displayed_mercy, 100.0f,
-                    (Color){241, 198, 65, 255});
-        UiDrawMeter((Rectangle){104.0f, 116.0f, 120.0f, 11.0f}, battle->displayed_aggression, 100.0f,
-                    (Color){220, 78, 76, 255});
-        DrawText("MERCI", 54, 99, 13, BLACK);
-        DrawText("AGRES", 54, 115, 13, BLACK);
-        if (enemy->status_turns > 0) {
-            DrawText(TextFormat("%s %d", PlayerStatusName(enemy->status), enemy->status_turns),
-                     54, 132, 12, type_color(enemy->type));
-        }
-        if (battle->stat_change_timer > 0.0f) {
-            const int offset = (int)((0.8f - battle->stat_change_timer) * 18.0f);
-            if (battle->mercy_change_popup != 0) {
-                DrawText(TextFormat("%+d", battle->mercy_change_popup), 228, 97 - offset, 14,
-                         (Color){198, 152, 23, 255});
-            }
-            if (battle->aggression_change_popup != 0) {
-                DrawText(TextFormat("%+d", battle->aggression_change_popup), 228, 128 - offset, 14,
-                         (Color){185, 45, 44, 255});
-            }
-        }
-    }
-
-    if (battle->phase == BATTLE_PLAYER_QTE) {
-        UiDrawPanel(text_box);
-        DrawText("Concentre-se no QTE!", 210, 264, 18, BLACK);
-        qte_draw(qte);
-    } else if (battle->phase == BATTLE_ENEMY_TURN) {
-        DefenseDraw(&battle->defense, !reduced_effects, sprites);
-        DrawText("DESVIE!  SETAS ou WASD", 198, 326, 16, BLACK);
+    DrawText(inimigo->nome, 54, 32, 21, BLACK);
+    if (inimigo->analisado && inimigo->possui_tipo2) {
+        DrawText(TextFormat("%s / %s", nome_tipo(inimigo->tipo), nome_tipo(inimigo->tipo2)),
+                 54, 58, 14, cor_tipo(inimigo->tipo));
     } else {
-        UiDrawTextBox(dialogue, text_box);
+        DrawText(inimigo->analisado ? nome_tipo(inimigo->tipo) : "TIPO ???", 54, 58, 14,
+                 inimigo->analisado ? cor_tipo(inimigo->tipo) : DARKGRAY);
     }
-    if (battle->phase == BATTLE_PLAYER_ACTION && battle->action_menu != ACTION_MESSAGE) {
-        DrawActionList(battle, player, enemy, sprites);
-        DrawText("X/Backspace: voltar", 434, 297, 14, DARKGRAY);
-        if (battle->action_menu == ACTION_ITEMS) {
-            const InventoryItem *selected = &player->inventory[battle->action_selection];
-            const ItemDefinition *definition = ItemGetDefinition(selected->id);
-            DrawText(definition->description, 70, 309, 13, DARKGRAY);
+    DrawText("VIDA", 54, 80, 12, BLACK);
+    DesenharBarraVida((Rectangle){105.0f, 80.0f, 120.0f, 12.0f}, batalha->vida_inimigo_exibida,
+                  batalha->rastro_vida_inimigo, inimigo->vida_maxima, cor_tipo(inimigo->tipo));
+    DrawText(TextFormat("%d/%d", inimigo->hp, inimigo->vida_maxima), 231, 79, 12, BLACK);
+    DrawText("MERCI", 54, 99, 12, BLACK);
+    InterfaceDesenharMedidor((Rectangle){105.0f, 100.0f, 120.0f, 11.0f}, batalha->misericordia_exibida, 100.0f,
+                (Color){241, 198, 65, 255});
+    DrawText("ESTRESSE", 54, 116, 11, BLACK);
+    InterfaceDesenharMedidor((Rectangle){105.0f, 117.0f, 120.0f, 11.0f}, batalha->agressividade_exibida, 100.0f,
+                (Color){220, 78, 76, 255});
+    if (inimigo->turnos_status > 0) {
+        DrawText(TextFormat("%s %d", JogadorNomeStatus(inimigo->status), inimigo->turnos_status),
+                 54, 133, 12, cor_tipo(inimigo->tipo));
+    }
+    if (batalha->temporizador_mudanca_status > 0.0f) {
+        const int deslocamento = (int)((0.8f - batalha->temporizador_mudanca_status) * 18.0f);
+        if (batalha->popup_mudanca_misericordia != 0) {
+            DrawText(TextFormat("%+d", batalha->popup_mudanca_misericordia), 231, 97 - deslocamento, 14,
+                     (Color){198, 152, 23, 255});
+        }
+        if (batalha->popup_mudanca_agressividade != 0) {
+            DrawText(TextFormat("%+d", batalha->popup_mudanca_agressividade), 231, 128 - deslocamento, 14,
+                     (Color){185, 45, 44, 255});
         }
     }
 
-    DrawText(player->name, 48, 343, 20, BLACK);
-    DrawText(TextFormat("LV %d", player->level), 157, 343, 17, DARKGRAY);
-    DrawText("HP", 222, 343, 16, BLACK);
-    DrawHealthBar((Rectangle){252.0f, 346.0f, 150.0f, 14.0f}, battle->displayed_player_hp,
-                  battle->player_hp_trail, player->hp_max,
+    if (batalha->fase == BATALHA_JOGADOR_QTE) {
+        InterfaceDesenharPainel(text_box);
+        qte_desenhar(qte);
+    } else if (batalha->fase == BATALHA_INIMIGO_TURNO) {
+        DefesaDesenhar(&batalha->defesa, !efeitos_reduzidos, sprites);
+    } else {
+        InterfaceDesenharCaixaTexto(dialogo, text_box);
+    }
+    if (batalha->fase == BATALHA_JOGADOR_ACAO && batalha->menu_acao != ACAO_MENSAGEM) {
+        DesenharListaAcoes(batalha, jogador, inimigo, sprites);
+        InterfaceDesenharAtalho("X  voltar", 505, 204);
+        if (batalha->menu_acao == ACAO_ITENS) {
+            const ItemInventario *selecionado = &jogador->inventario[batalha->selecao_acao];
+            const DefinicaoItem *definicao = ItemObterDefinicao(selecionado->id);
+            DrawText(definicao->descricao, 54, 323, 11, DARKGRAY);
+        }
+    }
+
+    DrawRectangle(38, 336, 560, 49, Fade(RAYWHITE, 0.72f));
+    DrawLine(38, 336, 598, 336, (Color){69, 70, 77, 170});
+    DrawText(jogador->nome, 48, 343, 20, BLACK);
+    DrawText(TextFormat("LV %d", jogador->nivel), 154, 343, 16, DARKGRAY);
+    DrawText("HP", 214, 343, 16, BLACK);
+    DesenharBarraVida((Rectangle){242.0f, 346.0f, 128.0f, 14.0f}, batalha->vida_jogador_exibida,
+                  batalha->rastro_vida_jogador, jogador->vida_maxima,
                   (Color){104, 183, 114, 255});
-    DrawText(TextFormat("%d / %d", player->hp, player->hp_max), 416, 342, 17, BLACK);
-    DrawText("DEF", 480, 343, 14, BLACK);
-    if (sprite_get(sprites, SpriteTypeId(player->defense_type)) != NULL) {
-        SpriteDrawCentered(sprites, SpriteTypeId(player->defense_type), (Vector2){515, 351}, WHITE,
-                           0.0f, sprites->debug_bounds);
-    } else {
-        DrawCircle(515, 351, 7, type_color(player->defense_type));
-        DrawCircleLines(515, 351, 7, BLACK);
-    }
-    DrawText(type_name(player->defense_type), 528, 343, 14, BLACK);
-    if (player->damage_buff_turns > 0) {
+    DrawText(TextFormat("%d/%d", jogador->hp, jogador->vida_maxima), 380, 343, 16, BLACK);
+    DrawText("DEF", 446, 343, 14, BLACK);
+    DesenharIconeTipo(jogador->tipo_defesa, (Vector2){484, 351}, true);
+    DrawText(nome_tipo(jogador->tipo_defesa), 499, 343, 14, BLACK);
+    if (jogador->turnos_buff_dano > 0) {
         DrawRectangle(48, 367, 116, 17, (Color){243, 207, 110, 255});
         DrawRectangleLines(48, 367, 116, 17, BLACK);
-        DrawText(TextFormat("DMG +%d%% (%d)", player->damage_buff_percent,
-                            player->damage_buff_turns), 53, 369, 12, BLACK);
+        DrawText(TextFormat("DMG +%d%% (%d)", jogador->percentual_buff_dano,
+                            jogador->turnos_buff_dano), 53, 369, 12, BLACK);
     }
 
-    for (int button_index = 0; button_index < 4; button_index++) {
-        const Rectangle button = GetMainButton(button_index);
-        const bool selected = battle->phase == BATTLE_PLAYER_MENU && battle->main_selection == button_index;
+    if (batalha->fase == BATALHA_INIMIGO_TURNO) {
+        InterfaceDesenharPainel((Rectangle){38, 398, 560, 40});
+        InterfaceDesenharAtalho("WASD/setas  mover", 54, 408);
+        InterfaceDesenharAtalho("SHIFT  dash", 267, 408);
+        InterfaceDesenharAtalho("ESC  pausa", 473, 408);
+    } else {
+        for (int indice_botao = 0; indice_botao < 4; indice_botao++) {
+            const Rectangle botao = ObterBotaoPrincipal(indice_botao);
+            const bool selecionado = batalha->fase == BATALHA_JOGADOR_MENU && batalha->selecao_principal == indice_botao;
 
-        UiDrawPanel(button);
-        DrawText(button_names[button_index], (int)button.x + 30, (int)button.y + 12, 16, BLACK);
-        if (selected) {
-            DrawCircle((int)button.x + 16, (int)button.y + 20, 7, (Color){225, 95, 122, 255});
-            DrawCircleLines((int)button.x + 16, (int)button.y + 20, 7, BLACK);
+            InterfaceDesenharBotao(botao, button_names[indice_botao], selecionado, true,
+                                   (Color){225, 95, 122, 255});
+            DesenharIconeMenuPrincipal(indice_botao,
+                (Vector2){botao.x + 23.0f, botao.y + botao.height / 2.0f},
+                selecionado ? (Color){175, 52, 83, 255} : BLACK);
         }
     }
 }

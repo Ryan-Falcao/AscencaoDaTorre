@@ -5,37 +5,64 @@
 
 int main(void)
 {
-    PlayerStats player;
-    HazardPool pool;
-    const Vector2 soul = {100.0f, 100.0f};
+    AtributosJogador jogador;
+    ConjuntoPerigos conjunto;
+    const Vector2 alma = {100.0f, 100.0f};
 
-    PlayerInit(&player);
-    const int initial_hp = player.hp;
-    HazardsInit(&pool);
-    assert(HazardsAddCircle(&pool, soul, 20.0f, 0.10f, 0.20f, 0.10f, TYPE_SHADOW, 5, true));
-    HazardsUpdate(&pool, &player, soul, 4.0f, 0.10f, 1.0f, false);
-    assert(player.hp == initial_hp); /* warning never hurts */
-    HazardsUpdate(&pool, &player, soul, 4.0f, 0.01f, 1.0f, false);
-    assert(player.hp < initial_hp);
-    const int after_hit = player.hp;
-    HazardsUpdate(&pool, &player, soul, 4.0f, 0.05f, 1.0f, false);
-    assert(player.hp == after_hit); /* hit_once */
+    JogadorInicializar(&jogador);
+    const int vida_inicial = jogador.hp;
+    PerigosInicializar(&conjunto);
+    assert(PerigosAdicionarCirculo(&conjunto, alma, 20.0f, 0.10f, 0.20f, 0.10f, TIPO_SOMBRA, 5, true));
+    PerigosAtualizar(&conjunto, &jogador, alma, 4.0f, 0.10f, 1.0f, false);
+    assert(jogador.hp == vida_inicial); /* o aviso nunca causa dano */
+    PerigosAtualizar(&conjunto, &jogador, alma, 4.0f, 0.01f, 1.0f, false);
+    assert(jogador.hp < vida_inicial);
+    const int apos_acerto = jogador.hp;
+    PerigosAtualizar(&conjunto, &jogador, alma, 4.0f, 0.05f, 1.0f, false);
+    assert(jogador.hp == apos_acerto); /* acerta_uma_vez */
 
-    HazardsClear(&pool);
-    assert(HazardsAddRect(&pool, (Rectangle){90.0f, 90.0f, 20.0f, 20.0f}, 0.0f, 0.2f, 0.1f,
-                          TYPE_PLANT, 4, true));
-    HazardsUpdate(&pool, &player, soul, 4.0f, 0.01f, 1.0f, false);
-    HazardsUpdate(&pool, &player, soul, 4.0f, 0.01f, 1.0f, false);
-    assert(player.hp < after_hit);
-    assert(!HazardCircleHitsRect((Vector2){10.0f, 10.0f}, 2.0f, (Rectangle){30, 30, 10, 10}));
-    assert(HazardCircleHitsCircle(soul, 4.0f, (Vector2){105.0f, 100.0f}, 2.0f));
+    PerigosLimpar(&conjunto);
+    assert(PerigosAdicionarRetangulo(&conjunto, (Rectangle){90.0f, 90.0f, 20.0f, 20.0f}, 0.0f, 0.2f, 0.1f,
+                          TIPO_PLANTA, 4, true));
+    PerigosAtualizar(&conjunto, &jogador, alma, 4.0f, 0.01f, 1.0f, false);
+    PerigosAtualizar(&conjunto, &jogador, alma, 4.0f, 0.01f, 1.0f, false);
+    assert(jogador.hp < apos_acerto);
+    assert(!CirculoPerigoAtingeRetangulo((Vector2){10.0f, 10.0f}, 2.0f, (Rectangle){30, 30, 10, 10}));
+    assert(CirculoPerigoAtingeCirculo(alma, 4.0f, (Vector2){105.0f, 100.0f}, 2.0f));
 
-    HazardsClear(&pool);
-    for (int index = 0; index < MAX_HAZARDS; index++) {
-        assert(HazardsAddCircle(&pool, soul, 2.0f, 1.0f, 1.0f, 1.0f, TYPE_NEUTRAL, 1, true));
+    PerigosLimpar(&conjunto);
+    for (int indice = 0; indice < MAXIMO_PERIGOS; indice++) {
+        assert(PerigosAdicionarCirculo(&conjunto, alma, 2.0f, 1.0f, 1.0f, 1.0f, TIPO_NEUTRO, 1, true));
     }
-    assert(!HazardsAddCircle(&pool, soul, 2.0f, 1.0f, 1.0f, 1.0f, TYPE_NEUTRAL, 1, true));
-    assert(BALANCE_GRAVITY_THORN_DEPTH <= 270.0f / 3.0f);
-    assert(BALANCE_GRAVITY_ESCAPE_TIME * 135.0f > BALANCE_GRAVITY_THORN_DEPTH * 2.0f);
+    assert(!PerigosAdicionarCirculo(&conjunto, alma, 2.0f, 1.0f, 1.0f, 1.0f, TIPO_NEUTRO, 1, true));
+    assert(BALANCEAMENTO_GRAVIDADE_ESPINHO_PROFUNDIDADE <= 270.0f / 3.0f);
+    assert(BALANCEAMENTO_GRAVIDADE_FUGA_TEMPO * 135.0f > BALANCEAMENTO_GRAVIDADE_ESPINHO_PROFUNDIDADE * 2.0f);
+
+    /* O olhar do gato pune movimento, nunca uma alma parada. */
+    JogadorInicializar(&jogador); PerigosLimpar(&conjunto);
+    PerigosAdicionarRetangulo(&conjunto, (Rectangle){0, 0, 200, 200}, .1f, 1, .1f, TIPO_NEUTRO, 4, true);
+    conjunto.perigos[0].apenas_em_movimento = true;
+    PerigosAtualizar(&conjunto, &jogador, alma, 4, .1f, 1, false);
+    PerigosAtualizar(&conjunto, &jogador, alma, 4, .1f, 1, false);
+    assert(jogador.hp == jogador.vida_maxima);
+    PerigosAtualizar(&conjunto, &jogador, (Vector2){102, 100}, 4, .1f, 1, false);
+    assert(jogador.hp == jogador.vida_maxima - 4);
+
+    /* Um eco e um anel vazio: seu centro fica seguro DEPOIS da passagem da onda. */
+    JogadorInicializar(&jogador); PerigosLimpar(&conjunto);
+    PerigosAdicionarAnel(&conjunto, alma, 80, .1f, 1, TIPO_NEUTRO, 4);
+    PerigosAtualizar(&conjunto, &jogador, alma, 4, .1f, 1, false);
+    PerigosAtualizar(&conjunto, &jogador, alma, 4, .5f, 1, false);
+    assert(jogador.hp == jogador.vida_maxima);
+    PerigosAtualizar(&conjunto, &jogador, (Vector2){148, 100}, 4, .1f, 1, false);
+    assert(jogador.hp == jogador.vida_maxima - 4);
+
+    /* Cortes de garra sobrepostos nao multiplicam o dano em um unico quadro. */
+    JogadorInicializar(&jogador); PerigosLimpar(&conjunto);
+    for (int i = 0; i < 3; i++)
+        PerigosAdicionarCirculo(&conjunto, alma, 20, .1f, 1, .1f, TIPO_NEUTRO, 4, true);
+    PerigosAtualizar(&conjunto, &jogador, alma, 4, .1f, 1, false);
+    PerigosAtualizar(&conjunto, &jogador, alma, 4, .1f, 1, false);
+    assert(jogador.hp == jogador.vida_maxima - 4);
     return 0;
 }

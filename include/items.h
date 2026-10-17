@@ -1,39 +1,37 @@
-#ifndef ITEMS_H
-#define ITEMS_H
+#ifndef ITENS_H
+#define ITENS_H
 
 #include "types.h"
 
 typedef enum {
-    ITEM_TEA,
-    ITEM_MOON_HERB,
-    ITEM_RED_RIBBON,
-    ITEM_TOWER_BELL,
-    ITEM_WET_CLOAK,
-    ITEM_SOLAR_BROOCH,
-    ITEM_FIRECRACKER,
-    ITEM_THORN_BOMB,
-    ITEM_COUNT
-} ItemId;
+    ITEM_CHA,
+    ITEM_LUA_ERVA,
+    ITEM_VERMELHA_FITA,
+    ITEM_TORRE_SINO,
+    ITEM_MOLHADO_MANTO,
+    ITEM_SOLAR_BROCHE,
+    ITEM_ESTALINHO,
+    ITEM_ESPINHO_BOMBA,
+    ITEM_TOTAL
+} IdItem;
 
 typedef enum {
-    ITEM_EFFECT_HEAL,
-    ITEM_EFFECT_DAMAGE_BUFF,
-    ITEM_EFFECT_DEFENSE_TYPE,
-    ITEM_EFFECT_SURPRISE_DAMAGE
-} ItemEffect;
+    ITEM_EFEITO_CURAR,
+    ITEM_EFEITO_DANO_BUFF,
+    ITEM_EFEITO_DEFESA_TIPO,
+    ITEM_EFEITO_SURPRESA_DANO
+} EfeitoItem;
 
 typedef struct {
-    ItemId id;
-    const char *name;
-    const char *description;
-    ItemEffect effect;
-    int value;
-    int duration;
-    Type defense_type;
-} ItemDefinition;
+    IdItem id;
+    const char *nome;
+    const char *descricao;
+    EfeitoItem efeito;
+    int valor;
+    int duracao;
+    Tipo tipo_defesa;
+} DefinicaoItem;
 
-const ItemDefinition *ItemGetDefinition(ItemId id);
-const char *ItemEffectLabel(ItemEffect effect);
-int ItemShopPrice(ItemId id);
+const DefinicaoItem *ItemObterDefinicao(IdItem id);
 
 #endif

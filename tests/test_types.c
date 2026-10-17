@@ -4,7 +4,7 @@
 
 int main(void)
 {
-    const float expected[TYPE_COUNT][TYPE_COUNT] = {
+    const float expected[TIPO_TOTAL][TIPO_TOTAL] = {
         {1.0f, 0.5f, 2.0f, 1.0f, 1.0f, 1.0f},
         {2.0f, 1.0f, 0.5f, 1.0f, 1.0f, 1.0f},
         {0.5f, 2.0f, 1.0f, 1.0f, 1.0f, 1.0f},
@@ -14,12 +14,12 @@ int main(void)
     };
     int failures = 0;
 
-    for (Type attacker = TYPE_FLAME; attacker < TYPE_COUNT; attacker++) {
-        for (Type defender = TYPE_FLAME; defender < TYPE_COUNT; defender++) {
-            const float actual = type_effectiveness(attacker, defender);
-            if (actual != expected[attacker][defender]) {
-                printf("Falha: %s contra %s = %.1f, esperado %.1f\n", type_name(attacker),
-                       type_name(defender), actual, expected[attacker][defender]);
+    for (Tipo atacante = TIPO_FOGO; atacante < TIPO_TOTAL; atacante++) {
+        for (Tipo defensor = TIPO_FOGO; defensor < TIPO_TOTAL; defensor++) {
+            const float actual = efetividade_tipo(atacante, defensor);
+            if (actual != expected[atacante][defensor]) {
+                printf("Falha: %s contra %s = %.1f, esperado %.1f\n", nome_tipo(atacante),
+                       nome_tipo(defensor), actual, expected[atacante][defensor]);
                 failures++;
             }
         }

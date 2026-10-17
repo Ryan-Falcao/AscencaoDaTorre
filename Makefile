@@ -1,5 +1,5 @@
 TARGET := ascensao_torre
-SRC := src/main.c src/input.c src/audio.c src/sprites.c src/fx.c src/playtest.c src/save.c src/render.c src/game.c src/tower.c src/battle.c src/player.c src/items.c src/enemy.c src/types.c src/bullets.c src/qte.c src/ui.c
+SRC := src/main.c src/input.c src/audio.c src/sprites.c src/fx.c src/playtest.c src/save.c src/render.c src/game.c src/tower.c src/battle.c src/player.c src/items.c src/enemy.c src/types.c src/bullets.c src/patterns.c src/motion_patterns.c src/hazards.c src/qte.c src/ui.c
 INCLUDE := -Iinclude
 CFLAGS := -std=c11 -Wall -Wextra -Wpedantic $(INCLUDE)
 RAYLIB_CFLAGS := $(shell pkg-config --cflags raylib 2>/dev/null)

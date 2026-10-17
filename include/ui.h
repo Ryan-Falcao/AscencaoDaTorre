@@ -4,20 +4,27 @@
 #include "raylib.h"
 
 
-#define DIALOGUE_CAPACITY 192
+#define DIALOGO_CAPACIDADE 192
 
 typedef struct {
-    char text[DIALOGUE_CAPACITY];
-    int visible_characters;
-    float character_timer;
-    bool complete;
-} TypewriterText;
+    char texto[DIALOGO_CAPACIDADE];
+    int caracteres_visiveis;
+    float temporizador_caractere;
+    bool completo;
+} TextoDigitado;
 
-void UiSetText(TypewriterText *text, const char *message);
-void UiUpdateText(TypewriterText *text, float delta_time);
-bool UiConfirmText(TypewriterText *text);
-void UiDrawTextBox(const TypewriterText *text, Rectangle box);
-void UiDrawPanel(Rectangle panel);
-void UiDrawMeter(Rectangle meter, float amount, float maximum, Color fill);
-float UiApproach(float current, float target, float speed, float delta_time);
+void InterfaceDefinirTexto(TextoDigitado *texto, const char *mensagem);
+void InterfaceAtualizarTexto(TextoDigitado *texto, float tempo_delta);
+bool InterfaceConfirmarTexto(TextoDigitado *texto);
+void InterfaceDesenharCaixaTexto(const TextoDigitado *texto, Rectangle caixa);
+void InterfaceDesenharPainel(Rectangle painel);
+void InterfaceDesenharBotao(Rectangle botao, const char *rotulo, bool selecionado,
+                            bool habilitado, Color destaque);
+void InterfaceDesenharLinhaOpcao(Rectangle area, bool selecionada, bool habilitada,
+                                 Color destaque);
+void InterfaceDesenharAtalho(const char *texto, int x, int y);
+void InterfaceDesenharTextoQuebrado(const char *texto, Rectangle area, int tamanho_fonte,
+                                    int espacamento_linhas, Color cor);
+void InterfaceDesenharMedidor(Rectangle medidor, float quantidade, float maximo, Color preenchimento);
+float InterfaceAproximar(float atual, float alvo, float velocidade, float tempo_delta);
 #endif

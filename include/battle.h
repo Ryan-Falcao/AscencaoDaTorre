@@ -1,5 +1,5 @@
-#ifndef BATTLE_H
-#define BATTLE_H
+#ifndef BATALHA_H
+#define BATALHA_H
 
 #include "enemy.h"
 #include "ui.h"
@@ -8,98 +8,97 @@
 #include "fx.h"
 
 typedef enum {
-    BATTLE_INTRO,
-    BATTLE_PLAYER_MENU,
-    BATTLE_PLAYER_ACTION,
-    BATTLE_PLAYER_QTE,
-    BATTLE_ENEMY_TURN,
-    BATTLE_VICTORY,
-    BATTLE_DEFEAT
-} BattlePhase;
+    BATALHA_INTRODUCAO,
+    BATALHA_JOGADOR_MENU,
+    BATALHA_JOGADOR_ACAO,
+    BATALHA_JOGADOR_QTE,
+    BATALHA_INIMIGO_TURNO,
+    BATALHA_VITORIA,
+    BATALHA_DERROTA
+} FaseBatalha;
 
 typedef enum {
-    MENU_ATTACK,
+    MENU_ATAQUE,
     MENU_ACT,
     MENU_ITEM,
     MENU_SPARE
-} MainMenuOption;
+} OpcaoMenuPrincipal;
 
 typedef enum {
-    ACTION_NONE,
-    ACTION_ATTACKS,
-    ACTION_ACTS,
-    ACTION_ITEMS,
-    ACTION_MESSAGE
-} ActionMenu;
+    ACAO_NENHUM,
+    ACAO_ATAQUES,
+    ACAO_ACOES,
+    ACAO_ITENS,
+    ACAO_MENSAGEM
+} MenuAcao;
 
 typedef enum {
-    BATTLE_OUTCOME_NONE,
-    BATTLE_OUTCOME_DAMAGE,
-    BATTLE_OUTCOME_MERCY,
-    BATTLE_OUTCOME_DEFEAT
-} BattleOutcome;
+    BATALHA_OUTCOME_NENHUM,
+    BATALHA_OUTCOME_DANO,
+    BATALHA_OUTCOME_MISERICORDIA,
+    BATALHA_OUTCOME_DERROTA
+} DesfechoBatalha;
 
 typedef struct {
-    BattleOutcome outcome;
-    int coins;
+    DesfechoBatalha desfecho;
+    int moedas;
     int xp;
-    int hp_lost;
-    int turns;
-    float duration_seconds;
-    int qte_results[4];
-} BattleResult;
+    int vida_perdida;
+    int turnos;
+    float duracao_segundos;
+    int resultados_qte[4];
+} ResultadoBatalha;
 
-#define MAX_BATTLE_PARTICLES 32
-
-typedef struct {
-    bool active;
-    Vector2 position;
-    Vector2 velocity;
-    Color color;
-    float lifetime;
-} BattleParticle;
+#define MAXIMO_BATALHA_PARTICULAS 32
 
 typedef struct {
-    BattlePhase phase;
-    BattlePhase next_phase;
-    ActionMenu action_menu;
-    int main_selection;
-    int floor;
-    int qte_difficulty;
-    int action_selection;
-    float enemy_turn_timer;
-    float elapsed_time;
-    int floating_damage;
-    float floating_damage_timer;
-    float last_effectiveness;
-    int qte_attack_index;
-    float screen_shake_timer;
-    float hitstop_timer;
-    int starting_player_hp;
-    int turn_count;
-    int qte_results[4];
-    float displayed_enemy_hp;
-    float enemy_hp_trail;
-    float displayed_player_hp;
-    float player_hp_trail;
-    BattleParticle particles[MAX_BATTLE_PARTICLES];
-    AttackFx attack_fx;
-    float displayed_mercy;
-    float displayed_aggression;
-    float stat_change_timer;
-    int mercy_change_popup;
-    int aggression_change_popup;
-    bool victory_by_mercy;
-    BattleResult result;
-    DefenseState defense;
-} Battle;
+    bool ativo;
+    Vector2 posicao;
+    Vector2 velocidade;
+    Color cor;
+    float tempo_vida;
+} ParticulaBatalha;
 
-void BattleInit(Battle *battle, TypewriterText *dialogue, int floor);
-BattleResult BattleUpdate(Battle *battle, PlayerStats *player, Enemy *enemy,
-                          TypewriterText *dialogue, Vector2 mouse_position,
-                          bool mouse_pressed, Qte *qte, AudioState *audio);
-void BattleDraw(const Battle *battle, const PlayerStats *player, const Enemy *enemy,
-                const TypewriterText *dialogue, const Qte *qte, bool line_tremor,
-                bool reduced_effects, const SpriteSystem *sprites);
+typedef struct {
+    FaseBatalha fase;
+    FaseBatalha proxima_fase;
+    MenuAcao menu_acao;
+    int selecao_principal;
+    int andar;
+    int dificuldade_qte;
+    int selecao_acao;
+    float tempo_decorrido;
+    int dano_flutuante;
+    float temporizador_dano_flutuante;
+    float ultima_efetividade;
+    int indice_ataque_qte;
+    float temporizador_tremor_tela;
+    float temporizador_pausa_impacto;
+    int vida_inicial_jogador;
+    int total_turnos;
+    int resultados_qte[4];
+    float vida_inimigo_exibida;
+    float rastro_vida_inimigo;
+    float vida_jogador_exibida;
+    float rastro_vida_jogador;
+    ParticulaBatalha particulas[MAXIMO_BATALHA_PARTICULAS];
+    EfeitoAtaque efeito_ataque;
+    float misericordia_exibida;
+    float agressividade_exibida;
+    float temporizador_mudanca_status;
+    int popup_mudanca_misericordia;
+    int popup_mudanca_agressividade;
+    bool vitoria_por_misericordia;
+    ResultadoBatalha resultado;
+    EstadoDefesa defesa;
+} Batalha;
+
+void BatalhaInicializar(Batalha *batalha, TextoDigitado *dialogo, int andar);
+ResultadoBatalha BatalhaAtualizar(Batalha *batalha, AtributosJogador *jogador, Inimigo *inimigo,
+                          TextoDigitado *dialogo, Vector2 posicao_mouse,
+                          bool mouse_pressionado, Qte *qte, EstadoAudio *audio);
+void BatalhaDesenhar(const Batalha *batalha, const AtributosJogador *jogador, const Inimigo *inimigo,
+                const TextoDigitado *dialogo, const Qte *qte, bool tremor_linha,
+                bool efeitos_reduzidos, const SistemaSprites *sprites);
 
 #endif

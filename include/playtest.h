@@ -1,9 +1,9 @@
-#ifndef PLAYTEST_H
-#define PLAYTEST_H
+#ifndef TESTE_JOGO_H
+#define TESTE_JOGO_H
 
 #include "battle.h"
 
-void PlaytestLogBattle(int floor, const Enemy *enemy, const BattleResult *result);
-void PlaytestLogRun(int floor, int coins, bool victory, float duration_seconds);
+void TesteJogoRegistrarBatalha(int andar, const Inimigo *inimigo, const ResultadoBatalha *resultado);
+void TesteJogoRegistrarPartida(int andar, int moedas, bool vitoria, float duracao_segundos);
 
 #endif

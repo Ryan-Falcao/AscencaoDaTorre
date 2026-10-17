@@ -2,61 +2,61 @@
 
 #include <math.h>
 
-void FxStart(AttackFx *fx, const Attack *attack, QteResult result)
+void EfeitoIniciar(EfeitoAtaque *efeito, const Ataque *ataque, ResultadoQte resultado)
 {
-    *fx = (AttackFx){true, attack->id, attack->fx_style, attack->type, result,
-                     0.0f, result == QTE_ERROR ? 0.25f : 0.48f, {320.0f, 137.0f}};
+    *efeito = (EfeitoAtaque){true, ataque->id, ataque->estilo_efeito, ataque->tipo, resultado,
+                     0.0f, resultado == QTE_ERRO ? 0.25f : 0.48f, {320.0f, 137.0f}};
 }
 
-void FxUpdate(AttackFx *fx, float delta_time)
+void EfeitoAtualizar(EfeitoAtaque *efeito, float tempo_delta)
 {
-    if (!fx->active) return;
-    fx->timer += delta_time;
-    if (fx->timer >= fx->duration) fx->active = false;
+    if (!efeito->ativo) return;
+    efeito->temporizador += tempo_delta;
+    if (efeito->temporizador >= efeito->duracao) efeito->ativo = false;
 }
 
-static void DrawFallback(const AttackFx *fx, float scale, Color color)
+static void DesenharAlternativa(const EfeitoAtaque *efeito, float escala, Color cor)
 {
-    const float progress = fx->timer / fx->duration;
-    const Vector2 center = fx->style == FX_PROJECTILE ?
-        (Vector2){112.0f + 208.0f * progress, 300.0f - 163.0f * progress} : fx->position;
+    const float progresso = efeito->temporizador / efeito->duracao;
+    const Vector2 centro = efeito->estilo == EFEITO_PROJETIL ?
+        (Vector2){112.0f + 208.0f * progresso, 300.0f - 163.0f * progresso} : efeito->posicao;
 
-    if (fx->result == QTE_ERROR) {
-        for (int index = 0; index < 5; index++) {
-            const float a = (float)index * 1.256f;
-            DrawCircleV((Vector2){center.x + cosf(a) * 14.0f * progress,
-                                  center.y + sinf(a) * 14.0f * progress}, 3.0f, GRAY);
+    if (efeito->resultado == QTE_ERRO) {
+        for (int indice = 0; indice < 5; indice++) {
+            const float a = (float)indice * 1.256f;
+            DrawCircleV((Vector2){centro.x + cosf(a) * 14.0f * progresso,
+                                  centro.y + sinf(a) * 14.0f * progresso}, 3.0f, GRAY);
         }
-    } else if (fx->style == FX_BEAM) {
-        DrawRectangle((int)(center.x - 80.0f), (int)(center.y - 4.0f * scale), 160,
-                      (int)(8.0f * scale), color);
-    } else if (fx->style == FX_SLASH) {
-        DrawLineEx((Vector2){center.x - 36.0f * scale, center.y + 28.0f * scale},
-                   (Vector2){center.x + 36.0f * scale, center.y - 28.0f * scale}, 5.0f, color);
-    } else if (fx->style == FX_RAIN) {
-        for (int index = 0; index < 4; index++) {
-            DrawCircle((int)(center.x - 30.0f + index * 20.0f),
-                       (int)(center.y - 35.0f + progress * 65.0f), 5, color);
+    } else if (efeito->estilo == EFEITO_FEIXE) {
+        DrawRectangle((int)(centro.x - 80.0f), (int)(centro.y - 4.0f * escala), 160,
+                      (int)(8.0f * escala), cor);
+    } else if (efeito->estilo == EFEITO_CORTE) {
+        DrawLineEx((Vector2){centro.x - 36.0f * escala, centro.y + 28.0f * escala},
+                   (Vector2){centro.x + 36.0f * escala, centro.y - 28.0f * escala}, 5.0f, cor);
+    } else if (efeito->estilo == EFEITO_CHUVA) {
+        for (int indice = 0; indice < 4; indice++) {
+            DrawCircle((int)(centro.x - 30.0f + indice * 20.0f),
+                       (int)(centro.y - 35.0f + progresso * 65.0f), 5, cor);
         }
     } else {
-        DrawCircleLines((int)center.x, (int)center.y, 28.0f * scale, color);
-        DrawCircleLines((int)center.x, (int)center.y, 18.0f * scale, color);
+        DrawCircleLines((int)centro.x, (int)centro.y, 28.0f * escala, cor);
+        DrawCircleLines((int)centro.x, (int)centro.y, 18.0f * escala, cor);
     }
 }
 
-void FxDraw(const AttackFx *fx, const SpriteSystem *sprites, bool reduced_effects)
+void EfeitoDesenhar(const EfeitoAtaque *efeito, const SistemaSprites *sprites, bool efeitos_reduzidos)
 {
-    if (!fx->active) return;
-    const float result_scale = fx->result == QTE_PERFECT ? 1.35f :
-                               (fx->result == QTE_BAD ? 0.75f : 1.0f);
-    const Color color = fx->result == QTE_ERROR ? GRAY : type_color(fx->type);
-    SpriteId id = SpriteFxAttackId(fx->attack_id);
+    if (!efeito->ativo) return;
+    const float result_scale = efeito->resultado == QTE_PERFEITO ? 1.35f :
+                               (efeito->resultado == QTE_RUIM ? 0.75f : 1.0f);
+    const Color cor = efeito->resultado == QTE_ERRO ? GRAY : cor_tipo(efeito->tipo);
+    IdSprite id = SpriteIdEfeitoAtaque(efeito->id_ataque);
 
-    if (sprite_get(sprites, id) == NULL) id = SpriteFxTypeId(fx->type);
-    if (!reduced_effects && fx->result != QTE_ERROR && sprite_get(sprites, id) != NULL) {
-        SpriteDrawCenteredScaled(sprites, id, fx->position, color, fx->timer, result_scale,
-                                 sprites->debug_bounds);
+    if (sprite_obter(sprites, id) == NULL) id = SpriteIdEfeitoTipo(efeito->tipo);
+    if (!efeitos_reduzidos && efeito->resultado != QTE_ERRO && sprite_obter(sprites, id) != NULL) {
+        SpriteDesenharCentralizadoEscalado(sprites, id, efeito->posicao, cor, efeito->temporizador, result_scale,
+                                 sprites->depurar_limites);
     } else {
-        DrawFallback(fx, reduced_effects ? 0.7f : result_scale, color);
+        DesenharAlternativa(efeito, efeitos_reduzidos ? 0.7f : result_scale, cor);
     }
 }

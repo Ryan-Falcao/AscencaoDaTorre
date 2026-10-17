@@ -3,80 +3,192 @@
 #include <stdio.h>
 #include <string.h>
 
-void UiSetText(TypewriterText *text, const char *message)
+static const Color UI_SOMBRA = {25, 27, 34, 70};
+static const Color UI_PAPEL = {251, 248, 240, 255};
+static const Color UI_PAPEL_ELEVADO = {255, 253, 247, 255};
+static const Color UI_TEXTO = {31, 33, 40, 255};
+static const Color UI_DESABILITADO = {177, 178, 181, 255};
+
+void InterfaceDefinirTexto(TextoDigitado *texto, const char *mensagem)
 {
-    snprintf(text->text, sizeof(text->text), "%s", message);
-    text->visible_characters = 0;
-    text->character_timer = 0.0f;
-    text->complete = false;
+    snprintf(texto->texto, sizeof(texto->texto), "%s", mensagem);
+    texto->caracteres_visiveis = 0;
+    texto->temporizador_caractere = 0.0f;
+    texto->completo = false;
 }
 
-void UiUpdateText(TypewriterText *text, float delta_time)
+void InterfaceAtualizarTexto(TextoDigitado *texto, float tempo_delta)
 {
-    const int length = (int)strlen(text->text);
+    const int length = (int)strlen(texto->texto);
 
-    if (text->complete) return;
+    if (texto->completo) return;
 
-    text->character_timer += delta_time;
-    while (text->character_timer >= 0.025f && text->visible_characters < length) {
-        text->character_timer -= 0.025f;
-        text->visible_characters++;
+    texto->temporizador_caractere += tempo_delta;
+    while (texto->temporizador_caractere >= 0.025f && texto->caracteres_visiveis < length) {
+        texto->temporizador_caractere -= 0.025f;
+        texto->caracteres_visiveis++;
     }
-    if (text->visible_characters >= length) text->complete = true;
+    if (texto->caracteres_visiveis >= length) texto->completo = true;
 }
 
-bool UiConfirmText(TypewriterText *text)
+bool InterfaceConfirmarTexto(TextoDigitado *texto)
 {
-    if (!text->complete) {
-        text->visible_characters = (int)strlen(text->text);
-        text->complete = true;
+    if (!texto->completo) {
+        texto->caracteres_visiveis = (int)strlen(texto->texto);
+        texto->completo = true;
         return false;
     }
 
     return true;
 }
 
-void UiDrawPanel(Rectangle panel)
+void InterfaceDesenharPainel(Rectangle painel)
 {
-    DrawRectangleRec(panel, RAYWHITE);
-    DrawRectangleLinesEx(panel, 3.0f, BLACK);
+    DrawRectangleRec((Rectangle){painel.x + 4, painel.y + 5, painel.width, painel.height}, UI_SOMBRA);
+    DrawRectangleRec(painel, UI_PAPEL);
+    DrawRectangleLinesEx(painel, 2.0f, UI_TEXTO);
+    DrawLine((int)painel.x + 3, (int)painel.y + 3,
+             (int)(painel.x + painel.width) - 4, (int)painel.y + 3,
+             Fade(WHITE, 0.75f));
 }
 
-void UiDrawMeter(Rectangle meter, float amount, float maximum, Color fill)
+void InterfaceDesenharBotao(Rectangle botao, const char *rotulo, bool selecionado,
+                            bool habilitado, Color destaque)
 {
-    float ratio = maximum > 0.0f ? amount / maximum : 0.0f;
+    const Color fundo = !habilitado ? (Color){226, 225, 221, 255} :
+                        (selecionado ? ColorLerp(UI_PAPEL_ELEVADO, destaque, 0.20f) : UI_PAPEL_ELEVADO);
+    const Color contorno = selecionado ? destaque : UI_TEXTO;
+    const Color texto = habilitado ? UI_TEXTO : UI_DESABILITADO;
+    const int tamanho_fonte = 16;
+    const int largura_texto = MeasureText(rotulo, tamanho_fonte);
+
+    DrawRectangleRec((Rectangle){botao.x + 3, botao.y + 4, botao.width, botao.height}, UI_SOMBRA);
+    DrawRectangleRec(botao, fundo);
+    DrawRectangleLinesEx(botao, selecionado ? 3.0f : 1.5f, contorno);
+    if (selecionado) {
+        DrawRectangle((int)botao.x, (int)botao.y, 6, (int)botao.height, destaque);
+        DrawTriangle((Vector2){botao.x + 13, botao.y + botao.height / 2.0f},
+                     (Vector2){botao.x + 8, botao.y + botao.height / 2.0f - 5},
+                     (Vector2){botao.x + 8, botao.y + botao.height / 2.0f + 5}, destaque);
+    }
+    DrawText(rotulo, (int)(botao.x + (botao.width - largura_texto) / 2.0f),
+             (int)(botao.y + (botao.height - tamanho_fonte) / 2.0f), tamanho_fonte, texto);
+}
+
+void InterfaceDesenharLinhaOpcao(Rectangle area, bool selecionada, bool habilitada,
+                                 Color destaque)
+{
+    if (selecionada) {
+        DrawRectangleRec(area, ColorLerp(UI_PAPEL, destaque, 0.18f));
+        DrawRectangle((int)area.x, (int)area.y, 5, (int)area.height, destaque);
+        DrawRectangleLinesEx(area, 1.5f, destaque);
+    } else {
+        DrawRectangleRec(area, habilitada ? Fade(UI_PAPEL_ELEVADO, 0.72f) :
+                                           (Color){228, 227, 223, 210});
+        DrawLine((int)area.x + 8, (int)(area.y + area.height),
+                 (int)(area.x + area.width) - 8, (int)(area.y + area.height),
+                 (Color){197, 196, 191, 180});
+    }
+}
+
+void InterfaceDesenharAtalho(const char *texto, int x, int y)
+{
+    const int tamanho_fonte = 12;
+    const int largura = MeasureText(texto, tamanho_fonte) + 14;
+    DrawRectangle(x, y, largura, 20, (Color){42, 44, 52, 225});
+    DrawRectangleLines(x, y, largura, 20, (Color){238, 231, 214, 255});
+    DrawText(texto, x + 7, y + 4, tamanho_fonte, RAYWHITE);
+}
+
+void InterfaceDesenharTextoQuebrado(const char *texto, Rectangle area, int tamanho_fonte,
+                                    int espacamento_linhas, Color cor)
+{
+    char linha[DIALOGO_CAPACIDADE] = "";
+    int tamanho_linha = 0;
+    int y = (int)area.y;
+    const char *cursor = texto;
+
+    while (*cursor != '\0' && y + tamanho_fonte <= area.y + area.height) {
+        while (*cursor == ' ') cursor++;
+        if (*cursor == '\n') {
+            DrawText(linha, (int)area.x, y, tamanho_fonte, cor);
+            linha[0] = '\0';
+            tamanho_linha = 0;
+            y += tamanho_fonte + espacamento_linhas;
+            cursor++;
+            continue;
+        }
+        if (*cursor == '\0') break;
+
+        const char *inicio_palavra = cursor;
+        while (*cursor != '\0' && *cursor != ' ' && *cursor != '\n') cursor++;
+        int tamanho_palavra = (int)(cursor - inicio_palavra);
+        char candidata[DIALOGO_CAPACIDADE];
+        int espaco = tamanho_linha > 0 ? 1 : 0;
+        int tamanho_candidata = tamanho_linha + espaco + tamanho_palavra;
+        if (tamanho_candidata >= DIALOGO_CAPACIDADE) tamanho_candidata = DIALOGO_CAPACIDADE - 1;
+
+        memcpy(candidata, linha, (size_t)tamanho_linha);
+        if (espaco) candidata[tamanho_linha] = ' ';
+        int copia = tamanho_candidata - tamanho_linha - espaco;
+        memcpy(candidata + tamanho_linha + espaco, inicio_palavra, (size_t)copia);
+        candidata[tamanho_candidata] = '\0';
+
+        if (tamanho_linha > 0 && MeasureText(candidata, tamanho_fonte) > area.width) {
+            DrawText(linha, (int)area.x, y, tamanho_fonte, cor);
+            y += tamanho_fonte + espacamento_linhas;
+            linha[0] = '\0';
+            tamanho_linha = 0;
+            if (y + tamanho_fonte > area.y + area.height) break;
+            tamanho_candidata = tamanho_palavra < DIALOGO_CAPACIDADE ? tamanho_palavra : DIALOGO_CAPACIDADE - 1;
+            memcpy(candidata, inicio_palavra, (size_t)tamanho_candidata);
+            candidata[tamanho_candidata] = '\0';
+        }
+        memcpy(linha, candidata, (size_t)tamanho_candidata + 1);
+        tamanho_linha = tamanho_candidata;
+    }
+    if (tamanho_linha > 0 && y + tamanho_fonte <= area.y + area.height)
+        DrawText(linha, (int)area.x, y, tamanho_fonte, cor);
+}
+
+void InterfaceDesenharMedidor(Rectangle medidor, float quantidade, float maximo, Color preenchimento)
+{
+    float ratio = maximo > 0.0f ? quantidade / maximo : 0.0f;
 
     if (ratio < 0.0f) ratio = 0.0f;
     if (ratio > 1.0f) ratio = 1.0f;
-    DrawRectangleRec(meter, BLACK);
-    DrawRectangle((int)meter.x + 2, (int)meter.y + 2, (int)meter.width - 4,
-                  (int)meter.height - 4, RAYWHITE);
-    DrawRectangle((int)meter.x + 2, (int)meter.y + 2,
-                  (int)((meter.width - 4.0f) * ratio), (int)meter.height - 4, fill);
+    DrawRectangleRec(medidor, BLACK);
+    DrawRectangle((int)medidor.x + 2, (int)medidor.y + 2, (int)medidor.width - 4,
+                  (int)medidor.height - 4, RAYWHITE);
+    DrawRectangle((int)medidor.x + 2, (int)medidor.y + 2,
+                  (int)((medidor.width - 4.0f) * ratio), (int)medidor.height - 4, preenchimento);
 }
 
-float UiApproach(float current, float target, float speed, float delta_time)
+float InterfaceAproximar(float atual, float alvo, float velocidade, float tempo_delta)
 {
-    const float distance = target - current;
-    const float step = speed * delta_time;
+    const float distancia = alvo - atual;
+    const float passo = velocidade * tempo_delta;
 
-    if (distance > step) return current + step;
-    if (distance < -step) return current - step;
-    return target;
+    if (distancia > passo) return atual + passo;
+    if (distancia < -passo) return atual - passo;
+    return alvo;
 }
 
-void UiDrawTextBox(const TypewriterText *text, Rectangle box)
+void InterfaceDesenharCaixaTexto(const TextoDigitado *texto, Rectangle caixa)
 {
-    char visible[DIALOGUE_CAPACITY];
-    int character_count = text->visible_characters;
+    char visible[DIALOGO_CAPACIDADE];
+    int character_count = texto->caracteres_visiveis;
 
-    if (character_count >= DIALOGUE_CAPACITY) character_count = DIALOGUE_CAPACITY - 1;
-    memcpy(visible, text->text, (size_t)character_count);
+    if (character_count >= DIALOGO_CAPACIDADE) character_count = DIALOGO_CAPACIDADE - 1;
+    memcpy(visible, texto->texto, (size_t)character_count);
     visible[character_count] = '\0';
 
-    UiDrawPanel(box);
-    DrawText(visible, (int)box.x + 16, (int)box.y + 15, 18, BLACK);
-    if (text->complete) DrawText("ESPACO", (int)(box.x + box.width - 61),
-                                 (int)(box.y + box.height - 25), 12, DARKGRAY);
+    InterfaceDesenharPainel(caixa);
+    InterfaceDesenharTextoQuebrado(visible,
+                (Rectangle){caixa.x + 18, caixa.y + 14, caixa.width - 36, caixa.height - 36},
+                18, 3, UI_TEXTO);
+    if (texto->completo)
+        InterfaceDesenharAtalho("ESPACO  continuar", (int)(caixa.x + caixa.width - 142),
+                                (int)(caixa.y + caixa.height - 25));
 }
 

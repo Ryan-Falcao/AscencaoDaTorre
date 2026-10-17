@@ -5,30 +5,30 @@
 
 int main(void)
 {
-    Tower tower;
-    PlayerStats player;
+    Torre torre;
+    AtributosJogador jogador;
 
-    TowerInit(&tower, 12345u);
-    assert(TowerIsBossFloor(5) && TowerIsBossFloor(10));
-    assert(TowerEnemyForFloor(&tower, 5) == ENEMY_BOSS_BELLKEEPER);
-    assert(TowerEnemyForFloor(&tower, 10) == ENEMY_BOSS_LAST_TOWER);
-    for (int floor = 2; floor <= TOWER_FLOORS; floor++) {
-        if (!TowerIsBossFloor(floor) && !TowerIsBossFloor(floor - 1)) {
-            assert(TowerEnemyForFloor(&tower, floor) != TowerEnemyForFloor(&tower, floor - 1));
+    TorreInicializar(&torre, 12345u);
+    assert(TorreAndarDeChefe(5) && TorreAndarDeChefe(10));
+    assert(TorreInimigoDoAndar(&torre, 5) == INIMIGO_CHEFE_SINEIRO);
+    assert(TorreInimigoDoAndar(&torre, 10) == INIMIGO_CHEFE_ULTIMA_TORRE);
+    for (int andar = 2; andar <= TOTAL_ANDARES_TORRE; andar++) {
+        if (!TorreAndarDeChefe(andar) && !TorreAndarDeChefe(andar - 1)) {
+            assert(TorreInimigoDoAndar(&torre, andar) != TorreInimigoDoAndar(&torre, andar - 1));
         }
     }
 
-    PlayerInit(&player);
-    TowerRollRewards(&tower, &player);
-    assert(tower.rewards[0].kind == REWARD_ATTACK);
-    assert(!PlayerHasAttack(&player, PlayerRewardAttack(tower.rewards[0].id)));
+    JogadorInicializar(&jogador);
+    TorreSortearRecompensas(&torre, &jogador);
+    assert(torre.recompensas[0].categoria == RECOMPENSA_ATAQUE);
+    assert(!JogadorPossuiAtaque(&jogador, JogadorAtaqueRecompensa(torre.recompensas[0].id)));
 
-    for (int item = 0; item < MAX_INVENTORY_ITEMS; item++) {
-        player.inventory[item] = (InventoryItem){(ItemId)item, 1};
+    for (int item = 0; item < MAXIMO_INVENTARIO_ITENS; item++) {
+        jogador.inventario[item] = (ItemInventario){(IdItem)item, 1};
     }
-    assert(!PlayerAddItem(&player, ITEM_COUNT, 1));
-    player.inventory[7].quantity = 0;
-    assert(PlayerAddItem(&player, ITEM_TEA, 1));
+    assert(!JogadorAdicionarItem(&jogador, ITEM_TOTAL, 1));
+    jogador.inventario[7].quantidade = 0;
+    assert(JogadorAdicionarItem(&jogador, ITEM_CHA, 1));
 
     puts("Geracao da torre, recompensas e limite da loja verificados.");
     return 0;

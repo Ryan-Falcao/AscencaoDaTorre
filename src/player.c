@@ -3,196 +3,186 @@
 #include <stdio.h>
 #include <string.h>
 
-#define ATTACK(ID, NAME, TYPE, QTE, DMG, FX, HITS, STATUS, DURATION, USES, COOLDOWN, CRIT) \
-    {ID, NAME, TYPE, QTE, DMG, FX, HITS, STATUS, DURATION, USES, COOLDOWN, CRIT}
+#define ATAQUE(ID, NAME, TIPO, QTE, DMG, EFEITO, HITS, STATUS, DURATION, COOLDOWN, CRIT) \
+    {ID, NAME, TIPO, QTE, DMG, EFEITO, HITS, STATUS, DURATION, COOLDOWN, CRIT}
 
-static const Attack REWARD_ATTACKS[PLAYER_ATTACK_COUNT] = {
-    ATTACK(ATTACK_BRASA, "Brasa", TYPE_FLAME, QTE_TIMING, 8, FX_IMPACT, 1, STATUS_BURN, 3, 0, 0, true),
-    ATTACK(ATTACK_GOTA_CLARA, "Gota Clara", TYPE_WATER, QTE_SEQUENCE, 7, FX_PROJECTILE, 1, STATUS_WET, 2, 0, 0, true),
-    ATTACK(ATTACK_RAIZ_RAPIDA, "Raiz Rapida", TYPE_PLANT, QTE_HOLD, 9, FX_SLASH, 1, STATUS_ROOT, 1, 3, 1, false),
-    ATTACK(ATTACK_RAIO_MANSO, "Raio Manso", TYPE_LIGHT, QTE_TIMING, 10, FX_BEAM, 1, STATUS_BLIND, 1, 3, 1, true),
-    ATTACK(ATTACK_ECO_SOMBRIO, "Eco Sombrio", TYPE_SHADOW, QTE_SEQUENCE, 10, FX_IMPACT, 2, STATUS_NONE, 0, 0, 0, false),
-    ATTACK(ATTACK_GOLPE_NEUTRO, "Golpe Neutro", TYPE_NEUTRAL, QTE_HOLD, 11, FX_SLASH, 1, STATUS_STUN, 1, 2, 2, true),
-    ATTACK(ATTACK_CHAMA_ALTA, "Chama Alta", TYPE_FLAME, QTE_HOLD, 13, FX_RAIN, 2, STATUS_BURN, 3, 2, 2, true),
-    ATTACK(ATTACK_MARE_CURTA, "Mare Curta", TYPE_WATER, QTE_TIMING, 12, FX_PROJECTILE, 1, STATUS_WET, 2, 3, 1, false),
-    ATTACK(ATTACK_VINHA_FINA, "Vinha Fina", TYPE_PLANT, QTE_SEQUENCE, 12, FX_SLASH, 2, STATUS_ROOT, 1, 2, 1, true),
-    ATTACK(ATTACK_LUZ_GUIA, "Luz Guia", TYPE_LIGHT, QTE_HOLD, 13, FX_BEAM, 1, STATUS_BLIND, 1, 2, 2, false),
-    ATTACK(ATTACK_SOMBRA_FRIA, "Sombra Fria", TYPE_SHADOW, QTE_TIMING, 14, FX_IMPACT, 1, STATUS_STUN, 1, 2, 2, true),
-    ATTACK(ATTACK_PULSO_CALMO, "Pulso Calmo", TYPE_NEUTRAL, QTE_SEQUENCE, 13, FX_RAIN, 3, STATUS_NONE, 0, 2, 1, false),
-    ATTACK(ATTACK_FAGULHA, "Fagulha", TYPE_FLAME, QTE_TIMING, 6, FX_PROJECTILE, 1, STATUS_BURN, 2, 0, 0, false),
-    ATTACK(ATTACK_ORVALHO, "Orvalho", TYPE_WATER, QTE_HOLD, 15, FX_BEAM, 1, STATUS_WET, 3, 2, 2, true),
-    ATTACK(ATTACK_ESPINHO_LUNAR, "Espinho Lunar", TYPE_PLANT, QTE_SEQUENCE, 15, FX_RAIN, 3, STATUS_ROOT, 1, 2, 2, true),
-    ATTACK(ATTACK_SINO_VAZIO, "Sino Vazio", TYPE_LIGHT, QTE_TIMING, 16, FX_IMPACT, 1, STATUS_STUN, 1, 1, 3, true)
+static const Ataque RECOMPENSA_ATAQUES[JOGADOR_ATAQUE_TOTAL] = {
+    ATAQUE(ATAQUE_BRASA, "Brasa", TIPO_FOGO, QTE_IMPACTO, 8, EFEITO_IMPACTO, 1, STATUS_QUEIMAR, 3, 0, true),
+    ATAQUE(ATAQUE_GOTA_CLARA, "Gota Clara", TIPO_AGUA, QTE_RITMO, 7, EFEITO_PROJETIL, 1, STATUS_MOLHADO, 2, 0, true),
+    ATAQUE(ATAQUE_RAIZ_RAPIDA, "Raiz Rapida", TIPO_PLANTA, QTE_CARGA, 9, EFEITO_CORTE, 1, STATUS_ENRAIZAR, 1, 1, false),
+    ATAQUE(ATAQUE_RAIO_MANSO, "Raio Manso", TIPO_LUZ, QTE_IMPACTO, 10, EFEITO_FEIXE, 1, STATUS_CEGAR, 1, 1, true),
+    ATAQUE(ATAQUE_ECO_SOMBRIO, "Eco Sombrio", TIPO_SOMBRA, QTE_RITMO, 10, EFEITO_IMPACTO, 2, STATUS_NENHUM, 0, 0, false),
+    ATAQUE(ATAQUE_GOLPE_NEUTRO, "Golpe Neutro", TIPO_NEUTRO, QTE_CARGA, 11, EFEITO_CORTE, 1, STATUS_ATORDOAR, 1, 2, true),
+    ATAQUE(ATAQUE_CHAMA_ALTA, "Chama Alta", TIPO_FOGO, QTE_CARGA, 13, EFEITO_CHUVA, 2, STATUS_QUEIMAR, 3, 2, true),
+    ATAQUE(ATAQUE_MARE_CURTA, "Mare Curta", TIPO_AGUA, QTE_IMPACTO, 12, EFEITO_PROJETIL, 1, STATUS_MOLHADO, 2, 1, false),
+    ATAQUE(ATAQUE_VINHA_FINA, "Vinha Fina", TIPO_PLANTA, QTE_RITMO, 12, EFEITO_CORTE, 2, STATUS_ENRAIZAR, 1, 1, true),
+    ATAQUE(ATAQUE_LUZ_GUIA, "Luz Guia", TIPO_LUZ, QTE_CARGA, 13, EFEITO_FEIXE, 1, STATUS_CEGAR, 1, 2, false),
+    ATAQUE(ATAQUE_SOMBRA_FRIA, "Sombra Fria", TIPO_SOMBRA, QTE_IMPACTO, 14, EFEITO_IMPACTO, 1, STATUS_ATORDOAR, 1, 2, true),
+    ATAQUE(ATAQUE_PULSO_CALMO, "Pulso Calmo", TIPO_NEUTRO, QTE_RITMO, 13, EFEITO_CHUVA, 3, STATUS_NENHUM, 0, 1, false),
+    ATAQUE(ATAQUE_FAGULHA, "Fagulha", TIPO_FOGO, QTE_IMPACTO, 6, EFEITO_PROJETIL, 1, STATUS_QUEIMAR, 2, 0, false),
+    ATAQUE(ATAQUE_ORVALHO, "Orvalho", TIPO_AGUA, QTE_CARGA, 15, EFEITO_FEIXE, 1, STATUS_MOLHADO, 3, 2, true),
+    ATAQUE(ATAQUE_ESPINHO_LUNAR, "Espinho Lunar", TIPO_PLANTA, QTE_RITMO, 15, EFEITO_CHUVA, 3, STATUS_ENRAIZAR, 1, 2, true),
+    ATAQUE(ATAQUE_SINO_VAZIO, "Sino Vazio", TIPO_LUZ, QTE_IMPACTO, 16, EFEITO_IMPACTO, 1, STATUS_ATORDOAR, 1, 3, true)
 };
 
-void PlayerInit(PlayerStats *player)
+void JogadorInicializar(AtributosJogador *jogador)
 {
-    memset(player, 0, sizeof(*player));
-    snprintf(player->name, sizeof(player->name), "Ari");
-    player->hp_max = 40;
-    player->hp = player->hp_max;
-    player->level = 1;
-    player->incoming_damage_multiplier = 1.0f;
-    player->defense_type = TYPE_NEUTRAL;
+    memset(jogador, 0, sizeof(*jogador));
+    snprintf(jogador->nome, sizeof(jogador->nome), "Ari");
+    jogador->vida_maxima = 40;
+    jogador->hp = jogador->vida_maxima;
+    jogador->nivel = 1;
+    jogador->multiplicador_dano_recebido = 1.0f;
+    jogador->tipo_defesa = TIPO_NEUTRO;
 
-    player->attacks[0] = REWARD_ATTACKS[ATTACK_BRASA];
-    player->attacks[1] = REWARD_ATTACKS[ATTACK_GOTA_CLARA];
-    player->attacks[2] = REWARD_ATTACKS[ATTACK_RAIZ_RAPIDA];
-    player->attack_count = 3;
+    jogador->ataques[0] = RECOMPENSA_ATAQUES[ATAQUE_BRASA];
+    jogador->ataques[1] = RECOMPENSA_ATAQUES[ATAQUE_GOTA_CLARA];
+    jogador->ataques[2] = RECOMPENSA_ATAQUES[ATAQUE_RAIZ_RAPIDA];
+    jogador->total_ataques = 3;
 
-    player->inventory[0] = (InventoryItem){ITEM_TEA, 2};
-    player->inventory[1] = (InventoryItem){ITEM_RED_RIBBON, 1};
-    player->inventory[2] = (InventoryItem){ITEM_WET_CLOAK, 1};
-    player->inventory[3] = (InventoryItem){ITEM_SOLAR_BROOCH, 1};
+    jogador->inventario[0] = (ItemInventario){ITEM_CHA, 2};
+    jogador->inventario[1] = (ItemInventario){ITEM_VERMELHA_FITA, 1};
+    jogador->inventario[2] = (ItemInventario){ITEM_MOLHADO_MANTO, 1};
+    jogador->inventario[3] = (ItemInventario){ITEM_SOLAR_BROCHE, 1};
 }
 
-bool PlayerAddItem(PlayerStats *player, ItemId id, int quantity)
+bool JogadorAdicionarItem(AtributosJogador *jogador, IdItem id, int quantidade)
 {
-    for (int index = 0; index < MAX_INVENTORY_ITEMS; index++) {
-        if (player->inventory[index].quantity > 0 && player->inventory[index].id == id) {
-            player->inventory[index].quantity += quantity;
+    for (int indice = 0; indice < MAXIMO_INVENTARIO_ITENS; indice++) {
+        if (jogador->inventario[indice].quantidade > 0 && jogador->inventario[indice].id == id) {
+            jogador->inventario[indice].quantidade += quantidade;
             return true;
         }
     }
-    for (int index = 0; index < MAX_INVENTORY_ITEMS; index++) {
-        if (player->inventory[index].quantity == 0) {
-            player->inventory[index] = (InventoryItem){id, quantity};
+    for (int indice = 0; indice < MAXIMO_INVENTARIO_ITENS; indice++) {
+        if (jogador->inventario[indice].quantidade == 0) {
+            jogador->inventario[indice] = (ItemInventario){id, quantidade};
             return true;
         }
     }
     return false;
 }
 
-bool PlayerHasAttack(const PlayerStats *player, Attack attack)
+bool JogadorPossuiAtaque(const AtributosJogador *jogador, Ataque ataque)
 {
-    for (int index = 0; index < player->attack_count; index++) {
-        if (strcmp(player->attacks[index].name, attack.name) == 0) return true;
+    for (int indice = 0; indice < jogador->total_ataques; indice++) {
+        if (strcmp(jogador->ataques[indice].nome, ataque.nome) == 0) return true;
     }
     return false;
 }
 
-int PlayerRewardAttackCount(void)
+int JogadorTotalAtaquesRecompensa(void)
 {
-    return (int)(sizeof(REWARD_ATTACKS) / sizeof(REWARD_ATTACKS[0]));
+    return (int)(sizeof(RECOMPENSA_ATAQUES) / sizeof(RECOMPENSA_ATAQUES[0]));
 }
 
-Attack PlayerRewardAttack(int index)
+Ataque JogadorAtaqueRecompensa(int indice)
 {
-    if (index < 0 || index >= PlayerRewardAttackCount()) return REWARD_ATTACKS[0];
-    return REWARD_ATTACKS[index];
+    if (indice < 0 || indice >= JogadorTotalAtaquesRecompensa()) return RECOMPENSA_ATAQUES[0];
+    return RECOMPENSA_ATAQUES[indice];
 }
 
-bool PlayerAddAttack(PlayerStats *player, Attack attack, int replace_index)
+bool JogadorAdicionarAtaque(AtributosJogador *jogador, Ataque ataque, int indice_substituicao)
 {
-    if (PlayerHasAttack(player, attack)) return false;
-    if (player->attack_count < MAX_EQUIPPED_ATTACKS) {
-        player->attacks[player->attack_count++] = attack;
+    if (JogadorPossuiAtaque(jogador, ataque)) return false;
+    if (jogador->total_ataques < MAXIMO_EQUIPADOS_ATAQUES) {
+        jogador->ataques[jogador->total_ataques++] = ataque;
         return true;
     }
-    if (replace_index < 0 || replace_index >= MAX_EQUIPPED_ATTACKS) return false;
-    player->attacks[replace_index] = attack;
+    if (indice_substituicao < 0 || indice_substituicao >= MAXIMO_EQUIPADOS_ATAQUES) return false;
+    jogador->ataques[indice_substituicao] = ataque;
     return true;
 }
 
-bool PlayerGainXp(PlayerStats *player, int xp)
+bool JogadorGanharXp(AtributosJogador *jogador, int xp)
 {
-    const int old_level = player->level;
+    const int nivel_anterior = jogador->nivel;
 
-    player->xp += xp;
-    while (player->xp >= player->level * 20) {
-        player->xp -= player->level * 20;
-        player->level++;
-        player->hp_max += 5;
-        player->hp += 5;
-        player->permanent_damage_bonus++;
+    jogador->xp += xp;
+    while (jogador->xp >= jogador->nivel * 20) {
+        jogador->xp -= jogador->nivel * 20;
+        jogador->nivel++;
+        jogador->vida_maxima += 5;
+        jogador->hp += 5;
+        jogador->bonus_dano_permanente++;
     }
-    return player->level > old_level;
+    return jogador->nivel > nivel_anterior;
 }
 
-bool PlayerAttackAvailable(const PlayerStats *player, const Attack *attack, char *reason, int reason_size)
+bool JogadorAtaqueDisponivel(const AtributosJogador *jogador, const Ataque *ataque, char *motivo, int tamanho_motivo)
 {
-    const int id = (int)attack->id;
+    const int id = (int)ataque->id;
 
-    if (id < 0 || id >= PLAYER_ATTACK_COUNT) return false;
-    if (attack->max_uses > 0 && player->attack_uses[id] >= attack->max_uses) {
-        snprintf(reason, (size_t)reason_size, "Esgotado");
-        return false;
-    }
-    if (player->attack_cooldowns[id] > 0) {
-        snprintf(reason, (size_t)reason_size, "Espere %d", player->attack_cooldowns[id]);
+    if (id < 0 || id >= JOGADOR_ATAQUE_TOTAL) return false;
+    if (jogador->recargas_ataques[id] > 0) {
+        snprintf(motivo, (size_t)tamanho_motivo, "Espere %d", jogador->recargas_ataques[id]);
         return false;
     }
     return true;
 }
 
-void PlayerUseAttack(PlayerStats *player, const Attack *attack)
+void JogadorUsarAtaque(AtributosJogador *jogador, const Ataque *ataque)
 {
-    const int id = (int)attack->id;
-    if (id < 0 || id >= PLAYER_ATTACK_COUNT) return;
-    player->attack_uses[id]++;
-    player->attack_cooldowns[id] = attack->cooldown_turns;
+    const int id = (int)ataque->id;
+    if (id < 0 || id >= JOGADOR_ATAQUE_TOTAL) return;
+    jogador->recargas_ataques[id] = ataque->turnos_recarga;
 }
 
-void PlayerAdvanceAttackCooldowns(PlayerStats *player)
+void JogadorAvancarRecargasAtaques(AtributosJogador *jogador)
 {
-    for (int index = 0; index < PLAYER_ATTACK_COUNT; index++) {
-        if (player->attack_cooldowns[index] > 0) player->attack_cooldowns[index]--;
+    for (int indice = 0; indice < JOGADOR_ATAQUE_TOTAL; indice++) {
+        if (jogador->recargas_ataques[indice] > 0) jogador->recargas_ataques[indice]--;
     }
 }
 
-const char *PlayerAttackIdName(AttackId id)
-{
-    return id >= 0 && id < PLAYER_ATTACK_COUNT ? REWARD_ATTACKS[id].name : "desconhecido";
-}
-
-const char *PlayerStatusName(StatusEffect status)
+const char *JogadorNomeStatus(EfeitoStatus status)
 {
     static const char *const names[] = {"", "QUEIMAR", "MOLHAR", "ENRAIZAR", "CEGAR", "ATORDOAR"};
-    return status >= STATUS_NONE && status <= STATUS_STUN ? names[status] : "";
+    return status >= STATUS_NENHUM && status <= STATUS_ATORDOAR ? names[status] : "";
 }
 
-bool PlayerUseItem(PlayerStats *player, int inventory_index, const ItemDefinition **used_item,
-                   int *applied_value)
+bool JogadorUsarItem(AtributosJogador *jogador, int indice_inventario, const DefinicaoItem **item_usado,
+                   int *valor_aplicado)
 {
-    InventoryItem *slot;
-    const ItemDefinition *item;
+    ItemInventario *espaco;
+    const DefinicaoItem *item;
 
-    if (inventory_index < 0 || inventory_index >= MAX_INVENTORY_ITEMS) return false;
-    slot = &player->inventory[inventory_index];
-    if (slot->quantity <= 0) return false;
+    if (indice_inventario < 0 || indice_inventario >= MAXIMO_INVENTARIO_ITENS) return false;
+    espaco = &jogador->inventario[indice_inventario];
+    if (espaco->quantidade <= 0) return false;
 
-    item = ItemGetDefinition(slot->id);
-    slot->quantity--;
-    *used_item = item;
-    *applied_value = item->value;
-    if (item->effect == ITEM_EFFECT_HEAL) {
-        *applied_value = PlayerHeal(player, item->value);
-    } else if (item->effect == ITEM_EFFECT_DAMAGE_BUFF) {
-        player->damage_buff_percent = item->value;
-        player->damage_buff_turns = item->duration;
-    } else if (item->effect == ITEM_EFFECT_DEFENSE_TYPE) {
-        player->defense_type = item->defense_type;
+    item = ItemObterDefinicao(espaco->id);
+    espaco->quantidade--;
+    *item_usado = item;
+    *valor_aplicado = item->valor;
+    if (item->efeito == ITEM_EFEITO_CURAR) {
+        *valor_aplicado = JogadorCurar(jogador, item->valor);
+    } else if (item->efeito == ITEM_EFEITO_DANO_BUFF) {
+        jogador->percentual_buff_dano = item->valor;
+        jogador->turnos_buff_dano = item->duracao;
+    } else if (item->efeito == ITEM_EFEITO_DEFESA_TIPO) {
+        jogador->tipo_defesa = item->tipo_defesa;
     }
     return true;
 }
 
-float PlayerAttackBuffMultiplier(const PlayerStats *player)
+float JogadorMultiplicadorBuffAtaque(const AtributosJogador *jogador)
 {
-    return 1.0f + (float)player->damage_buff_percent / 100.0f;
+    return 1.0f + (float)jogador->percentual_buff_dano / 100.0f;
 }
 
-void PlayerConsumeAttackBuff(PlayerStats *player)
+void JogadorConsumirBuffAtaque(AtributosJogador *jogador)
 {
-    if (player->damage_buff_turns <= 0) return;
-    player->damage_buff_turns--;
-    if (player->damage_buff_turns == 0) player->damage_buff_percent = 0;
+    if (jogador->turnos_buff_dano <= 0) return;
+    jogador->turnos_buff_dano--;
+    if (jogador->turnos_buff_dano == 0) jogador->percentual_buff_dano = 0;
 }
 
-int PlayerHeal(PlayerStats *player, int amount)
+int JogadorCurar(AtributosJogador *jogador, int quantidade)
 {
-    const int old_hp = player->hp;
+    const int vida_anterior = jogador->hp;
 
-    player->hp += amount;
-    if (player->hp > player->hp_max) player->hp = player->hp_max;
-    return player->hp - old_hp;
+    jogador->hp += quantidade;
+    if (jogador->hp > jogador->vida_maxima) jogador->hp = jogador->vida_maxima;
+    return jogador->hp - vida_anterior;
 }

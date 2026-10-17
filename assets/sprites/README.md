@@ -66,9 +66,7 @@ balas. Todos os arquivos abaixo sao opcionais:
 
 | Arquivo | Tamanho / metadado |
 |---|---|
-| `warn_gravity.png` | 32x32 |
 | `fx_hit_soul_sheet.png` | 4 frames de 32x32; `fx_hit_soul.txt` |
-| `gravity_wall_glow_sheet.png` | 4 frames de 16x16; `gravity_wall_glow.txt` |
 | `thorn_wall_sheet.png` | 4 frames de 16x48; `thorn_wall.txt` |
 | `thorn_wall_warn.png` | 16x48 |
 | `shadow_orb_sheet.png` | 4 frames de 32x32; `shadow_orb.txt` |

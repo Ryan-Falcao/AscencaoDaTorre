@@ -5,82 +5,82 @@
 #include "save.h"
 
 typedef struct {
-    uint32_t magic, version, checksum;
-} TestHeader;
+    uint32_t assinatura, versao, soma_verificacao;
+} CabecalhoTeste;
 
 typedef struct {
-    int best_floor, total_runs, victories, mercy_wins, damage_wins, fragments;
-    uint32_t unlocked_items, unlocked_attacks;
-    float music_volume, effects_volume;
-    bool fullscreen, line_tremor, reduced_effects;
-    unsigned int tutorial_seen;
-    GameDifficulty difficulty;
-    RelicChoiceKind relic_kind;
-    int relic_id;
-} TestSaveV2;
+    int melhor_andar, total_runs, vitorias, vitorias_misericordia, vitorias_dano, fragmentos;
+    uint32_t itens_desbloqueados, ataques_desbloqueados;
+    float volume_musica, volume_efeitos;
+    bool tela_cheia, tremor_linha, efeitos_reduzidos;
+    unsigned int tutorial_visto;
+    DificuldadeJogo dificuldade;
+    TipoEscolhaReliquia tipo_reliquia;
+    int id_reliquia;
+} TesteDadosSalvosV2;
 
-static uint32_t ChecksumV2(const TestSaveV2 *save)
+static uint32_t SomaVerificacaoV2(const TesteDadosSalvosV2 *salvamento)
 {
-    const unsigned char *bytes = (const unsigned char *)save;
-    uint32_t value = 2166136261u;
-    for (size_t index = 0; index < sizeof(*save); index++) value = (value ^ bytes[index]) * 16777619u;
-    return value;
+    const unsigned char *bytes = (const unsigned char *)salvamento;
+    uint32_t valor = 2166136261u;
+    for (size_t indice = 0; indice < sizeof(*salvamento); indice++) valor = (valor ^ bytes[indice]) * 16777619u;
+    return valor;
 }
 
 int main(void)
 {
-    const char *path = "test_save_temp.dat";
-    SaveData saved;
-    SaveData loaded;
-    FILE *file;
+    const char *caminho = "test_save_temp.dat";
+    DadosSalvos saved;
+    DadosSalvos carregado;
+    FILE *arquivo;
 
-    SaveSetDefaults(&saved);
-    saved.best_floor = 5;
-    saved.fragments = 22;
-    saved.mercy_wins = 10;
-    saved.reduced_effects = true;
-    saved.difficulty = DIFFICULTY_HARD;
-    SaveApplyUnlocks(&saved);
-    assert(SaveIsAttackUnlocked(&saved, 3));
-    assert(SaveIsItemUnlocked(&saved, ITEM_THORN_BOMB));
-    assert(SaveWritePath(&saved, path));
-    assert(SaveLoadPath(&loaded, path));
-    assert(loaded.best_floor == 5 && loaded.fragments == 22);
-    assert(loaded.reduced_effects && loaded.difficulty == DIFFICULTY_HARD);
+    SalvamentoDefinirPadroes(&saved);
+    saved.melhor_andar = 5;
+    saved.fragmentos = 22;
+    saved.vitorias_misericordia = 10;
+    saved.efeitos_reduzidos = true;
+    saved.dificuldade = DIFICULDADE_DIFICIL;
+    SalvamentoAplicarDesbloqueios(&saved);
+    assert(SalvamentoAtaqueDesbloqueado(&saved, 3));
+    assert(SalvamentoItemDesbloqueado(&saved, ITEM_ESPINHO_BOMBA));
+    assert(SalvamentoGravarCaminho(&saved, caminho));
+    assert(SalvamentoCarregarCaminho(&carregado, caminho));
+    assert(carregado.melhor_andar == 5 && carregado.fragmentos == 22);
+    assert(carregado.efeitos_reduzidos && carregado.dificuldade == DIFICULDADE_DIFICIL);
 
     {
-        TestSaveV2 old = {0};
-        old.best_floor = 4;
-        old.fragments = 9;
-        old.music_volume = 0.5f;
-        old.effects_volume = 0.6f;
-        old.difficulty = DIFFICULTY_CALM;
-        file = fopen(path, "wb");
-        assert(file != NULL);
-        const TestHeader old_header = {0x41535452u, 2u, ChecksumV2(&old)};
-        assert(fwrite(&old_header, sizeof(old_header), 1, file) == 1);
-        assert(fwrite(&old, sizeof(old), 1, file) == 1);
-        fclose(file);
-        assert(SaveLoadPath(&loaded, path));
-        assert(loaded.best_floor == 4 && loaded.fragments == 9);
-        assert(!loaded.tutorial_done && loaded.difficulty == DIFFICULTY_CALM);
+        TesteDadosSalvosV2 antigo = {0};
+        antigo.melhor_andar = 4;
+        antigo.fragmentos = 9;
+        antigo.volume_musica = 0.5f;
+        antigo.volume_efeitos = 0.6f;
+        antigo.dificuldade = DIFICULDADE_CALMA;
+        arquivo = fopen(caminho, "wb");
+        assert(arquivo != NULL);
+        const CabecalhoTeste cabecalho_antigo = {0x41535452u, 2u, SomaVerificacaoV2(&antigo)};
+        assert(fwrite(&cabecalho_antigo, sizeof(cabecalho_antigo), 1, arquivo) == 1);
+        assert(fwrite(&antigo, sizeof(antigo), 1, arquivo) == 1);
+        fclose(arquivo);
+        assert(SalvamentoCarregarCaminho(&carregado, caminho));
+        assert(carregado.melhor_andar == 4 && carregado.fragmentos == 9);
+        assert(!carregado.tutorial_concluido && carregado.dificuldade == DIFICULDADE_CALMA);
     }
 
-    file = fopen(path, "wb");
-    assert(file != NULL);
-    fputs("corrompido", file);
-    fclose(file);
-    assert(!SaveLoadPath(&loaded, path));
-    assert(loaded.best_floor == 0);
-    assert(loaded.difficulty == DIFFICULTY_NORMAL);
+    arquivo = fopen(caminho, "wb");
+    assert(arquivo != NULL);
+    fputs("corrompido", arquivo);
+    fclose(arquivo);
+    assert(!SalvamentoCarregarCaminho(&carregado, caminho));
+    assert(carregado.melhor_andar == 0);
+    assert(carregado.dificuldade == DIFICULDADE_NORMAL);
 
-    file = fopen(path, "wb");
-    assert(file != NULL);
-    fwrite(&(uint32_t){0x41535452u}, sizeof(uint32_t), 1, file);
-    fwrite(&(uint32_t){0u}, sizeof(uint32_t), 1, file);
-    fclose(file);
-    assert(!SaveLoadPath(&loaded, path));
-    remove(path);
+    arquivo = fopen(caminho, "wb");
+    assert(arquivo != NULL);
+    fwrite(&(uint32_t){0x41535452u}, sizeof(uint32_t), 1, arquivo);
+    fwrite(&(uint32_t){0u}, sizeof(uint32_t), 1, arquivo);
+    fclose(arquivo);
+    assert(!SalvamentoCarregarCaminho(&carregado, caminho));
+    remove(caminho);
     puts("Save, corrupcao, versao e desbloqueios verificados.");
     return 0;
 }

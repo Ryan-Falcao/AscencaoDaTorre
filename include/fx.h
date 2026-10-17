@@ -1,22 +1,22 @@
-#ifndef FX_H
-#define FX_H
+#ifndef EFEITO_H
+#define EFEITO_H
 
 #include "player.h"
 #include "sprites.h"
 
 typedef struct {
-    bool active;
-    AttackId attack_id;
-    AttackFxStyle style;
-    Type type;
-    QteResult result;
-    float timer;
-    float duration;
-    Vector2 position;
-} AttackFx;
+    bool ativo;
+    IdAtaque id_ataque;
+    EstiloEfeitoAtaque estilo;
+    Tipo tipo;
+    ResultadoQte resultado;
+    float temporizador;
+    float duracao;
+    Vector2 posicao;
+} EfeitoAtaque;
 
-void FxStart(AttackFx *fx, const Attack *attack, QteResult result);
-void FxUpdate(AttackFx *fx, float delta_time);
-void FxDraw(const AttackFx *fx, const SpriteSystem *sprites, bool reduced_effects);
+void EfeitoIniciar(EfeitoAtaque *efeito, const Ataque *ataque, ResultadoQte resultado);
+void EfeitoAtualizar(EfeitoAtaque *efeito, float tempo_delta);
+void EfeitoDesenhar(const EfeitoAtaque *efeito, const SistemaSprites *sprites, bool efeitos_reduzidos);
 
 #endif

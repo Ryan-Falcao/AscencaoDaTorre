@@ -1,10 +1,24 @@
 {
     "version": "2.0.0",
+    "options": {
+        "cwd": "${workspaceFolder}",
+        "env": {
+            "PATH": "C:\\msys64\\ucrt64\\bin;${env:PATH}"
+        }
+    },
     "tasks": [
         {
+            "label": "Configurar Ascensao da Torre",
+            "type": "process",
+            "command": "cmake",
+            "args": ["-S", ".", "-B", "build", "-G", "Ninja"],
+            "problemMatcher": []
+        },
+        {
             "label": "Compilar Ascensao da Torre",
-            "type": "shell",
-            "command": "C:/msys64/ucrt64/bin/cmake.exe",
+            "type": "process",
+            "command": "cmake",
+            "dependsOn": "Configurar Ascensao da Torre",
             "args": ["--build", "build"],
             "problemMatcher": ["$gcc"],
             "group": { "kind": "build", "isDefault": true }

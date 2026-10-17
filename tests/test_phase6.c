@@ -6,45 +6,56 @@
 
 int main(void)
 {
-    Enemy moth = EnemyCreate(ENEMY_DUST_MOTH);
-    Enemy tired_moth;
-    PlayerStats player;
-    const ItemDefinition *used_item;
-    int applied_value;
-    char message[128];
+    Inimigo mariposa = InimigoCriar(INIMIGO_POEIRA_MARIPOSA);
+    Inimigo sineiro = InimigoCriar(INIMIGO_CHEFE_SINEIRO);
+    Inimigo tired_moth;
+    AtributosJogador jogador;
+    const DefinicaoItem *item_usado;
+    int valor_aplicado;
+    char mensagem[128];
 
-    assert(EnemyApplyAction(&moth, 1, message, (int)sizeof(message)));
-    assert(moth.mercy == 30 && moth.aggression == 35);
-    assert(!EnemyActionAvailable(&moth, 1, message, (int)sizeof(message)));
-    EnemyAdvanceTurn(&moth);
-    assert(!EnemyActionAvailable(&moth, 1, message, (int)sizeof(message)));
-    EnemyAdvanceTurn(&moth);
-    assert(EnemyApplyAction(&moth, 1, message, (int)sizeof(message)));
-    assert(moth.mercy == 45); /* Second consecutive Elogiar is reduced from +30 to +15. */
-    EnemyAdvanceTurn(&moth);
-    EnemyAdvanceTurn(&moth);
-    assert(!EnemyActionAvailable(&moth, 1, message, (int)sizeof(message)));
+    bool possui_gas_sombra = false;
+    for (int indice = 0; indice < sineiro.total_padroes; indice++)
+        if (sineiro.ids_padroes[indice] == PADRAO_SINO_GAS_SOMBRA) possui_gas_sombra = true;
+    assert(sineiro.total_padroes == 5);
+    assert(possui_gas_sombra);
 
-    moth.mercy = 95;
-    moth.aggression = 90;
-    assert(EnemyApplyAction(&moth, 2, message, (int)sizeof(message)));
-    assert(moth.mercy == 85 && moth.aggression == 100);
-    moth.mercy = 100;
-    EnemyRefreshSpareable(&moth);
-    assert(!EnemyCanSpare(&moth));
-    moth.aggression = 66;
-    assert(EnemyCanSpare(&moth));
+    assert(!InimigoAcaoDisponivel(&mariposa, 1, mensagem, (int)sizeof(mensagem)));
+    assert(InimigoAplicarAcao(&mariposa, 0, mensagem, (int)sizeof(mensagem)));
+    assert(mariposa.analisado);
+    assert(!InimigoAcaoDisponivel(&mariposa, 0, mensagem, (int)sizeof(mensagem)));
+    assert(InimigoAplicarAcao(&mariposa, 1, mensagem, (int)sizeof(mensagem)));
+    assert(mariposa.misericordia == 30 && mariposa.agressividade == 35);
+    assert(!InimigoAcaoDisponivel(&mariposa, 1, mensagem, (int)sizeof(mensagem)));
+    InimigoAvancarTurno(&mariposa);
+    assert(!InimigoAcaoDisponivel(&mariposa, 1, mensagem, (int)sizeof(mensagem)));
+    InimigoAvancarTurno(&mariposa);
+    assert(InimigoAplicarAcao(&mariposa, 1, mensagem, (int)sizeof(mensagem)));
+    assert(mariposa.misericordia == 45); /* O segundo Elogiar seguido cai de +30 para +15. */
+    InimigoAvancarTurno(&mariposa);
+    InimigoAvancarTurno(&mariposa);
+    assert(!InimigoAcaoDisponivel(&mariposa, 1, mensagem, (int)sizeof(mensagem)));
 
-    tired_moth = EnemyCreate(ENEMY_DUST_MOTH);
-    EnemyTakeDamage(&tired_moth, 28, 1.0f);
-    assert(tired_moth.exhausted && tired_moth.spareable);
+    mariposa.misericordia = 95;
+    mariposa.agressividade = 90;
+    assert(InimigoAplicarAcao(&mariposa, 2, mensagem, (int)sizeof(mensagem)));
+    assert(mariposa.misericordia == 85 && mariposa.agressividade == 100);
+    mariposa.misericordia = 100;
+    InimigoAtualizarPoupavel(&mariposa);
+    assert(!InimigoPodePoupar(&mariposa));
+    mariposa.agressividade = 66;
+    assert(InimigoPodePoupar(&mariposa));
 
-    PlayerInit(&player);
-    assert(PlayerUseItem(&player, 1, &used_item, &applied_value));
-    assert(used_item->effect == ITEM_EFFECT_DAMAGE_BUFF);
-    assert(PlayerAttackBuffMultiplier(&player) == 1.5f);
-    PlayerConsumeAttackBuff(&player);
-    assert(PlayerAttackBuffMultiplier(&player) == 1.0f);
+    tired_moth = InimigoCriar(INIMIGO_POEIRA_MARIPOSA);
+    InimigoReceberDano(&tired_moth, 28, 1.0f);
+    assert(tired_moth.esgotado && tired_moth.poupavel);
+
+    JogadorInicializar(&jogador);
+    assert(JogadorUsarItem(&jogador, 1, &item_usado, &valor_aplicado));
+    assert(item_usado->efeito == ITEM_EFEITO_DANO_BUFF);
+    assert(JogadorMultiplicadorBuffAtaque(&jogador) == 1.5f);
+    JogadorConsumirBuffAtaque(&jogador);
+    assert(JogadorMultiplicadorBuffAtaque(&jogador) == 1.0f);
 
     puts("Mercy, agressividade, repeticao, cooldown, exaustao e buffs verificados.");
     return 0;

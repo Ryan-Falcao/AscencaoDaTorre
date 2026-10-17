@@ -6,705 +6,835 @@
 #include <stdio.h>
 #include <string.h>
 
-static void DrawTower(float time)
+static void DesenharTorre(float tempo)
 {
-    const float bob = sinf(time * 1.4f) * 2.0f;
+    const float oscilacao = sinf(tempo * 1.4f) * 2.0f;
 
-    DrawRectangle(272, (int)(82 + bob), 96, 198, (Color){54, 59, 67, 255});
-    DrawTriangle((Vector2){256, 84 + bob}, (Vector2){384, 84 + bob},
-                 (Vector2){320, 28 + bob}, (Color){39, 43, 50, 255});
-    DrawRectangleLines(272, (int)(82 + bob), 96, 198, BLACK);
-    DrawLine(256, (int)(84 + bob), 320, (int)(28 + bob), BLACK);
-    DrawLine(320, (int)(28 + bob), 384, (int)(84 + bob), BLACK);
+    DrawRectangle(272, (int)(82 + oscilacao), 96, 198, (Color){54, 59, 67, 255});
+    DrawTriangle((Vector2){256, 84 + oscilacao}, (Vector2){384, 84 + oscilacao},
+                 (Vector2){320, 28 + oscilacao}, (Color){39, 43, 50, 255});
+    DrawRectangleLines(272, (int)(82 + oscilacao), 96, 198, BLACK);
+    DrawLine(256, (int)(84 + oscilacao), 320, (int)(28 + oscilacao), BLACK);
+    DrawLine(320, (int)(28 + oscilacao), 384, (int)(84 + oscilacao), BLACK);
 
-    for (int window_index = 0; window_index < 3; window_index++) {
-        const int y = (int)(112 + bob + window_index * 50);
+    for (int indice_janela = 0; indice_janela < 3; indice_janela++) {
+        const int y = (int)(112 + oscilacao + indice_janela * 50);
         DrawRectangle(302, y, 36, 28, (Color){255, 218, 112, 255});
         DrawRectangleLines(302, y, 36, 28, BLACK);
     }
 
-    DrawCircle(320, (int)(270 + bob), 12, (Color){225, 123, 145, 255});
-    DrawCircleLines(320, (int)(270 + bob), 12, BLACK);
+    DrawCircle(320, (int)(270 + oscilacao), 12, (Color){225, 123, 145, 255});
+    DrawCircleLines(320, (int)(270 + oscilacao), 12, BLACK);
 }
 
-static Rectangle GetTitleButton(int option_index)
+static Rectangle ObterBotaoTitulo(int indice_opcao)
 {
-    return (Rectangle){205.0f, 326.0f + option_index * 29.0f, 230.0f, 25.0f};
+    return (Rectangle){190.0f, 318.0f + indice_opcao * 29.0f, 260.0f, 26.0f};
 }
 
-static void DrawTitle(const GameState *game)
+static void DesenharTitulo(const EstadoJogo *jogo)
 {
-    const char *options[5] = {"NOVA RUN", "RELIQUIAS", "COMO JOGAR", "OPCOES", "SAIR"};
+    const char *opcoes[5] = {"NOVA RUN", "RELIQUIAS", "COMO JOGAR", "OPCOES", "SAIR"};
 
     DrawCircle(92, 90, 44, (Color){178, 220, 239, 255});
     DrawCircle(551, 101, 30, (Color){255, 207, 144, 255});
-    if (sprite_get(&game->sprites, SPRITE_TITLE_TOWER) != NULL) {
-        SpriteDrawCentered(&game->sprites, SPRITE_TITLE_TOWER, (Vector2){320, 160}, WHITE,
-                           game->elapsed_time, game->sprites.debug_bounds);
+    if (sprite_obter(&jogo->sprites, SPRITE_TITULO_TORRE) != NULL) {
+        SpriteDesenharAjustado(&jogo->sprites, SPRITE_TITULO_TORRE,
+                               (Rectangle){250, 12, 140, 210}, WHITE);
     } else {
-        DrawTower(game->elapsed_time);
+        DesenharTorre(jogo->tempo_decorrido);
     }
 
-    DrawText("ASCENSAO", 194, 268, 42, BLACK);
-    DrawText("DA TORRE", 238, 309, 25, (Color){73, 77, 85, 255});
-    DrawText(TextFormat("melhor andar: %d  |  vitorias: %d", game->save.best_floor,
-                        game->save.victories), 188, 294, 15, (Color){105, 106, 111, 255});
+    const char *titulo = "ASCENSAO";
+    const char *subtitulo = "DA TORRE";
+    DrawText(titulo, (LOGICO_LARGURA - MeasureText(titulo, 42)) / 2, 225, 42, BLACK);
+    DrawText(subtitulo, (LOGICO_LARGURA - MeasureText(subtitulo, 23)) / 2, 266, 23,
+             (Color){73, 77, 85, 255});
+    DrawText(TextFormat("melhor andar: %d  |  vitorias: %d", jogo->salvamento.melhor_andar,
+                        jogo->salvamento.vitorias), 188, 298, 13, (Color){86, 88, 96, 255});
 
-    for (int option_index = 0; option_index < 5; option_index++) {
-        const Rectangle button = GetTitleButton(option_index);
-        const bool selected = game->title_selection == option_index;
+    for (int indice_opcao = 0; indice_opcao < 5; indice_opcao++) {
+        const Rectangle botao = ObterBotaoTitulo(indice_opcao);
+        const bool selecionado = jogo->selecao_titulo == indice_opcao;
 
-        UiDrawPanel(button);
-        if (selected) {
-            DrawRectangleLinesEx((Rectangle){button.x - 4, button.y - 4,
-                                               button.width + 8, button.height + 8},
-                                 2.0f, (Color){225, 123, 145, 255});
-            DrawText(">", 178, (int)button.y + 4, 18, BLACK);
-        }
-        DrawText(options[option_index], (int)button.x + 24, (int)button.y + 5, 15, BLACK);
+        InterfaceDesenharBotao(botao, opcoes[indice_opcao], selecionado, true,
+                               (Color){225, 95, 122, 255});
     }
 }
 
-static void DrawPlaceholder(const char *title, const char *subtitle)
+static void DesenharMarcador(const char *titulo, const char *subtitulo)
 {
-    UiDrawPanel((Rectangle){62.0f, 122.0f, 516.0f, 238.0f});
-    DrawText(title, 96, 160, 32, BLACK);
-    DrawText(subtitle, 96, 218, 18, (Color){75, 78, 84, 255});
+    InterfaceDesenharPainel((Rectangle){62.0f, 122.0f, 516.0f, 238.0f});
+    DrawText(titulo, 96, 160, 32, BLACK);
+    DrawText(subtitulo, 96, 218, 18, (Color){75, 78, 84, 255});
     DrawText("Aperte X para voltar ao titulo.", 96, 306, 16, (Color){105, 106, 111, 255});
 }
 
-static void DrawChoice(int y, const char *text, bool selected)
+static Rectangle ObterAreaEscolha(int y)
 {
-    if (selected) DrawText(">", 91, y, 20, (Color){225, 95, 122, 255});
-    DrawText(text, 118, y, 18, BLACK);
+    return (Rectangle){90, (float)y - 5, 460, 29};
 }
 
-static const char *RewardName(const TowerReward *reward)
+static Rectangle ObterAreaEscolhaCompacta(int y)
 {
-    if (reward->kind == REWARD_ATTACK) return PlayerRewardAttack(reward->id).name;
-    if (reward->kind == REWARD_ITEM) return ItemGetDefinition((ItemId)reward->id)->name;
-    return reward->kind == REWARD_HP ? "+ HP MAX" : "+ DANO BASE";
+    return (Rectangle){164, (float)y - 5, 312, 29};
 }
 
-static void DrawReward(const GameState *game)
+static void DesenharEscolha(int y, const char *texto, bool selecionado)
 {
-    UiDrawPanel((Rectangle){62, 72, 516, 325});
+    const Rectangle area = ObterAreaEscolha(y);
+    InterfaceDesenharLinhaOpcao(area, selecionado, true, (Color){225, 95, 122, 255});
+    DrawText(texto, 108, y, 17, BLACK);
+}
+
+static void DesenharEscolhaCompacta(int y, const char *texto, bool selecionado)
+{
+    const Rectangle area = ObterAreaEscolhaCompacta(y);
+    InterfaceDesenharLinhaOpcao(area, selecionado, true, (Color){225, 95, 122, 255});
+    DrawText(texto, 182, y, 17, BLACK);
+}
+
+static bool AtualizarSelecaoMouse(const EstadoJogo *jogo, int *selecao, int total,
+                                  int y_inicial, int passo, bool compacta)
+{
+    for (int indice = 0; indice < total; indice++) {
+        const int y = y_inicial + indice * passo;
+        const Rectangle area = compacta ? ObterAreaEscolhaCompacta(y) : ObterAreaEscolha(y);
+        if (CheckCollisionPointRec(jogo->posicao_mouse, area)) {
+            *selecao = indice;
+            return jogo->mouse_pressionado;
+        }
+    }
+    return false;
+}
+
+static const char *NomeRecompensa(const RecompensaTorre *recompensa)
+{
+    if (recompensa->categoria == RECOMPENSA_ATAQUE) return JogadorAtaqueRecompensa(recompensa->id).nome;
+    if (recompensa->categoria == RECOMPENSA_ITEM) return ItemObterDefinicao((IdItem)recompensa->id)->nome;
+    return recompensa->categoria == RECOMPENSA_VIDA ? "+ HP MAX" : "+ DANO BASE";
+}
+
+static void DesenharRecompensa(const EstadoJogo *jogo)
+{
+    InterfaceDesenharPainel((Rectangle){62, 72, 516, 325});
     DrawText("RECOMPENSA", 223, 94, 26, BLACK);
-    DrawText(TextFormat("%d moedas  |  %d XP  |  %s", game->last_battle_result.coins,
-                        game->last_battle_result.xp,
-                        game->last_battle_result.outcome == BATTLE_OUTCOME_MERCY ? "POUPAR: BONUS" : "VITORIA"),
+    DrawText(TextFormat("%d moedas  |  %d XP  |  %s", jogo->ultimo_resultado_batalha.moedas,
+                        jogo->ultimo_resultado_batalha.xp,
+                        jogo->ultimo_resultado_batalha.desfecho == BATALHA_OUTCOME_MISERICORDIA ? "POUPAR: BONUS" : "VITORIA"),
              114, 130, 16, DARKGRAY);
-    if (game->replacing_attack) {
+    if (jogo->substituindo_ataque) {
         DrawText("Escolha o ataque para substituir:", 104, 172, 18, BLACK);
         DrawText("W/S ou setas: escolher | ESPACO/ENTER: confirmar | X: voltar",
                  104, 383, 13, DARKGRAY);
-        for (int index = 0; index < game->player.attack_count; index++) {
-            DrawChoice(208 + index * 30, game->player.attacks[index].name,
-                       game->replacement_selection == index);
+        for (int indice = 0; indice < jogo->jogador.total_ataques; indice++) {
+            DesenharEscolha(208 + indice * 30, jogo->jogador.ataques[indice].nome,
+                       jogo->selecao_substituicao == indice);
         }
     } else {
         DrawText("Escolha uma opcao:", 104, 172, 18, BLACK);
-        for (int index = 0; index < 3; index++) {
-            DrawChoice(208 + index * 42, RewardName(&game->tower.rewards[index]),
-                       game->reward_selection == index);
+        for (int indice = 0; indice < 3; indice++) {
+            DesenharEscolha(208 + indice * 42, NomeRecompensa(&jogo->torre.recompensas[indice]),
+                       jogo->selecao_recompensa == indice);
         }
     }
 }
 
-static void DrawRest(const GameState *game)
+static void DesenharDescanso(const EstadoJogo *jogo)
 {
-    UiDrawPanel((Rectangle){62, 104, 516, 260});
+    InterfaceDesenharPainel((Rectangle){62, 104, 516, 260});
     DrawText("PONTO DE DESCANSO", 175, 132, 26, BLACK);
-    DrawText(TextFormat("HP %d / %d", game->player.hp, game->player.hp_max), 225, 170, 18, DARKGRAY);
-    DrawChoice(222, "DESCANSAR  (+50% HP)", game->rest_selection == 0);
-    DrawChoice(264, "TREINAR  (+1 dano permanente)", game->rest_selection == 1);
+    DrawText(TextFormat("HP %d / %d", jogo->jogador.hp, jogo->jogador.vida_maxima), 225, 170, 18, DARKGRAY);
+    DesenharEscolha(222, "DESCANSAR  (+50% HP)", jogo->selecao_descanso == 0);
+    DesenharEscolha(264, "TREINAR  (+1 dano permanente)", jogo->selecao_descanso == 1);
 }
 
-static void DrawShop(const GameState *game)
+static void DesenharLoja(const EstadoJogo *jogo)
 {
-    UiDrawPanel((Rectangle){62, 78, 516, 322});
+    InterfaceDesenharPainel((Rectangle){62, 78, 516, 322});
     DrawText("LOJA DA TORRE", 205, 104, 26, BLACK);
-    DrawText(TextFormat("MOEDAS: %d", game->tower.coins), 235, 140, 18, DARKGRAY);
-    for (int index = 0; index < 3; index++) {
-        const ItemDefinition *item = ItemGetDefinition(game->tower.shop_items[index]);
-        if (sprite_get(&game->sprites, SpriteItemId(item->id)) != NULL) {
-            SpriteDrawCentered(&game->sprites, SpriteItemId(item->id),
-                               (Vector2){103, 181.0f + index * 42.0f}, WHITE, 0.0f,
-                               game->sprites.debug_bounds);
+    DrawText(TextFormat("MOEDAS: %d", jogo->torre.moedas), 235, 140, 18, DARKGRAY);
+    for (int indice = 0; indice < 3; indice++) {
+        const DefinicaoItem *item = ItemObterDefinicao(jogo->torre.itens_loja[indice]);
+        if (sprite_obter(&jogo->sprites, SpriteIdItem(item->id)) != NULL) {
+            SpriteDesenharCentralizado(&jogo->sprites, SpriteIdItem(item->id),
+                               (Vector2){103, 181.0f + indice * 42.0f}, WHITE, 0.0f,
+                               jogo->sprites.depurar_limites);
         }
-        DrawChoice(187 + index * 42, TextFormat("%s - %d moedas", item->name,
-                                                game->tower.shop_prices[index]),
-                   game->shop_selection == index);
+        DesenharEscolha(187 + indice * 42, TextFormat("%s - %d moedas", item->nome,
+                                                jogo->torre.precos_loja[indice]),
+                   jogo->selecao_loja == indice);
     }
-    DrawChoice(325, "SAIR E SUBIR", game->shop_selection == 3);
-    if (game->shop_selection < 3) {
-        DrawText(ItemGetDefinition(game->tower.shop_items[game->shop_selection])->description,
+    DesenharEscolha(325, "SAIR E SUBIR", jogo->selecao_loja == 3);
+    if (jogo->selecao_loja < 3) {
+        DrawText(ItemObterDefinicao(jogo->torre.itens_loja[jogo->selecao_loja])->descricao,
                  103, 365, 14, DARKGRAY);
     }
-    if (game->screen_message[0] != '\0') DrawText(game->screen_message, 103, 382, 14, MAROON);
+    if (jogo->mensagem_tela[0] != '\0') DrawText(jogo->mensagem_tela, 103, 382, 14, MAROON);
 }
 
-static void DrawRelics(const GameState *game)
+static void DesenharReliquias(const EstadoJogo *jogo)
 {
-    UiDrawPanel((Rectangle){62, 104, 516, 270});
+    InterfaceDesenharPainel((Rectangle){62, 104, 516, 270});
     DrawText("RELIQUIAS", 246, 132, 28, BLACK);
-    DrawText(TextFormat("FRAGMENTOS: %d", game->save.fragments), 218, 169, 18, DARKGRAY);
-    DrawChoice(220, "Erva Lunar inicial - 8 fragmentos", game->relic_selection == 0);
-    DrawChoice(264, "Raio Manso inicial - 10 fragmentos", game->relic_selection == 1);
+    DrawText(TextFormat("FRAGMENTOS: %d", jogo->salvamento.fragmentos), 218, 169, 18, DARKGRAY);
+    DesenharEscolha(220, "Erva Lunar inicial - 8 fragmentos", jogo->selecao_reliquia == 0);
+    DesenharEscolha(264, "Raio Manso inicial - 10 fragmentos", jogo->selecao_reliquia == 1);
     DrawText("X/Backspace: voltar", 205, 331, 14, DARKGRAY);
 }
 
-static void DrawOptions(const GameState *game)
+static void DesenharOpcoes(const EstadoJogo *jogo)
 {
     static const char *difficulty_names[] = {"CALMO", "NORMAL", "DIFICIL"};
-    UiDrawPanel((Rectangle){62, 30, 516, 420});
-    DrawText("OPCOES", 260, 120, 28, BLACK);
-    DrawChoice(173, TextFormat("Musica: %d%%", (int)(game->save.music_volume * 100.0f)), game->option_selection == 0);
-    DrawChoice(215, TextFormat("Efeitos: %d%%", (int)(game->save.effects_volume * 100.0f)), game->option_selection == 1);
-    DrawChoice(257, TextFormat("Tela cheia: %s", game->save.fullscreen ? "SIM" : "NAO"), game->option_selection == 2);
-    DrawChoice(299, TextFormat("Tremor de linha: %s", game->save.line_tremor ? "SIM" : "NAO"), game->option_selection == 3);
-    DrawChoice(341, TextFormat("Efeitos reduzidos: %s", game->save.reduced_effects ? "SIM" : "NAO"), game->option_selection == 4);
-    DrawChoice(383, TextFormat("Dificuldade: %s", difficulty_names[game->save.difficulty]), game->option_selection == 5);
-    DrawChoice(413, "APAGAR SAVE", game->option_selection == 6);
-    DrawChoice(435, "REVER TUTORIAL", game->option_selection == 7);
-    DrawText("F11 alterna tela cheia.", 106, 456, 14, DARKGRAY);
+    InterfaceDesenharPainel((Rectangle){62, 30, 516, 420});
+    DrawText("OPCOES", 260, 55, 28, BLACK);
+    DesenharEscolha(105, TextFormat("Musica: %d%%", (int)(jogo->salvamento.volume_musica * 100.0f)), jogo->selecao_opcao == 0);
+    DesenharEscolha(141, TextFormat("Efeitos: %d%%", (int)(jogo->salvamento.volume_efeitos * 100.0f)), jogo->selecao_opcao == 1);
+    DesenharEscolha(177, TextFormat("Tela cheia: %s", jogo->salvamento.tela_cheia ? "SIM" : "NAO"), jogo->selecao_opcao == 2);
+    DesenharEscolha(213, TextFormat("Tremor de linha: %s", jogo->salvamento.tremor_linha ? "SIM" : "NAO"), jogo->selecao_opcao == 3);
+    DesenharEscolha(249, TextFormat("Efeitos reduzidos: %s", jogo->salvamento.efeitos_reduzidos ? "SIM" : "NAO"), jogo->selecao_opcao == 4);
+    DesenharEscolha(285, TextFormat("Dificuldade: %s", difficulty_names[jogo->salvamento.dificuldade]), jogo->selecao_opcao == 5);
+    DesenharEscolha(321, "APAGAR SAVE", jogo->selecao_opcao == 6);
+    DesenharEscolha(357, "REVER TUTORIAL", jogo->selecao_opcao == 7);
+    DesenharEscolha(393, TextFormat("Dicas: %s", jogo->salvamento.tutorial_concluido ? "DESATIVADAS" : "ATIVADAS"), jogo->selecao_opcao == 8);
+    InterfaceDesenharAtalho("ENTER alterar  |  X voltar  |  F11 tela cheia", 174, 422);
 }
 
-enum { TUTORIAL_MENU = 1, TUTORIAL_TYPES = 2, TUTORIAL_MERCY = 4,
-       TUTORIAL_DEFENSE = 8, TUTORIAL_QTE = 16, TUTORIAL_ALL = 31 };
+enum { TUTORIAL_MENU = 1, TUTORIAL_TIPOS = 2, TUTORIAL_MERCY = 4,
+       TUTORIAL_DEFESA = 8, TUTORIAL_QTE = 16, TUTORIAL_ALL = 31 };
 
-static const char *TutorialText(int tip)
+static const char *TextoTutorial(int dica)
 {
-    static const char *const tips[] = {
+    static const char *const dicas[] = {
         "Use WASD ou setas para escolher ATACAR, AGIR, ITEM e POUPAR.",
-        "AGIR > Analisar revela o tipo e a fraqueza do inimigo.",
-        "Mercy permite poupar; agressividade alta deixa a defesa mais perigosa.",
-        "Na defesa, mova a alma com WASD ou setas e fuja dos projeteis.",
-        "Nos QTEs, use ESPACO/ENTER/Z. Sequencias usam W, A, S e D."
+        "AGIR > Analisar revela o tipo e libera as outras acoes de AGIR.",
+        "MERCI permite poupar; ESTRESSE alto deixa a defesa mais perigosa.",
+        "Defesa: WASD/setas movem e SHIFT executa um dash. Com gravidade, ESPACO/W/CIMA pula.",
+        "Nos QTEs, use ESPACO/ENTER/Z. Ritmo pede tres acertos com a mesma tecla."
     };
-    return tips[tip];
+    return dicas[dica];
 }
 
-static bool UpdateTutorial(GameState *game)
+static bool AtualizarTutorial(EstadoJogo *jogo)
 {
-    int required = 0;
+    int exigido = 0;
 
-    if (game->save.tutorial_done) return false;
-    if (game->tutorial_timer < 0.0f) {
-        if (game->tutorial_wait_phase == (int)game->battle.phase) return false;
-        game->tutorial_timer = 0.0f;
-        game->tutorial_wait_phase = -1;
-    }
-    if (game->tutorial_timer > 0.0f) {
-        if (input_cancel_pressed()) {
-            /* X/Backspace is an explicit "close all tips" command. */
-            game->save.tutorial_done = true;
-            game->tutorial_timer = 0.0f;
-        } else if (input_confirm_pressed()) {
-            /* Confirm closes only this tip; the next waits for another battle state. */
-            game->tutorial_timer = -1.0f;
-            game->tutorial_wait_phase = (int)game->battle.phase;
-        }
-        else game->tutorial_timer -= GetFrameTime();
+    /* Consome tambem a soltura para fechar uma dica sem iniciar ou concluir um QTE. */
+    if (jogo->temporizador_tutorial == -2.0f) {
+        if (!IsKeyDown(KEY_SPACE)) jogo->temporizador_tutorial = -1.0f;
         return true;
     }
-    if (game->battle.phase == BATTLE_PLAYER_MENU) {
-        if ((game->save.tutorial_seen & TUTORIAL_MENU) == 0) required = TUTORIAL_MENU;
-        else if ((game->save.tutorial_seen & TUTORIAL_TYPES) == 0) required = TUTORIAL_TYPES;
-        else if ((game->save.tutorial_seen & TUTORIAL_MERCY) == 0) required = TUTORIAL_MERCY;
-    } else if (game->battle.phase == BATTLE_ENEMY_TURN && (game->save.tutorial_seen & TUTORIAL_DEFENSE) == 0) {
-        required = TUTORIAL_DEFENSE;
-    } else if (game->battle.phase == BATTLE_PLAYER_QTE && (game->save.tutorial_seen & TUTORIAL_QTE) == 0) {
-        required = TUTORIAL_QTE;
+    if (jogo->salvamento.tutorial_concluido) return false;
+    if (jogo->temporizador_tutorial < 0.0f) {
+        if (jogo->fase_espera_tutorial == (int)jogo->batalha.fase) return false;
+        jogo->temporizador_tutorial = 0.0f;
+        jogo->fase_espera_tutorial = -1;
     }
-    if (required != 0) {
-        int tip = 0;
-        while ((1 << tip) != required) tip++;
-        game->tutorial_tip = tip;
-        game->tutorial_timer = 2.4f;
-        game->save.tutorial_seen |= (unsigned int)required;
-        if (game->save.tutorial_seen == TUTORIAL_ALL) game->save.tutorial_done = true;
+    if (jogo->temporizador_tutorial > 0.0f) {
+        if (IsKeyPressed(KEY_SPACE)) {
+            jogo->salvamento.tutorial_visto |= 1u << jogo->dica_tutorial;
+            jogo->salvamento.tutorial_concluido = jogo->salvamento.tutorial_visto == TUTORIAL_ALL;
+            jogo->temporizador_tutorial = -2.0f;
+            jogo->fase_espera_tutorial = (int)jogo->batalha.fase;
+            SalvamentoGravar(&jogo->salvamento);
+        }
+        return true;
+    }
+    if (jogo->batalha.fase == BATALHA_JOGADOR_MENU) {
+        if ((jogo->salvamento.tutorial_visto & TUTORIAL_MENU) == 0) exigido = TUTORIAL_MENU;
+        else if ((jogo->salvamento.tutorial_visto & TUTORIAL_TIPOS) == 0) exigido = TUTORIAL_TIPOS;
+        else if ((jogo->salvamento.tutorial_visto & TUTORIAL_MERCY) == 0) exigido = TUTORIAL_MERCY;
+    } else if (jogo->batalha.fase == BATALHA_INIMIGO_TURNO && (jogo->salvamento.tutorial_visto & TUTORIAL_DEFESA) == 0) {
+        exigido = TUTORIAL_DEFESA;
+    } else if (jogo->batalha.fase == BATALHA_JOGADOR_QTE && (jogo->salvamento.tutorial_visto & TUTORIAL_QTE) == 0) {
+        exigido = TUTORIAL_QTE;
+    }
+    if (exigido != 0) {
+        int dica = 0;
+        while ((1 << dica) != exigido) dica++;
+        jogo->dica_tutorial = dica;
+        jogo->temporizador_tutorial = 1.0f; /* Modal: permanece aberto ate ESPACO ser pressionado. */
         return true;
     }
     return false;
 }
 
-static void DrawTutorial(const GameState *game)
+static void DesenharTutorial(const EstadoJogo *jogo)
 {
-    const Rectangle box = {54, 180, 532, 58};
-    UiDrawPanel(box);
-    DrawText("DICA", 72, 191, 14, (Color){203, 84, 104, 255});
-    DrawText(TutorialText(game->tutorial_tip), 72, 209, 12, BLACK);
-    DrawText("ESPACO/ENTER: avancar  |  X: fechar tutorial", 280, 225, 11, DARKGRAY);
+    const Rectangle caixa = {54, 166, 532, 92};
+    DrawRectangle(0, 0, LOGICO_LARGURA, LOGICO_ALTURA, (Color){0, 0, 0, 140});
+    InterfaceDesenharPainel(caixa);
+    DrawText("DICA", 72, 179, 14, (Color){203, 84, 104, 255});
+    InterfaceDesenharTextoQuebrado(TextoTutorial(jogo->dica_tutorial),
+                (Rectangle){72, 199, 496, 35}, 14, 2, BLACK);
+    InterfaceDesenharAtalho("ESPACO  fechar", 444, 234);
 }
 
-static void DrawHowToPlay(void)
+static void DesenharComoJogar(void)
 {
-    UiDrawPanel((Rectangle){48, 54, 544, 370});
-    DrawText("COMO JOGAR", 232, 76, 26, BLACK);
-    DrawText("Menu: WASD/setas | confirmar: ESPACO, ENTER ou Z | voltar: X", 72, 121, 14, BLACK);
-    DrawText("Combate: ataque usa QTE; AGIR revela tipos e cria misericordia.", 72, 155, 14, BLACK);
-    DrawText("Defesa: mova a alma com WASD ou setas e desvie dos projeteis.", 72, 187, 14, BLACK);
-    DrawText("QTE: ESPACO no timing/segurar; sequencia usa W, A, S e D.", 72, 219, 14, BLACK);
-    DrawText("Tipos: Chama > Planta > Agua > Chama | Luz <-> Sombra.", 72, 251, 14, BLACK);
-    DrawText("Poupar exige misericordia alta e agressividade baixa.", 72, 283, 14, BLACK);
-    DrawText("ESC: pausa. X/Backspace: voltar.", 72, 345, 15, DARKGRAY);
+    static const char *titulos[] = {"MENU", "COMBATE", "DEFESA", "QTE", "TIPOS", "POUPAR"};
+    static const char *textos[] = {
+        "WASD ou setas navegam. ESPACO, ENTER ou Z confirmam. X volta.",
+        "ATACAR inicia o QTE. AGIR revela tipos e aumenta a misericordia.",
+        "WASD ou setas movem a alma. SHIFT da dash. Com gravidade, ESPACO pula.",
+        "Impacto pede precisao, Ritmo pede 3 acertos e Carga pede segurar e soltar.",
+        "Chama vence Planta; Planta vence Agua; Agua vence Chama. Luz e Sombra se enfrentam.",
+        "MERCI alta e ESTRESSE baixo permitem encerrar a luta sem atacar."
+    };
+    InterfaceDesenharPainel((Rectangle){48, 38, 544, 404});
+    DrawText("COMO JOGAR", 232, 57, 26, BLACK);
+    for (int indice = 0; indice < 6; indice++) {
+        int y = 98 + indice * 49;
+        DrawText(titulos[indice], 72, y, 12, (Color){203, 84, 104, 255});
+        InterfaceDesenharTextoQuebrado(textos[indice],
+                    (Rectangle){72, (float)y + 15, 496, 31}, 14, 2, BLACK);
+    }
+    InterfaceDesenharAtalho("X  voltar", 478, 410);
 }
 
-static void DrawFxDebug(const GameState *game)
+static void DesenharDepuracaoEfeitos(const EstadoJogo *jogo)
 {
-    const SpriteId enemy_id = SpriteEnemyId((EnemyId)game->pattern_debug_enemy, false);
+    const IdSprite enemy_id = SpriteIdInimigo((IdInimigo)jogo->inimigo_depuracao_padrao, false);
 
     DrawText("TESTE DE PADROES", 195, 28, 25, BLACK);
-    DrawText(TextFormat("Padrao %d | inimigo %d", game->pattern_debug_id, game->pattern_debug_enemy),
+    DrawText(TextFormat("Padrao %d | inimigo %d", jogo->id_depuracao_padrao, jogo->inimigo_depuracao_padrao),
              70, 66, 18, DARKGRAY);
-    DrawText("A/D: padrao | W/S: inimigo | ESPACO: reiniciar | X: voltar", 55, 440, 14, DARKGRAY);
-    if (sprite_get(&game->sprites, enemy_id) != NULL) {
-        SpriteDrawCentered(&game->sprites, enemy_id, (Vector2){320, 190}, WHITE, game->elapsed_time,
-                           game->sprites.debug_bounds);
+    DrawText(TextFormat("HP %d/%d | dano: %s", jogo->jogador.hp, jogo->jogador.vida_maxima,
+                        jogo->batalha.defesa.depurar_invencivel ? "ignorado" : "ativo"),
+             70, 90, 14, DARKGRAY);
+    DrawText("WASD/setas: mover | SHIFT: dash | ESPACO: pular | R: reiniciar | G: Gas Sombrio", 20, 438, 11, DARKGRAY);
+    DrawText("F9/F10: padrao | PgUp/PgDn: inimigo | I: alternar dano | X: voltar", 35, 454, 11, DARKGRAY);
+    if (sprite_obter(&jogo->sprites, enemy_id) != NULL) {
+        SpriteDesenharCentralizado(&jogo->sprites, enemy_id, (Vector2){320, 190}, WHITE, jogo->tempo_decorrido,
+                           jogo->sprites.depurar_limites);
     } else {
-        DrawCircle(320, 190, 35, type_color(TYPE_SHADOW));
+        DrawCircle(320, 190, 35, cor_tipo(TIPO_SOMBRA));
         DrawCircleLines(320, 190, 35, BLACK);
     }
-    DefenseDraw(&game->battle.defense, !game->save.reduced_effects, &game->sprites);
+    DefesaDesenhar(&jogo->batalha.defesa, !jogo->salvamento.efeitos_reduzidos, &jogo->sprites);
 }
 
-static void DrawPause(const GameState *game)
+static void DesenharPausa(const EstadoJogo *jogo)
 {
-    const char *options[] = {"CONTINUAR", "OPCOES", "COMO JOGAR", "DESISTIR DA RUN", "TITULO"};
-    UiDrawPanel((Rectangle){136, 92, 368, 292});
+    const char *opcoes[] = {"CONTINUAR", "OPCOES", "COMO JOGAR", "DESISTIR DA RUN", "TITULO"};
+    InterfaceDesenharPainel((Rectangle){136, 92, 368, 292});
     DrawText("PAUSADO", 248, 119, 27, BLACK);
-    if (game->pause_confirm_quit) {
+    if (jogo->pausa_confirmar_saida) {
+        const Rectangle botao_desistir = {164, 218, 146, 38};
+        const Rectangle botao_cancelar = {330, 218, 146, 38};
+        const bool sobre_desistir = CheckCollisionPointRec(jogo->posicao_mouse, botao_desistir);
+        const bool sobre_cancelar = CheckCollisionPointRec(jogo->posicao_mouse, botao_cancelar);
         DrawText("Desistir desta run?", 210, 178, 18, MAROON);
-        DrawText("ESPACO confirma | X cancela", 178, 226, 15, DARKGRAY);
+        InterfaceDesenharBotao(botao_desistir, "DESISTIR", sobre_desistir, true,
+                               (Color){197, 69, 78, 255});
+        InterfaceDesenharBotao(botao_cancelar, "CANCELAR", sobre_cancelar || !sobre_desistir, true,
+                               (Color){83, 132, 171, 255});
+        InterfaceDesenharAtalho("ESPACO confirmar  |  X cancelar", 206, 278);
         return;
     }
-    for (int index = 0; index < 5; index++) DrawChoice(170 + index * 34, options[index], game->pause_selection == index);
+    for (int indice = 0; indice < 5; indice++)
+        DesenharEscolhaCompacta(170 + indice * 34, opcoes[indice], jogo->selecao_pausa == indice);
 }
 
-static void DrawDeleteConfirm(const GameState *game)
+static void DesenharConfirmacaoExclusao(const EstadoJogo *jogo)
 {
-    UiDrawPanel((Rectangle){93, 158, 454, 164});
+    InterfaceDesenharPainel((Rectangle){93, 158, 454, 164});
     DrawText("Apagar todo o save?", 191, 190, 23, BLACK);
-    DrawChoice(245, "SIM", game->delete_yes);
-    DrawChoice(275, "NAO", !game->delete_yes);
+    DesenharEscolhaCompacta(245, "SIM", jogo->excluir_sim);
+    DesenharEscolhaCompacta(275, "NAO", !jogo->excluir_sim);
 }
 
-static void StartFloor(GameState *game)
+static void IniciarAndar(EstadoJogo *jogo)
 {
-    game->enemy = EnemyCreate(TowerEnemyForFloor(&game->tower, game->tower.floor));
-    TowerScaleEnemy(&game->enemy, game->tower.floor);
-    RenderSetFloor(&game->render, game->tower.floor, game->enemy.boss);
-    BattleInit(&game->battle, &game->dialogue, game->tower.floor);
-    game->battle.qte_difficulty = BalanceQteDifficulty(game->tower.floor, game->save.difficulty);
-    game->transition_timer = 0.70f;
-    game->screen = BATTLE;
+    jogo->inimigo = InimigoCriar(TorreInimigoDoAndar(&jogo->torre, jogo->torre.andar));
+    TorreEscalarInimigo(&jogo->inimigo, jogo->torre.andar);
+    RenderizacaoDefinirAndar(&jogo->renderizacao, jogo->torre.andar, jogo->inimigo.chefe);
+    BatalhaInicializar(&jogo->batalha, &jogo->dialogo, jogo->torre.andar);
+    jogo->batalha.dificuldade_qte = BalanceamentoDificuldadeQte(jogo->torre.andar, jogo->salvamento.dificuldade);
+    jogo->temporizador_transicao = 0.70f;
+    jogo->tela = BATALHA;
 }
 
-static void StartRun(GameState *game)
+static void IniciarPartida(EstadoJogo *jogo)
 {
-    game->run_counter++;
-    game->run_started_at = (float)GetTime();
-    PlayerInit(&game->player);
-    game->player.incoming_damage_multiplier = BalanceIncomingDamageMultiplier(game->save.difficulty);
-    if (game->save.relic_kind == RELIC_ITEM) PlayerAddItem(&game->player, (ItemId)game->save.relic_id, 1);
-    if (game->save.relic_kind == RELIC_ATTACK) PlayerAddAttack(&game->player,
-        PlayerRewardAttack(game->save.relic_id), -1);
-    TowerInit(&game->tower, (unsigned int)(GetTime() * 1000.0) + game->run_counter * 7919u);
-    game->last_battle_result = (BattleResult){0};
-    game->screen_message[0] = '\0';
-    StartFloor(game);
+    jogo->contador_partidas++;
+    jogo->partida_iniciada_em = (float)GetTime();
+    JogadorInicializar(&jogo->jogador);
+    jogo->jogador.multiplicador_dano_recebido = BalanceamentoMultiplicadorDanoRecebido(jogo->salvamento.dificuldade);
+    if (jogo->salvamento.tipo_reliquia == RELIQUIA_ITEM) JogadorAdicionarItem(&jogo->jogador, (IdItem)jogo->salvamento.id_reliquia, 1);
+    if (jogo->salvamento.tipo_reliquia == RELIQUIA_ATAQUE) JogadorAdicionarAtaque(&jogo->jogador,
+        JogadorAtaqueRecompensa(jogo->salvamento.id_reliquia), -1);
+    TorreInicializar(&jogo->torre, (unsigned int)(GetTime() * 1000.0) + jogo->contador_partidas * 7919u);
+    jogo->ultimo_resultado_batalha = (ResultadoBatalha){0};
+    jogo->mensagem_tela[0] = '\0';
+    IniciarAndar(jogo);
 }
 
-static void FinishRun(GameState *game, bool victory)
+static void FinalizarPartida(EstadoJogo *jogo, bool vitoria)
 {
-    if (game->tower.floor > game->save.best_floor) game->save.best_floor = game->tower.floor;
-    game->save.total_runs++;
-    if (victory) game->save.victories++;
-    game->save.mercy_wins += game->tower.mercy_wins;
-    game->save.damage_wins += game->tower.damage_wins;
-    game->save.fragments += game->tower.floor + (victory ? 15 : 0);
-    SaveApplyUnlocks(&game->save);
-    SaveWrite(&game->save);
-    if (game->telemetry_enabled) {
-        PlaytestLogRun(game->tower.floor, game->tower.coins, victory,
-                       (float)GetTime() - game->run_started_at);
+    if (jogo->torre.andar > jogo->salvamento.melhor_andar) jogo->salvamento.melhor_andar = jogo->torre.andar;
+    jogo->salvamento.total_runs++;
+    if (vitoria) jogo->salvamento.vitorias++;
+    jogo->salvamento.vitorias_misericordia += jogo->torre.vitorias_misericordia;
+    jogo->salvamento.vitorias_dano += jogo->torre.vitorias_dano;
+    jogo->salvamento.fragmentos += jogo->torre.andar + (vitoria ? 15 : 0);
+    SalvamentoAplicarDesbloqueios(&jogo->salvamento);
+    SalvamentoGravar(&jogo->salvamento);
+    if (jogo->telemetria_ativada) {
+        TesteJogoRegistrarPartida(jogo->torre.andar, jogo->torre.moedas, vitoria,
+                       (float)GetTime() - jogo->partida_iniciada_em);
     }
 }
 
-static void ResumePausedRun(GameState *game)
+static void RetomarPartidaPausada(EstadoJogo *jogo)
 {
-    qte_resume_with_guard(&game->qte);
-    game->screen = game->screen_before_pause;
+    qte_retomar_com_guarda(&jogo->qte);
+    jogo->tela = jogo->tela_antes_pausa;
 }
 
-static void ContinueAfterReward(GameState *game)
+static void ContinuarAposRecompensa(EstadoJogo *jogo)
 {
-    const int completed_floor = game->tower.floor;
+    const int andar_concluido = jogo->torre.andar;
 
-    if (completed_floor >= TOWER_FLOORS) {
-        FinishRun(game, true);
-        game->end_selection = 0;
-        game->screen = VICTORY;
+    if (andar_concluido >= TOTAL_ANDARES_TORRE) {
+        FinalizarPartida(jogo, true);
+        jogo->selecao_final = 0;
+        jogo->tela = VITORIA;
         return;
     }
-    game->tower.floor++;
-    if (TowerShouldRest(completed_floor)) game->screen = REST;
-    else if (TowerShouldShop(completed_floor)) game->screen = SHOP;
-    else StartFloor(game);
+    jogo->torre.andar++;
+    if (TorreDeveDescansar(andar_concluido)) jogo->tela = DESCANSO;
+    else if (TorreDeveTerLoja(andar_concluido)) jogo->tela = LOJA;
+    else IniciarAndar(jogo);
 }
 
-static void ApplyReward(GameState *game, int selection)
+static void AplicarRecompensa(EstadoJogo *jogo, int selecao)
 {
-    const TowerReward reward = game->tower.rewards[selection];
+    const RecompensaTorre recompensa = jogo->torre.recompensas[selecao];
 
-    if (reward.kind == REWARD_ATTACK) {
-        const Attack attack = PlayerRewardAttack(reward.id);
-        if (game->player.attack_count >= MAX_EQUIPPED_ATTACKS && !game->replacing_attack) {
-            game->replacing_attack = true;
-            game->replacement_selection = 0;
+    if (recompensa.categoria == RECOMPENSA_ATAQUE) {
+        const Ataque ataque = JogadorAtaqueRecompensa(recompensa.id);
+        if (jogo->jogador.total_ataques >= MAXIMO_EQUIPADOS_ATAQUES && !jogo->substituindo_ataque) {
+            jogo->substituindo_ataque = true;
+            jogo->selecao_substituicao = 0;
             return;
         }
-        if (!PlayerAddAttack(&game->player, attack,
-                             game->player.attack_count >= MAX_EQUIPPED_ATTACKS ?
-                             game->replacement_selection : -1)) {
-            /* A reward can never silently consume itself when the attack is already equipped. */
-            snprintf(game->screen_message, sizeof(game->screen_message),
+        if (!JogadorAdicionarAtaque(&jogo->jogador, ataque,
+                             jogo->jogador.total_ataques >= MAXIMO_EQUIPADOS_ATAQUES ?
+                             jogo->selecao_substituicao : -1)) {
+            /* Uma recompensa nunca se perde silenciosamente se o ataque ja estiver equipado. */
+            snprintf(jogo->mensagem_tela, sizeof(jogo->mensagem_tela),
                      "Esse ataque ja esta equipado.");
-            game->replacing_attack = false;
+            jogo->substituindo_ataque = false;
             return;
         }
-    } else if (reward.kind == REWARD_ITEM) {
-        PlayerAddItem(&game->player, (ItemId)reward.id, reward.value);
-    } else if (reward.kind == REWARD_HP) {
-        game->player.hp_max += reward.value;
-        PlayerHeal(&game->player, reward.value * 2);
+    } else if (recompensa.categoria == RECOMPENSA_ITEM) {
+        JogadorAdicionarItem(&jogo->jogador, (IdItem)recompensa.id, recompensa.valor);
+    } else if (recompensa.categoria == RECOMPENSA_VIDA) {
+        jogo->jogador.vida_maxima += recompensa.valor;
+        JogadorCurar(&jogo->jogador, recompensa.valor * 2);
     } else {
-        game->player.permanent_damage_bonus += reward.value / 2;
+        jogo->jogador.bonus_dano_permanente += recompensa.valor / 2;
     }
-    game->replacing_attack = false;
-    ContinueAfterReward(game);
+    jogo->substituindo_ataque = false;
+    ContinuarAposRecompensa(jogo);
 }
 
-void GameInit(GameState *game)
+void JogoInicializar(EstadoJogo *jogo)
 {
-    memset(game, 0, sizeof(*game));
-    game->screen = TITLE;
-    game->tutorial_wait_phase = -1;
-    game->screen_before_pause = TITLE;
-    game->title_selection = 0;
-    game->elapsed_time = 0.0f;
-    game->quit_requested = false;
-    SaveLoad(&game->save);
-    RenderInit(&game->render, game->save.line_tremor);
-    AudioInit(&game->audio, game->save.music_volume, game->save.effects_volume);
-    SpritesInit(&game->sprites);
-    if (game->save.fullscreen) ToggleFullscreen();
-    game->next_test_enemy = ENEMY_DUST_MOTH;
-    game->run_counter = 0;
-    game->last_battle_result = (BattleResult){0};
-    PlayerInit(&game->player);
-    TowerInit(&game->tower, 1u);
-    game->enemy = EnemyCreate(ENEMY_DUST_MOTH);
-    BattleInit(&game->battle, &game->dialogue, 1);
+    memset(jogo, 0, sizeof(*jogo));
+    jogo->tela = TITULO;
+    jogo->fase_espera_tutorial = -1;
+    jogo->tela_antes_pausa = TITULO;
+    jogo->selecao_titulo = 0;
+    jogo->tempo_decorrido = 0.0f;
+    jogo->saida_solicitada = false;
+    SalvamentoCarregar(&jogo->salvamento);
+    RenderizacaoInicializar(&jogo->renderizacao, jogo->salvamento.tremor_linha);
+    AudioInicializar(&jogo->audio, jogo->salvamento.volume_musica, jogo->salvamento.volume_efeitos);
+    SpritesInicializar(&jogo->sprites);
+    if (jogo->salvamento.tela_cheia) ToggleFullscreen();
+    jogo->contador_partidas = 0;
+    jogo->ultimo_resultado_batalha = (ResultadoBatalha){0};
+    JogadorInicializar(&jogo->jogador);
+    TorreInicializar(&jogo->torre, 1u);
+    jogo->inimigo = InimigoCriar(INIMIGO_POEIRA_MARIPOSA);
+    BatalhaInicializar(&jogo->batalha, &jogo->dialogo, 1);
 }
 
-void GameUpdate(GameState *game)
+void JogoAtualizar(EstadoJogo *jogo)
 {
-    game->elapsed_time += GetFrameTime();
-    if (input_confirm_pressed()) AudioPlay(&game->audio, AUDIO_CONFIRM);
-    if (input_cancel_pressed()) AudioPlay(&game->audio, AUDIO_CANCEL);
-    if (input_up_pressed() || input_down_pressed() || input_left_pressed() || input_right_pressed()) {
-        AudioPlay(&game->audio, AUDIO_CURSOR);
+    if ((jogo->tela == BATALHA || jogo->tela == DEPURAR_EFEITOS) && !IsWindowFocused()) {
+        AudioAtualizar(&jogo->audio, GetFrameTime());
+        return;
+    }
+    if (jogo->tela == BATALHA && jogo->temporizador_transicao <= 0.0f &&
+        jogo->batalha.temporizador_pausa_impacto <= 0.0f && AtualizarTutorial(jogo)) {
+        AudioAtualizar(&jogo->audio, GetFrameTime());
+        return;
+    }
+    jogo->tempo_decorrido += GetFrameTime();
+    if (entrada_confirmar_pressionada()) AudioTocar(&jogo->audio, AUDIO_CONFIRMAR);
+    if (entrada_cancelar_pressionada()) AudioTocar(&jogo->audio, AUDIO_CANCELAR);
+    if (entrada_cima_pressionada() || entrada_baixo_pressionada() || entrada_esquerda_pressionada() || entrada_direita_pressionada()) {
+        AudioTocar(&jogo->audio, AUDIO_CURSOR);
     }
 #ifndef NDEBUG
-    if (IsKeyPressed(KEY_F8) && game->screen != DEBUG_FX) {
-        game->screen_before_pause = game->screen;
-        game->screen = DEBUG_FX;
-        game->pattern_debug_enemy = ENEMY_DUST_MOTH;
-        game->pattern_debug_id = PATTERN_RAIN;
-        PlayerInit(&game->player);
-        DefenseInit(&game->battle.defense);
-        DefenseStart(&game->battle.defense, PATTERN_RAIN, (Rectangle){42, 228, 556, 94},
+    if (IsKeyPressed(KEY_F8) && jogo->tela != DEPURAR_EFEITOS) {
+        jogo->tela_antes_pausa = jogo->tela;
+        jogo->tela = DEPURAR_EFEITOS;
+        jogo->inimigo_depuracao_padrao = INIMIGO_CHEFE_SINEIRO;
+        jogo->id_depuracao_padrao = PADRAO_SINO_GAS_SOMBRA;
+        JogadorInicializar(&jogo->jogador);
+        DefesaInicializar(&jogo->batalha.defesa);
+        DefesaIniciar(&jogo->batalha.defesa, PADRAO_SINO_GAS_SOMBRA, (Rectangle){42, 228, 556, 94},
                      0, 0, 1.0f, 1.0f);
-        game->battle.defense.debug_invincible = true;
+        jogo->batalha.defesa.depurar_invencivel = true;
     }
 #endif
 
-    if (game->screen == TITLE) {
-        bool confirmed = input_confirm_pressed();
+    if (jogo->tela == TITULO) {
+        bool confirmado = entrada_confirmar_pressionada();
 
-        if (input_up_pressed()) {
-            game->title_selection = (game->title_selection + 4) % 5;
+        if (entrada_cima_pressionada()) {
+            jogo->selecao_titulo = (jogo->selecao_titulo + 4) % 5;
         }
-        if (input_down_pressed()) {
-            game->title_selection = (game->title_selection + 1) % 5;
+        if (entrada_baixo_pressionada()) {
+            jogo->selecao_titulo = (jogo->selecao_titulo + 1) % 5;
         }
-        if (game->mouse_pressed) {
-            for (int option_index = 0; option_index < 5; option_index++) {
-                if (CheckCollisionPointRec(game->mouse_position, GetTitleButton(option_index))) {
-                    game->title_selection = option_index;
-                    confirmed = true;
-                }
+        for (int indice_opcao = 0; indice_opcao < 5; indice_opcao++) {
+            if (CheckCollisionPointRec(jogo->posicao_mouse, ObterBotaoTitulo(indice_opcao))) {
+                jogo->selecao_titulo = indice_opcao;
+                if (jogo->mouse_pressionado) confirmado = true;
             }
         }
-        if (confirmed) {
-            if (game->title_selection == 0) StartRun(game);
-            else if (game->title_selection == 1) game->screen = RELICS;
-            else if (game->title_selection == 2) game->screen = HOW_TO_PLAY;
-            else if (game->title_selection == 3) game->screen = OPTIONS;
-            else game->quit_requested = true;
+        if (confirmado) {
+            if (jogo->selecao_titulo == 0) IniciarPartida(jogo);
+            else if (jogo->selecao_titulo == 1) jogo->tela = RELIQUIAS;
+            else if (jogo->selecao_titulo == 2) jogo->tela = COMO_JOGAR;
+            else if (jogo->selecao_titulo == 3) jogo->tela = OPCOES;
+            else jogo->saida_solicitada = true;
         }
-    } else if (game->screen == BATTLE) {
-        BattleResult result = {0};
+    } else if (jogo->tela == BATALHA) {
+        ResultadoBatalha resultado = {0};
 
-        if (game->transition_timer > 0.0f) game->transition_timer -= GetFrameTime();
-        else if (game->battle.hitstop_timer > 0.0f) game->battle.hitstop_timer -= GetFrameTime();
-        else if (!UpdateTutorial(game)) result = BattleUpdate(&game->battle, &game->player, &game->enemy,
-                                   &game->dialogue, game->mouse_position,
-                                   game->mouse_pressed, &game->qte, &game->audio);
+        if (jogo->temporizador_transicao > 0.0f) jogo->temporizador_transicao -= GetFrameTime();
+        else if (jogo->batalha.temporizador_pausa_impacto > 0.0f) jogo->batalha.temporizador_pausa_impacto -= GetFrameTime();
+        else resultado = BatalhaAtualizar(&jogo->batalha, &jogo->jogador, &jogo->inimigo,
+                                   &jogo->dialogo, jogo->posicao_mouse,
+                                   jogo->mouse_pressionado, &jogo->qte, &jogo->audio);
 
-        if (result.outcome == BATTLE_OUTCOME_DAMAGE || result.outcome == BATTLE_OUTCOME_MERCY) {
-            result.coins += game->enemy.reward_bonus + (game->enemy.boss ? 8 : 0);
-            result.xp += game->enemy.reward_bonus + (game->enemy.boss ? 10 : 0);
-            game->last_battle_result = result;
-            game->tower.coins += result.coins;
-            if (game->telemetry_enabled) PlaytestLogBattle(game->tower.floor, &game->enemy, &result);
-            if (result.outcome == BATTLE_OUTCOME_MERCY) game->tower.mercy_wins++;
-            else game->tower.damage_wins++;
-            if (PlayerGainXp(&game->player, result.xp)) AudioPlay(&game->audio, AUDIO_LEVEL_UP);
-            AudioPlay(&game->audio, result.outcome == BATTLE_OUTCOME_MERCY ? AUDIO_VICTORY : AUDIO_DAMAGE_DEALT);
-            TowerRollRewards(&game->tower, &game->player);
-            game->reward_selection = 0;
-            game->replacing_attack = false;
-            game->screen = REWARD;
+        if (resultado.desfecho == BATALHA_OUTCOME_DANO || resultado.desfecho == BATALHA_OUTCOME_MISERICORDIA) {
+            resultado.moedas += jogo->inimigo.bonus_recompensa + (jogo->inimigo.chefe ? 8 : 0);
+            resultado.xp += jogo->inimigo.bonus_recompensa + (jogo->inimigo.chefe ? 10 : 0);
+            jogo->ultimo_resultado_batalha = resultado;
+            jogo->torre.moedas += resultado.moedas;
+            if (jogo->telemetria_ativada) TesteJogoRegistrarBatalha(jogo->torre.andar, &jogo->inimigo, &resultado);
+            if (resultado.desfecho == BATALHA_OUTCOME_MISERICORDIA) jogo->torre.vitorias_misericordia++;
+            else jogo->torre.vitorias_dano++;
+            if (JogadorGanharXp(&jogo->jogador, resultado.xp)) AudioTocar(&jogo->audio, AUDIO_NIVEL_CIMA);
+            AudioTocar(&jogo->audio, resultado.desfecho == BATALHA_OUTCOME_MISERICORDIA ? AUDIO_VITORIA : AUDIO_DANO_CAUSADO);
+            TorreSortearRecompensas(&jogo->torre, &jogo->jogador);
+            jogo->selecao_recompensa = 0;
+            jogo->substituindo_ataque = false;
+            jogo->tela = RECOMPENSA;
         }
-        if (result.outcome == BATTLE_OUTCOME_DEFEAT) {
-            if (game->telemetry_enabled) PlaytestLogBattle(game->tower.floor, &game->enemy, &result);
-            AudioPlay(&game->audio, AUDIO_DEFEAT);
-            FinishRun(game, false);
-            game->end_selection = 0;
-            game->screen = GAME_OVER;
+        if (resultado.desfecho == BATALHA_OUTCOME_DERROTA) {
+            if (jogo->telemetria_ativada) TesteJogoRegistrarBatalha(jogo->torre.andar, &jogo->inimigo, &resultado);
+            AudioTocar(&jogo->audio, AUDIO_DERROTA);
+            FinalizarPartida(jogo, false);
+            jogo->selecao_final = 0;
+            jogo->tela = FIM_JOGO;
         }
         if (IsKeyPressed(KEY_ESCAPE)) {
-            game->screen_before_pause = game->screen;
-            game->pause_selection = 0;
-            game->pause_confirm_quit = false;
-            game->screen = PAUSE;
+            jogo->tela_antes_pausa = jogo->tela;
+            jogo->selecao_pausa = 0;
+            jogo->pausa_confirmar_saida = false;
+            jogo->tela = PAUSA;
         }
-    } else if (game->screen == PAUSE) {
-        if (game->pause_confirm_quit) {
-            if (input_cancel_pressed() || IsKeyPressed(KEY_ESCAPE)) game->pause_confirm_quit = false;
-            else if (input_confirm_pressed()) { FinishRun(game, false); game->end_selection = 0; game->screen = GAME_OVER; }
+    } else if (jogo->tela == PAUSA) {
+        if (jogo->pausa_confirmar_saida) {
+            bool clicou_desistir = jogo->mouse_pressionado &&
+                CheckCollisionPointRec(jogo->posicao_mouse, (Rectangle){164, 218, 146, 38});
+            bool clicou_cancelar = jogo->mouse_pressionado &&
+                CheckCollisionPointRec(jogo->posicao_mouse, (Rectangle){330, 218, 146, 38});
+            if (entrada_cancelar_pressionada() || IsKeyPressed(KEY_ESCAPE) || clicou_cancelar)
+                jogo->pausa_confirmar_saida = false;
+            else if (entrada_confirmar_pressionada() || clicou_desistir) {
+                FinalizarPartida(jogo, false);
+                jogo->selecao_final = 0;
+                jogo->tela = FIM_JOGO;
+            }
         } else {
-            if (input_up_pressed()) game->pause_selection = (game->pause_selection + 4) % 5;
-            if (input_down_pressed()) game->pause_selection = (game->pause_selection + 1) % 5;
-            if (IsKeyPressed(KEY_ESCAPE) || input_cancel_pressed()) ResumePausedRun(game);
-            if (input_confirm_pressed()) {
-                if (game->pause_selection == 0) ResumePausedRun(game);
-                else if (game->pause_selection == 1) game->screen = OPTIONS;
-                else if (game->pause_selection == 2) game->screen = HOW_TO_PLAY;
-                else if (game->pause_selection == 3) game->pause_confirm_quit = true;
-                else game->screen = TITLE;
+            bool confirmou_mouse = AtualizarSelecaoMouse(jogo, &jogo->selecao_pausa, 5, 170, 34, true);
+            if (entrada_cima_pressionada()) jogo->selecao_pausa = (jogo->selecao_pausa + 4) % 5;
+            if (entrada_baixo_pressionada()) jogo->selecao_pausa = (jogo->selecao_pausa + 1) % 5;
+            if (IsKeyPressed(KEY_ESCAPE) || entrada_cancelar_pressionada()) RetomarPartidaPausada(jogo);
+            if (entrada_confirmar_pressionada() || confirmou_mouse) {
+                if (jogo->selecao_pausa == 0) RetomarPartidaPausada(jogo);
+                else if (jogo->selecao_pausa == 1) jogo->tela = OPCOES;
+                else if (jogo->selecao_pausa == 2) jogo->tela = COMO_JOGAR;
+                else if (jogo->selecao_pausa == 3) jogo->pausa_confirmar_saida = true;
+                else jogo->tela = TITULO;
             }
         }
-    } else if (game->screen == REWARD) {
-        if (game->replacing_attack) {
-            if (input_up_pressed() || input_left_pressed()) {
-                game->replacement_selection = (game->replacement_selection +
-                    game->player.attack_count - 1) % game->player.attack_count;
+    } else if (jogo->tela == RECOMPENSA) {
+        if (jogo->substituindo_ataque) {
+            bool confirmou_mouse = AtualizarSelecaoMouse(jogo, &jogo->selecao_substituicao,
+                jogo->jogador.total_ataques, 208, 30, false);
+            if (entrada_cima_pressionada() || entrada_esquerda_pressionada()) {
+                jogo->selecao_substituicao = (jogo->selecao_substituicao +
+                    jogo->jogador.total_ataques - 1) % jogo->jogador.total_ataques;
             }
-            if (input_down_pressed() || input_right_pressed()) {
-                game->replacement_selection = (game->replacement_selection + 1) %
-                    game->player.attack_count;
+            if (entrada_baixo_pressionada() || entrada_direita_pressionada()) {
+                jogo->selecao_substituicao = (jogo->selecao_substituicao + 1) %
+                    jogo->jogador.total_ataques;
             }
-            if (input_confirm_pressed()) ApplyReward(game, game->reward_selection);
-            if (input_cancel_pressed()) game->replacing_attack = false;
+            if (entrada_confirmar_pressionada() || confirmou_mouse)
+                AplicarRecompensa(jogo, jogo->selecao_recompensa);
+            if (entrada_cancelar_pressionada()) jogo->substituindo_ataque = false;
         } else {
-            if (input_up_pressed()) game->reward_selection = (game->reward_selection + 2) % 3;
-            if (input_down_pressed()) game->reward_selection = (game->reward_selection + 1) % 3;
-            if (input_confirm_pressed()) ApplyReward(game, game->reward_selection);
+            bool confirmou_mouse = AtualizarSelecaoMouse(jogo, &jogo->selecao_recompensa, 3, 208, 42, false);
+            if (entrada_cima_pressionada()) jogo->selecao_recompensa = (jogo->selecao_recompensa + 2) % 3;
+            if (entrada_baixo_pressionada()) jogo->selecao_recompensa = (jogo->selecao_recompensa + 1) % 3;
+            if (entrada_confirmar_pressionada() || confirmou_mouse)
+                AplicarRecompensa(jogo, jogo->selecao_recompensa);
         }
-    } else if (game->screen == REST) {
-        if (input_up_pressed() || input_down_pressed()) game->rest_selection = 1 - game->rest_selection;
-        if (input_confirm_pressed()) {
-            if (game->rest_selection == 0) {
-                PlayerHeal(&game->player, game->player.hp_max / 2);
-                AudioPlay(&game->audio, AUDIO_HEAL);
+    } else if (jogo->tela == DESCANSO) {
+        bool confirmou_mouse = AtualizarSelecaoMouse(jogo, &jogo->selecao_descanso, 2, 222, 42, false);
+        if (entrada_cima_pressionada() || entrada_baixo_pressionada()) jogo->selecao_descanso = 1 - jogo->selecao_descanso;
+        if (entrada_confirmar_pressionada() || confirmou_mouse) {
+            if (jogo->selecao_descanso == 0) {
+                JogadorCurar(&jogo->jogador, jogo->jogador.vida_maxima / 2);
+                AudioTocar(&jogo->audio, AUDIO_CURAR);
             }
-            else game->player.permanent_damage_bonus++;
-            StartFloor(game);
+            else jogo->jogador.bonus_dano_permanente++;
+            IniciarAndar(jogo);
         }
-    } else if (game->screen == SHOP) {
-        if (input_up_pressed()) game->shop_selection = (game->shop_selection + 3) % 4;
-        if (input_down_pressed()) game->shop_selection = (game->shop_selection + 1) % 4;
-        if (input_confirm_pressed()) {
-            if (game->shop_selection == 3) StartFloor(game);
+    } else if (jogo->tela == LOJA) {
+        bool confirmou_mouse = false;
+        for (int indice = 0; indice < 4; indice++) {
+            int y = indice < 3 ? 187 + indice * 42 : 325;
+            if (CheckCollisionPointRec(jogo->posicao_mouse, ObterAreaEscolha(y))) {
+                jogo->selecao_loja = indice;
+                confirmou_mouse = jogo->mouse_pressionado;
+            }
+        }
+        if (entrada_cima_pressionada()) jogo->selecao_loja = (jogo->selecao_loja + 3) % 4;
+        if (entrada_baixo_pressionada()) jogo->selecao_loja = (jogo->selecao_loja + 1) % 4;
+        if (entrada_confirmar_pressionada() || confirmou_mouse) {
+            if (jogo->selecao_loja == 3) IniciarAndar(jogo);
             else {
-                const ItemId item = game->tower.shop_items[game->shop_selection];
-                const int price = game->tower.shop_prices[game->shop_selection];
-                if (game->tower.coins >= price && PlayerAddItem(&game->player, item, 1)) {
-                    game->tower.coins -= price;
-                    AudioPlay(&game->audio, AUDIO_BUY);
-                    snprintf(game->screen_message, sizeof(game->screen_message), "Comprou %s.",
-                             ItemGetDefinition(item)->name);
-                } else if (game->tower.coins < price) {
-                    snprintf(game->screen_message, sizeof(game->screen_message), "Moedas insuficientes.");
+                const IdItem item = jogo->torre.itens_loja[jogo->selecao_loja];
+                const int preco = jogo->torre.precos_loja[jogo->selecao_loja];
+                if (jogo->torre.moedas >= preco && JogadorAdicionarItem(&jogo->jogador, item, 1)) {
+                    jogo->torre.moedas -= preco;
+                    AudioTocar(&jogo->audio, AUDIO_COMPRAR);
+                    snprintf(jogo->mensagem_tela, sizeof(jogo->mensagem_tela), "Comprou %s.",
+                             ItemObterDefinicao(item)->nome);
+                } else if (jogo->torre.moedas < preco) {
+                    snprintf(jogo->mensagem_tela, sizeof(jogo->mensagem_tela), "Moedas insuficientes.");
                 } else {
-                    snprintf(game->screen_message, sizeof(game->screen_message), "Inventario cheio.");
+                    snprintf(jogo->mensagem_tela, sizeof(jogo->mensagem_tela), "Inventario cheio.");
                 }
             }
         }
-    } else if (game->screen == GAME_OVER || game->screen == VICTORY) {
-        if (input_up_pressed() || input_down_pressed()) game->end_selection = 1 - game->end_selection;
-        if (input_confirm_pressed()) {
-            if (game->end_selection == 0 && game->screen == GAME_OVER) StartRun(game);
-            else game->screen = TITLE;
+    } else if (jogo->tela == FIM_JOGO || jogo->tela == VITORIA) {
+        bool confirmou_mouse = jogo->tela == FIM_JOGO ?
+            AtualizarSelecaoMouse(jogo, &jogo->selecao_final, 2, 270, 40, false) :
+            (jogo->mouse_pressionado && CheckCollisionPointRec(jogo->posicao_mouse,
+                                                               ObterAreaEscolha(292)));
+        if (entrada_cima_pressionada() || entrada_baixo_pressionada()) jogo->selecao_final = 1 - jogo->selecao_final;
+        if (entrada_confirmar_pressionada() || confirmou_mouse) {
+            if (jogo->selecao_final == 0 && jogo->tela == FIM_JOGO) IniciarPartida(jogo);
+            else jogo->tela = TITULO;
         }
-    } else if (game->screen == RELICS) {
-        if (input_up_pressed() || input_down_pressed()) game->relic_selection = 1 - game->relic_selection;
-        if (input_confirm_pressed()) {
-            if (game->relic_selection == 0) SaveBuyRelic(&game->save, RELIC_ITEM, ITEM_MOON_HERB, 8);
-            else SaveBuyRelic(&game->save, RELIC_ATTACK, 3, 10);
-            SaveWrite(&game->save);
+    } else if (jogo->tela == RELIQUIAS) {
+        bool confirmou_mouse = AtualizarSelecaoMouse(jogo, &jogo->selecao_reliquia, 2, 220, 44, false);
+        if (entrada_cima_pressionada() || entrada_baixo_pressionada()) jogo->selecao_reliquia = 1 - jogo->selecao_reliquia;
+        if (entrada_confirmar_pressionada() || confirmou_mouse) {
+            if (jogo->selecao_reliquia == 0) SalvamentoComprarReliquia(&jogo->salvamento, RELIQUIA_ITEM, ITEM_LUA_ERVA, 8);
+            else SalvamentoComprarReliquia(&jogo->salvamento, RELIQUIA_ATAQUE, 3, 10);
+            SalvamentoGravar(&jogo->salvamento);
         }
-        if (input_cancel_pressed()) game->screen = TITLE;
-    } else if (game->screen == OPTIONS) {
-        if (input_up_pressed()) game->option_selection = (game->option_selection + 7) % 8;
-        if (input_down_pressed()) game->option_selection = (game->option_selection + 1) % 8;
-        if (input_left_pressed() && game->option_selection == 0) game->save.music_volume -= 0.1f;
-        if (input_right_pressed() && game->option_selection == 0) game->save.music_volume += 0.1f;
-        if (input_left_pressed() && game->option_selection == 1) game->save.effects_volume -= 0.1f;
-        if (input_right_pressed() && game->option_selection == 1) game->save.effects_volume += 0.1f;
-        if (game->save.music_volume < 0.0f) game->save.music_volume = 0.0f;
-        if (game->save.music_volume > 1.0f) game->save.music_volume = 1.0f;
-        if (game->save.effects_volume < 0.0f) game->save.effects_volume = 0.0f;
-        if (game->save.effects_volume > 1.0f) game->save.effects_volume = 1.0f;
-        if (input_confirm_pressed()) {
-            if (game->option_selection == 2) {
-                ToggleFullscreen(); game->save.fullscreen = !game->save.fullscreen;
-            } else if (game->option_selection == 3) {
-                game->save.line_tremor = !game->save.line_tremor;
-            } else if (game->option_selection == 4) {
-                game->save.reduced_effects = !game->save.reduced_effects;
-            } else if (game->option_selection == 5) {
-                game->save.difficulty = (game->save.difficulty + 1) % 3;
-            } else if (game->option_selection == 6) game->screen = DELETE_CONFIRM;
-            else if (game->option_selection == 7) {
-                game->save.tutorial_seen = 0;
-                game->save.tutorial_done = false;
-                game->tutorial_timer = 0.0f;
-                game->tutorial_wait_phase = -1;
+        if (entrada_cancelar_pressionada()) jogo->tela = TITULO;
+    } else if (jogo->tela == OPCOES) {
+        bool confirmou_mouse = AtualizarSelecaoMouse(jogo, &jogo->selecao_opcao, 9, 105, 36, false);
+        if (entrada_cima_pressionada()) jogo->selecao_opcao = (jogo->selecao_opcao + 8) % 9;
+        if (entrada_baixo_pressionada()) jogo->selecao_opcao = (jogo->selecao_opcao + 1) % 9;
+        if (entrada_esquerda_pressionada() && jogo->selecao_opcao == 0) jogo->salvamento.volume_musica -= 0.1f;
+        if (entrada_direita_pressionada() && jogo->selecao_opcao == 0) jogo->salvamento.volume_musica += 0.1f;
+        if (entrada_esquerda_pressionada() && jogo->selecao_opcao == 1) jogo->salvamento.volume_efeitos -= 0.1f;
+        if (entrada_direita_pressionada() && jogo->selecao_opcao == 1) jogo->salvamento.volume_efeitos += 0.1f;
+        if (jogo->salvamento.volume_musica < 0.0f) jogo->salvamento.volume_musica = 0.0f;
+        if (jogo->salvamento.volume_musica > 1.0f) jogo->salvamento.volume_musica = 1.0f;
+        if (jogo->salvamento.volume_efeitos < 0.0f) jogo->salvamento.volume_efeitos = 0.0f;
+        if (jogo->salvamento.volume_efeitos > 1.0f) jogo->salvamento.volume_efeitos = 1.0f;
+        if (entrada_confirmar_pressionada() || confirmou_mouse) {
+            if (jogo->selecao_opcao == 2) {
+                ToggleFullscreen(); jogo->salvamento.tela_cheia = !jogo->salvamento.tela_cheia;
+            } else if (jogo->selecao_opcao == 3) {
+                jogo->salvamento.tremor_linha = !jogo->salvamento.tremor_linha;
+            } else if (jogo->selecao_opcao == 4) {
+                jogo->salvamento.efeitos_reduzidos = !jogo->salvamento.efeitos_reduzidos;
+            } else if (jogo->selecao_opcao == 5) {
+                jogo->salvamento.dificuldade = (jogo->salvamento.dificuldade + 1) % 3;
+            } else if (jogo->selecao_opcao == 6) jogo->tela = CONFIRMAR_EXCLUSAO;
+            else if (jogo->selecao_opcao == 7) {
+                jogo->salvamento.tutorial_visto = 0;
+                jogo->salvamento.tutorial_concluido = false;
+                jogo->temporizador_tutorial = 0.0f;
+                jogo->fase_espera_tutorial = -1;
+                SalvamentoGravar(&jogo->salvamento);
+            } else if (jogo->selecao_opcao == 8) {
+                jogo->salvamento.tutorial_concluido = !jogo->salvamento.tutorial_concluido;
+                if (!jogo->salvamento.tutorial_concluido) jogo->salvamento.tutorial_visto = 0;
+                jogo->temporizador_tutorial = 0.0f;
+                jogo->fase_espera_tutorial = -1;
+                SalvamentoGravar(&jogo->salvamento);
             }
         }
-        if (input_cancel_pressed()) { SaveWrite(&game->save); game->screen = TITLE; }
-    } else if (game->screen == DELETE_CONFIRM) {
-        if (input_left_pressed() || input_right_pressed()) game->delete_yes = !game->delete_yes;
-        if (input_confirm_pressed()) {
-            if (game->delete_yes) SaveSetDefaults(&game->save);
-            SaveWrite(&game->save);
-            game->screen = OPTIONS;
+        if (entrada_cancelar_pressionada()) { SalvamentoGravar(&jogo->salvamento); jogo->tela = TITULO; }
+    } else if (jogo->tela == CONFIRMAR_EXCLUSAO) {
+        int selecao_exclusao = jogo->excluir_sim ? 0 : 1;
+        bool confirmou_mouse = AtualizarSelecaoMouse(jogo, &selecao_exclusao, 2, 245, 30, true);
+        jogo->excluir_sim = selecao_exclusao == 0;
+        if (entrada_esquerda_pressionada() || entrada_direita_pressionada()) jogo->excluir_sim = !jogo->excluir_sim;
+        if (entrada_confirmar_pressionada() || confirmou_mouse) {
+            if (jogo->excluir_sim) SalvamentoDefinirPadroes(&jogo->salvamento);
+            SalvamentoGravar(&jogo->salvamento);
+            jogo->tela = OPCOES;
         }
-    } else if (game->screen == HOW_TO_PLAY) {
-        if (input_cancel_pressed() || input_confirm_pressed()) game->screen = TITLE;
-    } else if (game->screen == DEBUG_FX) {
-        if (input_left_pressed()) game->pattern_debug_id =
-            (game->pattern_debug_id + PATTERN_COUNT - 1) % PATTERN_COUNT;
-        if (input_right_pressed()) game->pattern_debug_id =
-            (game->pattern_debug_id + 1) % PATTERN_COUNT;
-        if (input_up_pressed()) game->pattern_debug_enemy =
-            (game->pattern_debug_enemy + ENEMY_COUNT - 1) % ENEMY_COUNT;
-        if (input_down_pressed()) game->pattern_debug_enemy =
-            (game->pattern_debug_enemy + 1) % ENEMY_COUNT;
-        if (input_left_pressed() || input_right_pressed() || input_confirm_pressed()) {
-            DefenseStart(&game->battle.defense, (BulletPatternId)game->pattern_debug_id,
+    } else if (jogo->tela == COMO_JOGAR) {
+        if (entrada_cancelar_pressionada() || entrada_confirmar_pressionada()) jogo->tela = TITULO;
+    } else if (jogo->tela == DEPURAR_EFEITOS) {
+        bool trocar_padrao = false;
+        if (IsKeyPressed(KEY_F9)) {
+            jogo->id_depuracao_padrao =
+                (jogo->id_depuracao_padrao + PADRAO_TOTAL - 1) % PADRAO_TOTAL;
+            trocar_padrao = true;
+        }
+        if (IsKeyPressed(KEY_F10)) {
+            jogo->id_depuracao_padrao =
+                (jogo->id_depuracao_padrao + 1) % PADRAO_TOTAL;
+            trocar_padrao = true;
+        }
+        if (IsKeyPressed(KEY_PAGE_UP)) jogo->inimigo_depuracao_padrao =
+            (jogo->inimigo_depuracao_padrao + INIMIGO_TOTAL - 1) % INIMIGO_TOTAL;
+        if (IsKeyPressed(KEY_PAGE_DOWN)) jogo->inimigo_depuracao_padrao =
+            (jogo->inimigo_depuracao_padrao + 1) % INIMIGO_TOTAL;
+        if (IsKeyPressed(KEY_G)) {
+            jogo->id_depuracao_padrao = PADRAO_SINO_GAS_SOMBRA;
+            jogo->inimigo_depuracao_padrao = INIMIGO_CHEFE_SINEIRO;
+            trocar_padrao = true;
+        }
+        if (IsKeyPressed(KEY_I)) jogo->batalha.defesa.depurar_invencivel =
+            !jogo->batalha.defesa.depurar_invencivel;
+        if (trocar_padrao || IsKeyPressed(KEY_R)) {
+            const bool ignorar_dano = jogo->batalha.defesa.depurar_invencivel;
+            JogadorInicializar(&jogo->jogador);
+            DefesaIniciar(&jogo->batalha.defesa, (IdPadraoProjetil)jogo->id_depuracao_padrao,
                          (Rectangle){42, 228, 556, 94}, 0, 0, 1.0f, 1.0f);
-            game->battle.defense.debug_invincible = true;
+            jogo->batalha.defesa.depurar_invencivel = ignorar_dano;
         }
-        DefenseUpdate(&game->battle.defense, &game->player, GetFrameTime());
-        if (input_cancel_pressed()) game->screen = game->screen_before_pause;
+        ResultadoDefesa resultado_depuracao =
+            DefesaAtualizar(&jogo->batalha.defesa, &jogo->jogador, GetFrameTime());
+        if (resultado_depuracao != DEFESA_EM_ANDAMENTO) {
+            const bool ignorar_dano = jogo->batalha.defesa.depurar_invencivel;
+            JogadorInicializar(&jogo->jogador);
+            DefesaIniciar(&jogo->batalha.defesa, (IdPadraoProjetil)jogo->id_depuracao_padrao,
+                         (Rectangle){42, 228, 556, 94}, 0, 0, 1.0f, 1.0f);
+            jogo->batalha.defesa.depurar_invencivel = ignorar_dano;
+        }
+        if (entrada_cancelar_pressionada()) jogo->tela = jogo->tela_antes_pausa;
     }
 
-    if (IsKeyPressed(KEY_F11)) { ToggleFullscreen(); game->save.fullscreen = !game->save.fullscreen; }
-    if (IsKeyPressed(KEY_F3)) game->telemetry_enabled = !game->telemetry_enabled;
+    if (IsKeyPressed(KEY_F11)) { ToggleFullscreen(); jogo->salvamento.tela_cheia = !jogo->salvamento.tela_cheia; }
+    if (IsKeyPressed(KEY_F3)) jogo->telemetria_ativada = !jogo->telemetria_ativada;
 #ifndef NDEBUG
-    if (IsKeyPressed(KEY_F6)) SpritesReload(&game->sprites);
-    if (IsKeyPressed(KEY_F7)) game->sprites.debug_bounds = !game->sprites.debug_bounds;
+    if (IsKeyPressed(KEY_F6)) SpritesRecarregar(&jogo->sprites);
+    if (IsKeyPressed(KEY_F7)) jogo->sprites.depurar_limites = !jogo->sprites.depurar_limites;
 #endif
-    if (game->screen == BATTLE) {
-        if (game->dialogue.visible_characters < game->last_typewriter_character) {
-            game->last_typewriter_character = 0;
+    if (jogo->tela == BATALHA) {
+        if (jogo->dialogo.caracteres_visiveis < jogo->ultimo_caractere_digitado) {
+            jogo->ultimo_caractere_digitado = 0;
         }
-        if (game->dialogue.visible_characters > game->last_typewriter_character) {
-            AudioPlay(&game->audio, AUDIO_TEXT);
+        if (jogo->dialogo.caracteres_visiveis > jogo->ultimo_caractere_digitado) {
+            AudioTocar(&jogo->audio, AUDIO_TEXTO);
         }
-        game->last_typewriter_character = game->dialogue.visible_characters;
-    } else game->last_typewriter_character = 0;
-    game->render.line_tremor = game->save.line_tremor;
-    if (game->save.reduced_effects) game->battle.screen_shake_timer = 0.0f;
-    if (game->save.reduced_effects) {
-        game->battle.hitstop_timer = 0.0f;
-        for (int index = 0; index < MAX_BATTLE_PARTICLES; index++) game->battle.particles[index].active = false;
+        jogo->ultimo_caractere_digitado = jogo->dialogo.caracteres_visiveis;
+    } else jogo->ultimo_caractere_digitado = 0;
+    jogo->renderizacao.tremor_linha = jogo->salvamento.tremor_linha;
+    if (jogo->salvamento.efeitos_reduzidos) jogo->batalha.temporizador_tremor_tela = 0.0f;
+    if (jogo->salvamento.efeitos_reduzidos) {
+        jogo->batalha.temporizador_pausa_impacto = 0.0f;
+        for (int indice = 0; indice < MAXIMO_BATALHA_PARTICULAS; indice++) jogo->batalha.particulas[indice].ativo = false;
     }
-    RenderUpdate(&game->render, GetFrameTime());
-    AudioSetVolumes(&game->audio, game->save.music_volume, game->save.effects_volume);
-    AudioRequestTrack(&game->audio, game->screen == SHOP || game->screen == REST ? MUSIC_CALM :
-                      (game->screen == BATTLE && game->enemy.boss ? MUSIC_BOSS : MUSIC_COMMON));
-    AudioUpdate(&game->audio, GetFrameTime());
+    RenderizacaoAtualizar(&jogo->renderizacao, GetFrameTime());
+    AudioDefinirVolumes(&jogo->audio, jogo->salvamento.volume_musica, jogo->salvamento.volume_efeitos);
+    AudioSolicitarFaixa(&jogo->audio, jogo->tela == LOJA || jogo->tela == DESCANSO ? MUSICA_CALMA :
+                      (jogo->tela == BATALHA && jogo->inimigo.chefe ? MUSICA_CHEFE : MUSICA_COMUM));
+    AudioAtualizar(&jogo->audio, GetFrameTime());
 }
 
-void GameDraw(const GameState *game)
+void JogoDesenhar(const EstadoJogo *jogo)
 {
-    RenderDrawBackground(&game->render, game->elapsed_time);
-    if (game->screen != TITLE) {
-        const SpriteId background = game->enemy.boss ? SPRITE_BG_BOSS : SPRITE_BG_PASTEL;
-        SpriteDrawFit(&game->sprites, background, (Rectangle){0, 0, LOGICAL_WIDTH, LOGICAL_HEIGHT}, WHITE);
+    RenderizacaoDesenharFundo(&jogo->renderizacao, jogo->tempo_decorrido);
+    if (jogo->tela != TITULO) {
+        const IdSprite fundo = jogo->inimigo.chefe ? SPRITE_FUNDO_CHEFE : SPRITE_FUNDO_PASTEL;
+        SpriteDesenharAjustado(&jogo->sprites, fundo, (Rectangle){0, 0, LOGICO_LARGURA, LOGICO_ALTURA}, WHITE);
     }
-    if (game->screen == TITLE) {
-        DrawTitle(game);
-    } else if (game->screen == BATTLE) {
-        BattleDraw(&game->battle, &game->player, &game->enemy, &game->dialogue, &game->qte,
-                   game->render.line_tremor && !game->save.reduced_effects, game->save.reduced_effects,
-                   &game->sprites);
-        if (game->tutorial_timer > 0.0f) DrawTutorial(game);
-        if (game->transition_timer > 0.0f) {
-            UiDrawPanel((Rectangle){198, 193, 244, 82});
+    if (jogo->tela == TITULO) {
+        DesenharTitulo(jogo);
+    } else if (jogo->tela == BATALHA) {
+        BatalhaDesenhar(&jogo->batalha, &jogo->jogador, &jogo->inimigo, &jogo->dialogo, &jogo->qte,
+                   jogo->renderizacao.tremor_linha && !jogo->salvamento.efeitos_reduzidos, jogo->salvamento.efeitos_reduzidos,
+                   &jogo->sprites);
+        if (jogo->temporizador_tutorial > 0.0f) DesenharTutorial(jogo);
+        if (jogo->temporizador_transicao > 0.0f) {
+            InterfaceDesenharPainel((Rectangle){198, 193, 244, 82});
             DrawText("SUBINDO...", 252, 215, 25, BLACK);
-            DrawText(TextFormat("ANDAR %d", game->tower.floor), 276, 246, 16, DARKGRAY);
+            DrawText(TextFormat("ANDAR %d", jogo->torre.andar), 276, 246, 16, DARKGRAY);
         }
-    } else if (game->screen == PAUSE) {
-        DrawPause(game);
-    } else if (game->screen == REWARD) {
-        DrawReward(game);
-    } else if (game->screen == REST) {
-        DrawRest(game);
-    } else if (game->screen == SHOP) {
-        DrawShop(game);
-    } else if (game->screen == GAME_OVER) {
-        UiDrawPanel((Rectangle){62, 120, 516, 250});
+    } else if (jogo->tela == PAUSA) {
+        DesenharPausa(jogo);
+    } else if (jogo->tela == RECOMPENSA) {
+        DesenharRecompensa(jogo);
+    } else if (jogo->tela == DESCANSO) {
+        DesenharDescanso(jogo);
+    } else if (jogo->tela == LOJA) {
+        DesenharLoja(jogo);
+    } else if (jogo->tela == FIM_JOGO) {
+        InterfaceDesenharPainel((Rectangle){62, 120, 516, 250});
         DrawText("FIM DA RUN", 225, 152, 30, BLACK);
-        DrawText(TextFormat("Andar %d  |  Moedas %d", game->tower.floor, game->tower.coins),
+        DrawText(TextFormat("Andar %d  |  Moedas %d", jogo->torre.andar, jogo->torre.moedas),
                  190, 206, 18, DARKGRAY);
-        DrawChoice(270, "TENTAR DE NOVO", game->end_selection == 0);
-        DrawChoice(310, "TITULO", game->end_selection == 1);
-    } else if (game->screen == VICTORY) {
-        UiDrawPanel((Rectangle){62, 104, 516, 276});
+        DesenharEscolha(270, "TENTAR DE NOVO", jogo->selecao_final == 0);
+        DesenharEscolha(310, "TITULO", jogo->selecao_final == 1);
+    } else if (jogo->tela == VITORIA) {
+        InterfaceDesenharPainel((Rectangle){62, 104, 516, 276});
         DrawText("TORRE CONCLUIDA", 185, 136, 29, BLACK);
-        DrawText(TextFormat("10 andares | %d moedas", game->tower.coins), 205, 190, 18, DARKGRAY);
-        DrawText(TextFormat("Poupar: %d  |  Dano: %d", game->tower.mercy_wins,
-                            game->tower.damage_wins), 205, 218, 18, DARKGRAY);
-        DrawChoice(292, "TITULO", true);
-    } else if (game->screen == RELICS) {
-        DrawRelics(game);
-    } else if (game->screen == OPTIONS) {
-        DrawOptions(game);
-    } else if (game->screen == DELETE_CONFIRM) {
-        DrawDeleteConfirm(game);
-    } else if (game->screen == HOW_TO_PLAY) {
-        DrawHowToPlay();
-    } else if (game->screen == DEBUG_FX) {
-        DrawFxDebug(game);
+        DrawText(TextFormat("10 andares | %d moedas", jogo->torre.moedas), 205, 190, 18, DARKGRAY);
+        DrawText(TextFormat("Poupar: %d  |  Dano: %d", jogo->torre.vitorias_misericordia,
+                            jogo->torre.vitorias_dano), 205, 218, 18, DARKGRAY);
+        DesenharEscolha(292, "TITULO", true);
+    } else if (jogo->tela == RELIQUIAS) {
+        DesenharReliquias(jogo);
+    } else if (jogo->tela == OPCOES) {
+        DesenharOpcoes(jogo);
+    } else if (jogo->tela == CONFIRMAR_EXCLUSAO) {
+        DesenharConfirmacaoExclusao(jogo);
+    } else if (jogo->tela == COMO_JOGAR) {
+        DesenharComoJogar();
+    } else if (jogo->tela == DEPURAR_EFEITOS) {
+        DesenharDepuracaoEfeitos(jogo);
     } else {
-        DrawPlaceholder("EM BREVE", "Este estado sera implementado nas proximas fases.");
+        DesenharMarcador("EM BREVE", "Este estado sera implementado nas proximas fases.");
+    }
+    if ((jogo->tela == BATALHA || jogo->tela == DEPURAR_EFEITOS) && !IsWindowFocused()) {
+        DrawRectangle(0, 0, LOGICO_LARGURA, LOGICO_ALTURA, (Color){0, 0, 0, 135});
+        InterfaceDesenharPainel((Rectangle){142, 190, 356, 92});
+        DrawText("TECLADO PAUSADO", 218, 208, 20, BLACK);
+        DrawText("Clique na janela para continuar", 207, 241, 14, DARKGRAY);
     }
 }

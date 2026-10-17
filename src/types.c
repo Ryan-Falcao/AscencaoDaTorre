@@ -1,42 +1,42 @@
 #include "types.h"
 
-/* Rows: attacking type. Columns: defending type.
-   Order for both axes: Flame, Water, Plant, Light, Shadow, Neutral. */
-static const float EFFECTIVENESS[TYPE_COUNT][TYPE_COUNT] = {
-    /* Flame   */ {1.0f, 0.5f, 2.0f, 1.0f, 1.0f, 1.0f},
-    /* Water   */ {2.0f, 1.0f, 0.5f, 1.0f, 1.0f, 1.0f},
-    /* Plant   */ {0.5f, 2.0f, 1.0f, 1.0f, 1.0f, 1.0f},
-    /* Light   */ {1.0f, 1.0f, 1.0f, 1.0f, 2.0f, 1.0f},
-    /* Shadow  */ {1.0f, 1.0f, 1.0f, 2.0f, 1.0f, 1.0f},
-    /* Neutral */ {1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f}
+/* Linhas: tipo atacante. Colunas: tipo defensor.
+   Ordem dos dois eixos: Fogo, Agua, Planta, Luz, Sombra, Neutro. */
+static const float EFETIVIDADE[TIPO_TOTAL][TIPO_TOTAL] = {
+    /* Fogo    */ {1.0f, 0.5f, 2.0f, 1.0f, 1.0f, 1.0f},
+    /* Agua    */ {2.0f, 1.0f, 0.5f, 1.0f, 1.0f, 1.0f},
+    /* Planta  */ {0.5f, 2.0f, 1.0f, 1.0f, 1.0f, 1.0f},
+    /* Luz     */ {1.0f, 1.0f, 1.0f, 1.0f, 2.0f, 1.0f},
+    /* Sombra  */ {1.0f, 1.0f, 1.0f, 2.0f, 1.0f, 1.0f},
+    /* Neutro  */ {1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f}
 };
 
-float type_effectiveness(Type attacker, Type defender)
+float efetividade_tipo(Tipo atacante, Tipo defensor)
 {
-    if (attacker < TYPE_FLAME || attacker >= TYPE_COUNT ||
-        defender < TYPE_FLAME || defender >= TYPE_COUNT) return 1.0f;
-    return EFFECTIVENESS[attacker][defender];
+    if (atacante < TIPO_FOGO || atacante >= TIPO_TOTAL ||
+        defensor < TIPO_FOGO || defensor >= TIPO_TOTAL) return 1.0f;
+    return EFETIVIDADE[atacante][defensor];
 }
 
-const char *type_name(Type type)
+const char *nome_tipo(Tipo tipo)
 {
-    static const char *names[TYPE_COUNT] = {
+    static const char *names[TIPO_TOTAL] = {
         "Chama", "Agua", "Planta", "Luz", "Sombra", "Neutro"
     };
 
-    if (type < TYPE_FLAME || type >= TYPE_COUNT) return "Desconhecido";
-    return names[type];
+    if (tipo < TIPO_FOGO || tipo >= TIPO_TOTAL) return "Desconhecido";
+    return names[tipo];
 }
 
-Color type_color(Type type)
+Color cor_tipo(Tipo tipo)
 {
-    switch (type) {
-        case TYPE_FLAME: return (Color){227, 92, 68, 255};
-        case TYPE_WATER: return (Color){66, 151, 220, 255};
-        case TYPE_PLANT: return (Color){76, 167, 96, 255};
-        case TYPE_LIGHT: return (Color){225, 181, 49, 255};
-        case TYPE_SHADOW: return (Color){111, 75, 151, 255};
-        case TYPE_NEUTRAL:
+    switch (tipo) {
+        case TIPO_FOGO: return (Color){227, 92, 68, 255};
+        case TIPO_AGUA: return (Color){66, 151, 220, 255};
+        case TIPO_PLANTA: return (Color){76, 167, 96, 255};
+        case TIPO_LUZ: return (Color){225, 181, 49, 255};
+        case TIPO_SOMBRA: return (Color){111, 75, 151, 255};
+        case TIPO_NEUTRO:
         default: return (Color){112, 119, 126, 255};
     }
 }

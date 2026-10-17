@@ -7,47 +7,47 @@
 
 typedef enum {
     AUDIO_CURSOR,
-    AUDIO_CONFIRM,
-    AUDIO_CANCEL,
-    AUDIO_TEXT,
-    AUDIO_DAMAGE_TAKEN,
-    AUDIO_DAMAGE_DEALT,
-    AUDIO_SUPER_EFFECTIVE,
-    AUDIO_NOT_EFFECTIVE,
-    AUDIO_QTE_TICK,
-    AUDIO_QTE_ERROR,
-    AUDIO_QTE_PERFECT,
-    AUDIO_HEAL,
-    AUDIO_BUY,
-    AUDIO_LEVEL_UP,
-    AUDIO_DEFEAT,
-    AUDIO_VICTORY,
-    AUDIO_EFFECT_COUNT
-} AudioEffect;
+    AUDIO_CONFIRMAR,
+    AUDIO_CANCELAR,
+    AUDIO_TEXTO,
+    AUDIO_DANO_RECEBIDO,
+    AUDIO_DANO_CAUSADO,
+    AUDIO_SUPER_EFETIVO,
+    AUDIO_NAO_EFETIVO,
+    AUDIO_QTE_BATIDA,
+    AUDIO_QTE_ERRO,
+    AUDIO_QTE_PERFEITO,
+    AUDIO_CURAR,
+    AUDIO_COMPRAR,
+    AUDIO_NIVEL_CIMA,
+    AUDIO_DERROTA,
+    AUDIO_VITORIA,
+    AUDIO_TOTAL_EFEITOS
+} EfeitoAudio;
 
 typedef enum {
-    MUSIC_COMMON,
-    MUSIC_BOSS,
-    MUSIC_CALM,
-    MUSIC_TRACK_COUNT
-} MusicTrack;
+    MUSICA_COMUM,
+    MUSICA_CHEFE,
+    MUSICA_CALMA,
+    MUSICA_FAIXA_TOTAL
+} FaixaMusical;
 
 typedef struct {
-    bool available;
-    Sound effects[AUDIO_EFFECT_COUNT];
-    Sound tracks[MUSIC_TRACK_COUNT];
-    float music_volume;
-    float effects_volume;
-    MusicTrack current_track;
-    MusicTrack requested_track;
-    float fade;
-} AudioState;
+    bool disponivel;
+    Sound efeitos[AUDIO_TOTAL_EFEITOS];
+    Sound faixas[MUSICA_FAIXA_TOTAL];
+    float volume_musica;
+    float volume_efeitos;
+    FaixaMusical faixa_atual;
+    FaixaMusical faixa_solicitada;
+    float desvanecer;
+} EstadoAudio;
 
-void AudioInit(AudioState *audio, float music_volume, float effects_volume);
-void AudioUnload(AudioState *audio);
-void AudioSetVolumes(AudioState *audio, float music_volume, float effects_volume);
-void AudioPlay(AudioState *audio, AudioEffect effect);
-void AudioRequestTrack(AudioState *audio, MusicTrack track);
-void AudioUpdate(AudioState *audio, float delta_time);
+void AudioInicializar(EstadoAudio *audio, float volume_musica, float volume_efeitos);
+void AudioDescarregar(EstadoAudio *audio);
+void AudioDefinirVolumes(EstadoAudio *audio, float volume_musica, float volume_efeitos);
+void AudioTocar(EstadoAudio *audio, EfeitoAudio efeito);
+void AudioSolicitarFaixa(EstadoAudio *audio, FaixaMusical faixa);
+void AudioAtualizar(EstadoAudio *audio, float tempo_delta);
 
 #endif

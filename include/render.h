@@ -1,28 +1,27 @@
-#ifndef RENDER_H
-#define RENDER_H
+#ifndef RENDERIZACAO_H
+#define RENDERIZACAO_H
 
 #include <stdbool.h>
 
 #include "raylib.h"
 
 typedef struct {
-    Color background;
-    Color floating;
-    Color paper;
-    bool boss;
-} FloorPalette;
+    Color fundo;
+    Color flutuante;
+    Color papel;
+    bool chefe;
+} PaletaAndar;
 
 typedef struct {
-    FloorPalette current;
-    FloorPalette target;
-    float transition;
-    bool shader_enabled;
-    bool line_tremor;
-} RenderState;
+    PaletaAndar atual;
+    PaletaAndar alvo;
+    float transicao;
+    bool tremor_linha;
+} EstadoRenderizacao;
 
-void RenderInit(RenderState *render, bool line_tremor);
-void RenderSetFloor(RenderState *render, int floor, bool boss);
-void RenderUpdate(RenderState *render, float delta_time);
-void RenderDrawBackground(const RenderState *render, float time);
+void RenderizacaoInicializar(EstadoRenderizacao *renderizacao, bool tremor_linha);
+void RenderizacaoDefinirAndar(EstadoRenderizacao *renderizacao, int andar, bool chefe);
+void RenderizacaoAtualizar(EstadoRenderizacao *renderizacao, float tempo_delta);
+void RenderizacaoDesenharFundo(const EstadoRenderizacao *renderizacao, float tempo);
 
 #endif

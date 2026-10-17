@@ -2,33 +2,33 @@
 
 #include <stdio.h>
 
-#define PLAYTEST_PATH "playtest_log.csv"
+#define CAMINHO_TESTE_JOGO "playtest_log.csv"
 
-static void WriteHeaderIfNeeded(FILE *file)
+static void GravarCabecalhoSeNecessario(FILE *arquivo)
 {
-    if (ftell(file) == 0) {
-        fputs("kind,floor,enemy,outcome,hp_lost,turns,duration_seconds,qte_perfect,qte_good,qte_bad,qte_error,coins\n", file);
+    if (ftell(arquivo) == 0) {
+        fputs("kind,floor,enemy,outcome,hp_lost,turns,duration_seconds,qte_perfect,qte_good,qte_bad,qte_error,coins\n", arquivo);
     }
 }
 
-void PlaytestLogBattle(int floor, const Enemy *enemy, const BattleResult *result)
+void TesteJogoRegistrarBatalha(int andar, const Inimigo *inimigo, const ResultadoBatalha *resultado)
 {
-    FILE *file = fopen(PLAYTEST_PATH, "a+");
-    if (file == NULL) return;
-    WriteHeaderIfNeeded(file);
-    fprintf(file, "battle,%d,%s,%d,%d,%d,%.2f,%d,%d,%d,%d,%d\n", floor, enemy->name,
-            result->outcome, result->hp_lost, result->turns, result->duration_seconds,
-            result->qte_results[0], result->qte_results[1], result->qte_results[2],
-            result->qte_results[3], result->coins);
-    fclose(file);
+    FILE *arquivo = fopen(CAMINHO_TESTE_JOGO, "a+");
+    if (arquivo == NULL) return;
+    GravarCabecalhoSeNecessario(arquivo);
+    fprintf(arquivo, "battle,%d,%s,%d,%d,%d,%.2f,%d,%d,%d,%d,%d\n", andar, inimigo->nome,
+            resultado->desfecho, resultado->vida_perdida, resultado->turnos, resultado->duracao_segundos,
+            resultado->resultados_qte[0], resultado->resultados_qte[1], resultado->resultados_qte[2],
+            resultado->resultados_qte[3], resultado->moedas);
+    fclose(arquivo);
 }
 
-void PlaytestLogRun(int floor, int coins, bool victory, float duration_seconds)
+void TesteJogoRegistrarPartida(int andar, int moedas, bool vitoria, float duracao_segundos)
 {
-    FILE *file = fopen(PLAYTEST_PATH, "a+");
-    if (file == NULL) return;
-    WriteHeaderIfNeeded(file);
-    fprintf(file, "run,%d,,%s,0,0,%.2f,0,0,0,0,%d\n", floor,
-            victory ? "victory" : "defeat", duration_seconds, coins);
-    fclose(file);
+    FILE *arquivo = fopen(CAMINHO_TESTE_JOGO, "a+");
+    if (arquivo == NULL) return;
+    GravarCabecalhoSeNecessario(arquivo);
+    fprintf(arquivo, "run,%d,,%s,0,0,%.2f,0,0,0,0,%d\n", andar,
+            vitoria ? "victory" : "defeat", duracao_segundos, moedas);
+    fclose(arquivo);
 }

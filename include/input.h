@@ -1,20 +1,20 @@
-#ifndef INPUT_H
-#define INPUT_H
+#ifndef ENTRADA_H
+#define ENTRADA_H
 
 #include <stdbool.h>
 
-bool input_confirm_pressed(void);
-bool input_confirm_down(void);
-bool input_confirm_released(void);
-bool input_cancel_pressed(void);
+bool entrada_confirmar_pressionada(void);
+bool entrada_confirmar_mantida(void);
+bool entrada_confirmar_solta(void);
+bool entrada_cancelar_pressionada(void);
 
-bool input_up_pressed(void);
-bool input_down_pressed(void);
-bool input_left_pressed(void);
-bool input_right_pressed(void);
-bool input_up_down(void);
-bool input_down_down(void);
-bool input_left_down(void);
-bool input_right_down(void);
+bool entrada_cima_pressionada(void);
+bool entrada_baixo_pressionada(void);
+bool entrada_esquerda_pressionada(void);
+bool entrada_direita_pressionada(void);
+bool entrada_cima_mantida(void);
+bool entrada_baixo_mantida(void);
+bool entrada_esquerda_mantida(void);
+bool entrada_direita_mantida(void);
 
 #endif

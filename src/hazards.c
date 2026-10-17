@@ -6,121 +6,148 @@
 #include <math.h>
 #include <string.h>
 
-void HazardsInit(HazardPool *pool) { memset(pool, 0, sizeof(*pool)); }
-void HazardsClear(HazardPool *pool) { memset(pool, 0, sizeof(*pool)); }
+void PerigosInicializar(ConjuntoPerigos *conjunto) { memset(conjunto, 0, sizeof(*conjunto)); }
+void PerigosLimpar(ConjuntoPerigos *conjunto) { memset(conjunto, 0, sizeof(*conjunto)); }
 
-static Hazard *HazardsNext(HazardPool *pool)
+static Perigo *ProximoPerigo(ConjuntoPerigos *conjunto)
 {
-    for (int index = 0; index < MAX_HAZARDS; index++) if (!pool->hazards[index].active) return &pool->hazards[index];
+    for (int indice = 0; indice < MAXIMO_PERIGOS; indice++) if (!conjunto->perigos[indice].ativo) return &conjunto->perigos[indice];
     return NULL;
 }
 
-static bool HazardAdd(HazardPool *pool, Hazard hazard)
+static bool AdicionarPerigo(ConjuntoPerigos *conjunto, Perigo perigo)
 {
-    Hazard *slot = HazardsNext(pool);
-    if (slot == NULL) return false;
-    *slot = hazard;
+    Perigo *espaco = ProximoPerigo(conjunto);
+    if (espaco == NULL) return false;
+    *espaco = perigo;
     return true;
 }
 
-bool HazardsAddRect(HazardPool *pool, Rectangle rect, float warn, float active, float fade,
-                    Type type, int damage, bool hit_once)
+bool PerigosAdicionarRetangulo(ConjuntoPerigos *conjunto, Rectangle retangulo, float aviso, float ativo, float desvanecer,
+                    Tipo tipo, int dano, bool acerta_uma_vez)
 {
-    return HazardAdd(pool, (Hazard){true, HAZARD_RECT, HAZARD_WARN, rect, {0.0f, 0.0f}, 0.0f,
-                                    warn, active, fade, 0.0f, type, damage, hit_once, false});
+    return AdicionarPerigo(conjunto, (Perigo){true, PERIGO_RETANGULO, PERIGO_AVISO, retangulo, {0.0f, 0.0f}, 0.0f,
+                                    aviso, ativo, desvanecer, 0.0f, tipo, dano, acerta_uma_vez, false, 0.0f, false});
 }
 
-bool HazardsAddCircle(HazardPool *pool, Vector2 center, float radius, float warn, float active,
-                      float fade, Type type, int damage, bool hit_once)
+bool PerigosAdicionarCirculo(ConjuntoPerigos *conjunto, Vector2 centro, float raio, float aviso, float ativo,
+                      float desvanecer, Tipo tipo, int dano, bool acerta_uma_vez)
 {
-    return HazardAdd(pool, (Hazard){true, HAZARD_CIRCLE, HAZARD_WARN, {0.0f, 0.0f, 0.0f, 0.0f}, center, radius,
-                                    warn, active, fade, 0.0f, type, damage, hit_once, false});
+    return AdicionarPerigo(conjunto, (Perigo){true, PERIGO_CIRCULO, PERIGO_AVISO, {0.0f, 0.0f, 0.0f, 0.0f}, centro, raio,
+                                    aviso, ativo, desvanecer, 0.0f, tipo, dano, acerta_uma_vez, false, 0.0f, false});
 }
 
-bool HazardCircleHitsRect(Vector2 center, float radius, Rectangle rect)
+bool CirculoPerigoAtingeRetangulo(Vector2 centro, float raio, Rectangle retangulo)
 {
-    const float x = fmaxf(rect.x, fminf(center.x, rect.x + rect.width));
-    const float y = fmaxf(rect.y, fminf(center.y, rect.y + rect.height));
-    const float dx = center.x - x, dy = center.y - y;
-    return dx * dx + dy * dy <= radius * radius;
+    const float x = fmaxf(retangulo.x, fminf(centro.x, retangulo.x + retangulo.width));
+    const float y = fmaxf(retangulo.y, fminf(centro.y, retangulo.y + retangulo.height));
+    const float dx = centro.x - x, dy = centro.y - y;
+    return dx * dx + dy * dy <= raio * raio;
 }
 
-bool HazardCircleHitsCircle(Vector2 first, float first_radius, Vector2 second, float second_radius)
+bool PerigosAdicionarAnel(ConjuntoPerigos *conjunto, Vector2 centro, float velocidade, float aviso, float ativo,
+                    Tipo tipo, int dano)
 {
-    const float dx = first.x - second.x, dy = first.y - second.y;
-    const float range = first_radius + second_radius;
+    Perigo ring = {0};
+    ring.ativo = true; ring.forma = PERIGO_ANEL; ring.fase = PERIGO_AVISO;
+    ring.centro = centro; ring.tempo_aviso = aviso; ring.tempo_ativo = ativo;
+    ring.tempo_desvanecer = 0.15f; ring.tipo = tipo; ring.dano = dano;
+    ring.acerta_uma_vez = true; ring.velocidade_expansao = velocidade;
+    return AdicionarPerigo(conjunto, ring);
+}
+
+bool CirculoPerigoAtingeCirculo(Vector2 primeiro, float raio_primeiro, Vector2 segundo, float raio_segundo)
+{
+    const float dx = primeiro.x - segundo.x, dy = primeiro.y - segundo.y;
+    const float range = raio_primeiro + raio_segundo;
     return dx * dx + dy * dy <= range * range;
 }
 
-static void HazardDamage(Hazard *hazard, PlayerStats *player, float damage_multiplier)
+static void AplicarDanoPerigo(Perigo *perigo, AtributosJogador *jogador, float multiplicador_dano)
 {
-    int damage = (int)ceilf((float)hazard->damage * type_effectiveness(hazard->type, player->defense_type) *
-                            player->incoming_damage_multiplier * damage_multiplier);
-    if (damage < 1) damage = 1;
-    player->hp -= damage;
-    if (player->hp < 0) player->hp = 0;
-    hazard->has_hit = true;
+    int dano = (int)ceilf((float)perigo->dano * efetividade_tipo(perigo->tipo, jogador->tipo_defesa) *
+                            jogador->multiplicador_dano_recebido * multiplicador_dano);
+    if (dano < 1) dano = 1;
+    jogador->hp -= dano;
+    if (jogador->hp < 0) jogador->hp = 0;
+    perigo->ja_acertou = true;
 }
 
-void HazardsUpdate(HazardPool *pool, PlayerStats *player, Vector2 soul, float soul_radius,
-                   float delta_time, float damage_multiplier, bool invincible)
+void PerigosAtualizar(ConjuntoPerigos *conjunto, AtributosJogador *jogador, Vector2 alma, float raio_alma,
+                   float tempo_delta, float multiplicador_dano, bool invencivel)
 {
-    for (int index = 0; index < MAX_HAZARDS; index++) {
-        Hazard *hazard = &pool->hazards[index];
-        if (!hazard->active) continue;
-        hazard->timer += delta_time;
-        if (hazard->phase == HAZARD_WARN && hazard->timer >= hazard->warning_time) {
-            hazard->phase = HAZARD_ACTIVE; hazard->timer = 0.0f;
-            continue; /* The warning frame itself never deals damage. */
-        } else if (hazard->phase == HAZARD_ACTIVE && hazard->timer >= hazard->active_time) {
-            hazard->phase = HAZARD_FADE; hazard->timer = 0.0f;
-        } else if (hazard->phase == HAZARD_FADE && hazard->timer >= hazard->fade_time) {
-            hazard->active = false; continue;
+    const bool movendo = conjunto->alma_rastreada &&
+        (fabsf(alma.x - conjunto->alma_anterior.x) + fabsf(alma.y - conjunto->alma_anterior.y) > 0.01f);
+    conjunto->alma_anterior = alma;
+    conjunto->alma_rastreada = true;
+    for (int indice = 0; indice < MAXIMO_PERIGOS; indice++) {
+        Perigo *perigo = &conjunto->perigos[indice];
+        if (!perigo->ativo) continue;
+        perigo->temporizador += tempo_delta;
+        if (perigo->fase == PERIGO_AVISO && perigo->temporizador >= perigo->tempo_aviso) {
+            perigo->fase = PERIGO_ATIVA; perigo->temporizador = 0.0f;
+            continue; /* O proprio quadro de aviso nunca causa dano. */
+        } else if (perigo->fase == PERIGO_ATIVA && perigo->temporizador >= perigo->tempo_ativo) {
+            perigo->fase = PERIGO_DESVANECER; perigo->temporizador = 0.0f;
+        } else if (perigo->fase == PERIGO_DESVANECER && perigo->temporizador >= perigo->tempo_desvanecer) {
+            perigo->ativo = false; continue;
         }
-        if (hazard->phase != HAZARD_ACTIVE || invincible || (hazard->hit_once && hazard->has_hit)) continue;
-        const bool hit = hazard->shape == HAZARD_RECT ?
-            HazardCircleHitsRect(soul, soul_radius, hazard->rect) :
-            HazardCircleHitsCircle(soul, soul_radius, hazard->center, hazard->radius);
-        if (hit) HazardDamage(hazard, player, damage_multiplier);
+        if (perigo->fase == PERIGO_ATIVA && perigo->forma == PERIGO_ANEL)
+            perigo->raio = perigo->temporizador * perigo->velocidade_expansao;
+        if (perigo->fase != PERIGO_ATIVA || invencivel || (perigo->acerta_uma_vez && perigo->ja_acertou) ||
+            (perigo->apenas_em_movimento && !movendo)) continue;
+        const float dx = alma.x - perigo->centro.x, dy = alma.y - perigo->centro.y;
+        const bool hit = perigo->forma == PERIGO_ANEL ?
+            fabsf(sqrtf(dx * dx + dy * dy) - perigo->raio) <= raio_alma + 5.0f :
+            perigo->forma == PERIGO_RETANGULO ?
+            CirculoPerigoAtingeRetangulo(alma, raio_alma, perigo->retangulo) :
+            CirculoPerigoAtingeCirculo(alma, raio_alma, perigo->centro, perigo->raio);
+        if (hit) { AplicarDanoPerigo(perigo, jogador, multiplicador_dano); invencivel = true; }
     }
-    (void)damage_multiplier;
+    (void)multiplicador_dano;
 }
 
-void HazardsDraw(const HazardPool *pool, bool reduced_effects, const SpriteSystem *sprites,
-                 bool debug_hitboxes)
+void PerigosDesenhar(const ConjuntoPerigos *conjunto, bool efeitos_reduzidos, const SistemaSprites *sprites,
+                 bool depurar_colisoes)
 {
-    for (int index = 0; index < MAX_HAZARDS; index++) {
-        const Hazard *hazard = &pool->hazards[index];
-        if (!hazard->active) continue;
-        const Color color = type_color(hazard->type);
-        const float alpha = hazard->phase == HAZARD_WARN ? 0.45f : (hazard->phase == HAZARD_FADE ? 0.35f : 0.85f);
-        if (hazard->shape == HAZARD_RECT) {
-            const SpriteId thorn = hazard->phase == HAZARD_WARN ? SPRITE_THORN_WALL_WARN : SPRITE_THORN_WALL;
-            if (sprite_get(sprites, thorn) != NULL) SpriteDrawFit(sprites, thorn, hazard->rect, WHITE);
-            else if (hazard->phase == HAZARD_WARN) DrawRectangleLinesEx(hazard->rect, 2.0f, Fade(color, alpha));
-            else DrawRectangleRec(hazard->rect, Fade(color, alpha));
+    for (int indice = 0; indice < MAXIMO_PERIGOS; indice++) {
+        const Perigo *perigo = &conjunto->perigos[indice];
+        if (!perigo->ativo) continue;
+        const Color cor = cor_tipo(perigo->tipo);
+        const float alpha = perigo->fase == PERIGO_AVISO ? 0.45f : (perigo->fase == PERIGO_DESVANECER ? 0.35f : 0.85f);
+        if (perigo->forma == PERIGO_ANEL) {
+            const float raio = perigo->fase == PERIGO_AVISO ? 12.0f : fmaxf(1.0f, perigo->raio);
+            DrawRing(perigo->centro, fmaxf(0.0f, raio - 4.0f), raio + 4.0f,
+                     0, 360, 64, Fade(cor, alpha));
+        } else if (perigo->forma == PERIGO_RETANGULO) {
+            const IdSprite thorn = perigo->fase == PERIGO_AVISO ? SPRITE_ESPINHO_PAREDE_AVISO : SPRITE_ESPINHO_PAREDE;
+            if (sprite_obter(sprites, thorn) != NULL) SpriteDesenharAjustado(sprites, thorn, perigo->retangulo, WHITE);
+            else if (perigo->fase == PERIGO_AVISO) DrawRectangleLinesEx(perigo->retangulo, 2.0f, Fade(cor, alpha));
+            else DrawRectangleRec(perigo->retangulo, Fade(cor, alpha));
         } else {
-            const float progress = fmaxf(0.18f, fminf(hazard->timer / hazard->warning_time, 1.0f));
-            const float radius = hazard->phase == HAZARD_WARN ? hazard->radius * progress : hazard->radius;
-            if (hazard->phase == HAZARD_WARN) {
-                if (sprite_get(sprites, SPRITE_SHADOW_ORB) != NULL) {
-                    SpriteDrawCenteredScaled(sprites, SPRITE_SHADOW_ORB, hazard->center, WHITE,
-                                            hazard->timer, radius / 16.0f, debug_hitboxes);
-                } else DrawCircleV(hazard->center, radius * 0.16f, Fade(color, 0.9f));
-                if (sprite_get(sprites, SPRITE_SHADOW_BLOOM_WARN) != NULL) {
-                    SpriteDrawCenteredScaled(sprites, SPRITE_SHADOW_BLOOM_WARN, hazard->center, WHITE,
-                                            hazard->timer, radius / 32.0f, debug_hitboxes);
-                } else DrawCircleLines((int)hazard->center.x, (int)hazard->center.y, radius, Fade(color, alpha));
+            if (perigo->fase == PERIGO_AVISO)
+                DrawCircleLines((int)perigo->centro.x, (int)perigo->centro.y, perigo->raio, YELLOW);
+            const float progresso = fmaxf(0.18f, fminf(perigo->temporizador / perigo->tempo_aviso, 1.0f));
+            const float raio = perigo->fase == PERIGO_AVISO ? perigo->raio * progresso : perigo->raio;
+            if (perigo->fase == PERIGO_AVISO) {
+                if (sprite_obter(sprites, SPRITE_SOMBRA_ORBE) != NULL) {
+                    SpriteDesenharCentralizadoEscalado(sprites, SPRITE_SOMBRA_ORBE, perigo->centro, WHITE,
+                                            perigo->temporizador, raio / 16.0f, depurar_colisoes);
+                } else DrawCircleV(perigo->centro, raio * 0.16f, Fade(cor, 0.9f));
+                if (sprite_obter(sprites, SPRITE_SOMBRA_FLORACAO_AVISO) != NULL) {
+                    SpriteDesenharCentralizadoEscalado(sprites, SPRITE_SOMBRA_FLORACAO_AVISO, perigo->centro, WHITE,
+                                            perigo->temporizador, raio / 32.0f, depurar_colisoes);
+                } else DrawCircleLines((int)perigo->centro.x, (int)perigo->centro.y, raio, Fade(cor, alpha));
             } else {
-                if (sprite_get(sprites, SPRITE_SHADOW_BURST) != NULL && !reduced_effects) {
-                    SpriteDrawCenteredScaled(sprites, SPRITE_SHADOW_BURST, hazard->center, WHITE,
-                                            hazard->timer, radius / 48.0f, debug_hitboxes);
-                } else DrawCircleV(hazard->center, radius, Fade(color, alpha));
+                if (sprite_obter(sprites, SPRITE_SOMBRA_EXPLOSAO) != NULL && !efeitos_reduzidos) {
+                    SpriteDesenharCentralizadoEscalado(sprites, SPRITE_SOMBRA_EXPLOSAO, perigo->centro, WHITE,
+                                            perigo->temporizador, raio / 48.0f, depurar_colisoes);
+                } else DrawCircleV(perigo->centro, raio, Fade(cor, alpha));
             }
         }
-        if (debug_hitboxes) {
-            if (hazard->shape == HAZARD_RECT) DrawRectangleLinesEx(hazard->rect, 1.0f, MAGENTA);
-            else DrawCircleLines((int)hazard->center.x, (int)hazard->center.y, hazard->radius, MAGENTA);
+        if (depurar_colisoes) {
+            if (perigo->forma == PERIGO_RETANGULO) DrawRectangleLinesEx(perigo->retangulo, 1.0f, MAGENTA);
+            else DrawCircleLines((int)perigo->centro.x, (int)perigo->centro.y, perigo->raio, MAGENTA);
         }
     }
 }

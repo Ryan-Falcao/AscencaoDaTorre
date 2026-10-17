@@ -14,7 +14,25 @@ As Fases 1 a 7 tambem estao prontas.
 - Raylib instalada
 - CMake 3.20+ ou Make
 
-No Windows deste computador, a Raylib esta disponivel pelo MSYS2 UCRT64.
+No Windows, instale as dependencias pelo [MSYS2 UCRT64](https://www.msys2.org/).
+Instale o MSYS2 em `C:\msys64`, abra o terminal **MSYS2 UCRT64** e execute:
+
+```sh
+pacman -Syu
+```
+
+Se o terminal solicitar que seja fechado, reabra o **MSYS2 UCRT64** e execute
+`pacman -Syu` novamente. Depois instale as ferramentas e a Raylib:
+
+```sh
+pacman -S --needed mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-cmake mingw-w64-ucrt-x86_64-ninja mingw-w64-ucrt-x86_64-raylib
+```
+
+A tarefa do VS Code (`Ctrl+Shift+B`) configura e compila o projeto, incluindo
+`C:\msys64\ucrt64\bin` no PATH do processo. Se instalar o MSYS2 em outro local,
+ajuste esse caminho em `.vscode/tasks.json` e nos comandos abaixo.
+O erro de comando CMake nao reconhecido indica que a ferramenta ainda nao foi
+instalada ou que sua pasta `bin` nao esta no PATH.
 
 ## Compilar e executar com CMake
 
@@ -38,15 +56,20 @@ O Makefile usa `pkg-config` para localizar a Raylib.
 
 ## Controles atuais
 
+Os inimigos agora usam [golpes exclusivos e novas mecanicas de esquiva](docs/combat-patterns.md),
+com avisos antes do impacto: saltos, mergulhos, crescimento de pocas, luz protetora,
+olhar que exige ficar parado, duelos de espada, ecos e prensas.
+
 - Setas ou WASD: navegar no titulo e nos menus
 - Enter, Espaco ou Z: confirmar
 - Em batalha, esquerda/direita: escolher ATACAR, AGIR, ITEM ou POUPAR
 - Em submenus, cima/baixo: escolher uma opcao
 - Enter, Espaco ou Z: confirmar ou acelerar/avancar o texto
 - X ou Backspace: voltar de um submenu de batalha
-- Durante a defesa, setas ou WASD: mover a alma
-- QTE de timing: aperte Espaco, Enter ou Z quando os aneis coincidirem
-- QTE de sequencia: repita W, A, S e D mostrados na ordem (setas tambem funcionam)
+- Durante a defesa, setas ou WASD: mover a alma; Shift: executar um dash na direcao pressionada
+- Nas defesas com chao/plataformas, Espaco, W ou Cima: pular (A/D ou esquerda/direita movem)
+- QTE de impacto: aperte Espaco, Enter ou Z quando os aneis coincidirem
+- QTE de ritmo: acerte tres zonas sucessivas usando a mesma tecla de confirmacao
 - QTE de carga: segure Espaco, Enter ou Z e solte na faixa verde
 - Esc: pausar
 
@@ -68,7 +91,7 @@ exausto (menos de 25% de HP), desde que a agressividade esteja abaixo de 67.
 O primeiro tipo da linha ataca o tipo da coluna. Inimigos com dois tipos multiplicam os dois
 resultados. A matriz editavel fica em `src/types.c`.
 
-Para adicionar um tipo novo, inclua-o em `Type` e `TYPE_COUNT` em `include/types.h`, adicione
+Para adicionar um tipo novo, inclua-o em `Tipo` e `TIPO_TOTAL` em `include/types.h`, adicione
 a linha e coluna correspondentes em `EFFECTIVENESS`, seu nome e cor em `src/types.c`, e atualize
 `tests/test_types.c` com os valores esperados.
 
@@ -118,7 +141,8 @@ normalmente tambem precisa das DLLs correspondentes ao lado do executavel.
 ### Tutorial e save
 
 Na primeira run, o jogo mostra cinco dicas curtas: menu, tipos/Analisar, mercy/agressividade,
-defesa e QTE. ESPACO, ENTER, Z, X ou Backspace pulam a dica atual. **Opcoes > Rever tutorial**
+defesa e QTE. Cada dica pausa os comandos do jogo ate apertar ESPACO para fechar.
+**Opcoes > Dicas** ativa ou desativa as dicas e salva a escolha. **Opcoes > Rever tutorial**
 redefine essas dicas. O save agora esta na versao 3; saves da versao 2 sao migrados mantendo a
 progressao e exibindo o tutorial, enquanto arquivos invalidos continuam seguros e recriam o padrao.
 
@@ -129,19 +153,18 @@ sustentam uma run completa. `save` e `render` cuidam da progressao e apresentaca
 
 ### QTEs e dificuldade
 
-Cada `Attack` em `include/player.h` escolhe seu QTE por `qte_kind`. Os tres tipos atuais sao
-`QTE_TIMING`, `QTE_SEQUENCE` e `QTE_HOLD`. A dificuldade usa o andar atual; os tempos, a guarda
-de 0,30 s e janelas de
-acerto estao em `src/qte.c`. Todo QTE mostra `PREPARAR...` nessa guarda e so comeca a contar depois
-dela. Para criar outro QTE, adicione um valor em `QteKind`, inicialize-o em `qte_start`,
-atualize-o em `qte_update` e desenhe-o em `qte_draw`.
+Cada `Ataque` em `include/player.h` escolhe seu QTE por `tipo_qte`. Os tres tipos atuais sao
+`QTE_IMPACTO`, `QTE_RITMO` e `QTE_CARGA`. A dificuldade usa o andar atual; os tempos, a guarda
+e as janelas de acerto estao em `src/qte.c`. Todo QTE mostra `PREPARE-SE` nessa guarda e so comeca
+a contar depois dela. Para criar outro QTE, adicione um valor em `TipoQte`, inicialize-o em
+`qte_iniciar`, atualize-o em `qte_atualizar_com_entrada` e desenhe-o em `qte_desenhar`.
 
 Os testes podem ser executados com `cmake --build build --target test_qte` ou `make test-qte`.
 
 ### Criar uma acao de AGIR ou um inimigo
 
-Em `src/enemy.c`, cada caso de `EnemyCreate` preenche `enemy.actions` com ate quatro
-`EnemyAction`. `Analisar` usa `ENEMY_ACTION_ANALYZE` e fica sempre disponivel; as demais usam
+Em `src/enemy.c`, cada caso de `InimigoCriar` preenche `inimigo.acoes` com ate quatro
+`AcaoInimigo`. `Analisar` usa `INIMIGO_ACAO_ANALISAR` e fica sempre disponivel; as demais usam
 `ENEMY_ACTION_SOCIAL`. Os campos importantes sao:
 
 - `mercy_delta` e `aggression_delta`: mudancas, positivas ou negativas, limitadas entre 0 e 100.
@@ -162,32 +185,32 @@ agressividade estiver em 67 ou mais: primeiro e preciso acalmar o inimigo.
 
 ### Criar um item
 
-Adicione uma entrada em `ITEM_DEFINITIONS`, em `src/items.c`, e o respectivo id em `ItemId` no
+Adicione uma entrada em `DEFINICOES_ITENS`, em `src/items.c`, e o respectivo id em `IdItem` no
 arquivo `include/items.h`. Os efeitos disponiveis sao `ITEM_EFFECT_HEAL`,
-`ITEM_EFFECT_DAMAGE_BUFF`, `ITEM_EFFECT_DEFENSE_TYPE` e `ITEM_EFFECT_SURPRISE_DAMAGE`.
-Para colocar o item inicial na mochila, acrescente o id e a quantidade em `PlayerInit`.
+`ITEM_EFEITO_BUFF_DANO`, `ITEM_EFEITO_TIPO_DEFESA` e `ITEM_EFEITO_DANO_SURPRESA`.
+Para colocar o item inicial na mochila, acrescente o id e a quantidade em `JogadorInicializar`.
 
 O teste da Fase 6 verifica misericordia, exaustao e buffs: execute
 `cmake --build build --target test_phase6` ou `make test-phase6`.
 
 ### Torre, chefes e recompensas
 
-`Tower`, em `include/tower.h`, guarda a seed, o andar, as moedas e a lista de inimigos sorteados.
+`Torre`, em `include/tower.h`, guarda a semente, o andar, as moedas e a lista de inimigos sorteados.
 `TOWER_FLOORS` controla a quantidade de andares. Os andares 5 e 10 sao chefes; os demais sorteiam
 inimigos comuns sem repetir o mesmo inimigo consecutivamente. Depois do andar 3 ocorre descanso,
 depois do 6 ocorre loja e depois do 9 ocorre descanso. A escala de HP, dano de projeteis e moedas
-fica em `TowerScaleEnemy`, em `src/tower.c`.
+fica em `TorreEscalarInimigo`, em `src/tower.c`.
 
-As recompensas sao sorteadas em `TowerRollRewards`: ataque, item ou atributo. Ataques ficam na
-tabela `REWARD_ATTACKS`, em `src/player.c`; para adicionar um, inclua-o nessa tabela com tipo,
-dano e `qte_kind`. A loja usa `TowerRollShop` e o preco base de cada item pode ser ajustado em
-`ItemShopPrice`, em `src/items.c`. Chefes sao definidos em `EnemyCreate` e usam seis padroes;
+As recompensas sao sorteadas em `TorreSortearRecompensas`: ataque, item ou atributo. Ataques ficam na
+tabela `ATAQUES_RECOMPENSA`, em `src/player.c`; para adicionar um, inclua-o nessa tabela com tipo,
+dano e `tipo_qte`. A loja usa `TorreSortearLoja` e o preco base pode ser ajustado em
+`BALANCEAMENTO_LOJA_BASE_PRECO`, em `include/balance.h`. Chefes sao definidos em `InimigoCriar`;
 ao chegar a 50% de HP entram na segunda fase.
 
 O teste da torre verifica chefes, ausencia de repeticao consecutiva, recompensa sem ataque duplicado
 e limite do inventario: `cmake --build build --target test_tower` ou `make test-tower`.
 
-### Save, desbloqueios e visual
+### Salvamento, desbloqueios e visual
 
 O save fica em `save.dat`, na pasta em que o executavel e iniciado. Ele tem versao e checksum; se
 nao existir, estiver corrompido ou for de outra versao, o jogo inicia um save padrao sem travar.
@@ -199,17 +222,18 @@ vitorias ou poupadas e libera um item ou ataque. A tela Relíquias permite gasta
 item ou ataque inicial; apenas uma escolha fica equipada para a proxima run.
 
 As paletas vivem em `include/palettes.h`. Para criar outra, adicione um `FloorPalette` com fundo,
-cor flutuante e cor do papel. `render.c` faz a transicao suave. O shader e propositalmente opcional:
-`ENABLE_OPTIONAL_SHADER` em `src/render.c` fica desligado por padrao e o jogo possui fallback sem
-shader. O tremor de linha pode ser desligado em Opções; F11 alterna tela cheia.
+cor flutuante e cor do papel. `render.c` faz a transicao suave diretamente com formas do raylib.
+O tremor de linha pode ser desligado em Opções; F11 alterna tela cheia.
 
 ### Adicionar um padrao de projeteis
 
 Em `src/bullets.c`, adicione um novo item na tabela `PATTERNS`, com duracao, tamanho da caixa,
 intervalo, quantidade, velocidade, raio, tipo e dano. Em seguida, acrescente o id em
-`BulletPatternId` e na lista `pattern_ids` do inimigo em `src/enemy.c`. Os tres modos atuais de
-spawn sao chuva, onda lateral com brecha e espiral. Novos modos podem ser acrescentados no unico
-`switch` de spawn, sem duplicar o loop de movimento, colisao ou dano.
+`IdPadraoProjetil` e na lista `ids_padroes` do inimigo em `src/enemy.c`. Golpes de sequencia vivem
+em `src/patterns.c`; golpes com movimento ou fisica propria vivem em `src/motion_patterns.c`.
+Cada golpe novo desse segundo grupo precisa receber um `ModoMovimento` exclusivo. Compartilhe a
+infraestrutura de colisao e gravidade, mas nao reutilize a mesma regra de jogo com outra cor.
+O repertorio e as regras de justica estao descritos em `docs/combat-patterns.md`.
 
 ### Sprites PNG opcionais
 
@@ -237,7 +261,7 @@ O teste do parser e dos IDs de fallback pode ser rodado com
 ### Ataques e efeitos visuais
 
 Os ataques usam dados em `src/player.c`: tipo, dano, QTE, quantidade de golpes, efeito, status,
-usos e cooldown. Os cinco estilos de efeito sao `IMPACT`, `PROJECTILE`, `SLASH`, `RAIN` e `BEAM`.
+cooldown e usos ilimitados. Os cinco estilos de efeito sao `IMPACT`, `PROJECTILE`, `SLASH`, `RAIN` e `BEAM`.
 Todo efeito procura primeiro `fx_<ataque>_sheet.png`, depois `fx_type_<tipo>_sheet.png`; se nenhum
 PNG estiver instalado, um efeito geometricamente desenhado por codigo ocupa o lugar.
 
@@ -247,7 +271,7 @@ dimensoes fica em `assets/sprites/README.md`.
 
 Status: Queimar causa dano no inicio do turno inimigo; Molhar aumenta em 25% ataques de Planta e
 Luz; Enraizar reduz a velocidade da defesa; Cegar reduz o dano; Atordoar faz o inimigo perder um
-turno. Usos e cooldowns impedem repetir ataques pesados sem custo. Rode
+turno. Os ataques do jogador possuem usos ilimitados; os cooldowns continuam limitando a frequencia dos golpes pesados. Rode
 `cmake --build build --target test_phase10` ou `make test-phase10` para validar essa logica.
 
 ### Defesa: padroes e sprites

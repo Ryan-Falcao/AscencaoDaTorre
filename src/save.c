@@ -3,151 +3,151 @@
 #include <stdio.h>
 #include <string.h>
 
-#define SAVE_MAGIC 0x41535452u
-#define SAVE_PATH "save.dat"
+#define SALVAMENTO_MAGIC 0x41535452u
+#define CAMINHO_SALVAMENTO "save.dat"
 
 typedef struct {
-    uint32_t magic;
-    uint32_t version;
-    uint32_t checksum;
-} SaveHeader;
+    uint32_t assinatura;
+    uint32_t versao;
+    uint32_t soma_verificacao;
+} CabecalhoSalvamento;
 
-/* Exact layout of version 2: loading it preserves progress and starts the tutorial. */
+/* Layout exato da versao 2: carrega o progresso preservado e inicia o tutorial. */
 typedef struct {
-    int best_floor, total_runs, victories, mercy_wins, damage_wins, fragments;
-    uint32_t unlocked_items, unlocked_attacks;
-    float music_volume, effects_volume;
-    bool fullscreen, line_tremor, reduced_effects;
-    unsigned int tutorial_seen;
-    GameDifficulty difficulty;
-    RelicChoiceKind relic_kind;
-    int relic_id;
-} SaveDataV2;
+    int melhor_andar, total_runs, vitorias, vitorias_misericordia, vitorias_dano, fragmentos;
+    uint32_t itens_desbloqueados, ataques_desbloqueados;
+    float volume_musica, volume_efeitos;
+    bool tela_cheia, tremor_linha, efeitos_reduzidos;
+    unsigned int tutorial_visto;
+    DificuldadeJogo dificuldade;
+    TipoEscolhaReliquia tipo_reliquia;
+    int id_reliquia;
+} DadosSalvosV2;
 
 typedef struct {
     int floor_required;
     int victories_required;
     int mercy_required;
-    RelicChoiceKind kind;
+    TipoEscolhaReliquia categoria;
     int id;
-} UnlockRule;
+} RegraDesbloqueio;
 
-static const UnlockRule UNLOCKS[] = {
-    {2, 0, 0, RELIC_ITEM, ITEM_MOON_HERB}, {3, 0, 0, RELIC_ATTACK, 3},
-    {5, 0, 0, RELIC_ITEM, ITEM_TOWER_BELL}, {5, 0, 0, RELIC_ATTACK, 6},
-    {1, 1, 0, RELIC_ATTACK, 9}, {1, 0, 10, RELIC_ITEM, ITEM_THORN_BOMB}
+static const RegraDesbloqueio DESBLOQUEIOS[] = {
+    {2, 0, 0, RELIQUIA_ITEM, ITEM_LUA_ERVA}, {3, 0, 0, RELIQUIA_ATAQUE, 3},
+    {5, 0, 0, RELIQUIA_ITEM, ITEM_TORRE_SINO}, {5, 0, 0, RELIQUIA_ATAQUE, 6},
+    {1, 1, 0, RELIQUIA_ATAQUE, 9}, {1, 0, 10, RELIQUIA_ITEM, ITEM_ESPINHO_BOMBA}
 };
 
-static uint32_t ChecksumBytes(const void *data, size_t size)
+static uint32_t SomaVerificacaoBytes(const void *data, size_t tamanho)
 {
     const unsigned char *bytes = data;
-    uint32_t value = 2166136261u;
+    uint32_t valor = 2166136261u;
 
-    for (size_t index = 0; index < size; index++) value = (value ^ bytes[index]) * 16777619u;
-    return value;
+    for (size_t indice = 0; indice < tamanho; indice++) valor = (valor ^ bytes[indice]) * 16777619u;
+    return valor;
 }
 
-static uint32_t Checksum(const SaveData *save) { return ChecksumBytes(save, sizeof(*save)); }
+static uint32_t SomaVerificacao(const DadosSalvos *salvamento) { return SomaVerificacaoBytes(salvamento, sizeof(*salvamento)); }
 
-void SaveSetDefaults(SaveData *save)
+void SalvamentoDefinirPadroes(DadosSalvos *salvamento)
 {
-    memset(save, 0, sizeof(*save));
-    save->music_volume = 0.70f;
-    save->effects_volume = 0.80f;
-    save->line_tremor = true;
-    save->difficulty = DIFFICULTY_NORMAL;
-    save->unlocked_items = (1u << ITEM_TEA) | (1u << ITEM_RED_RIBBON) |
-                            (1u << ITEM_WET_CLOAK) | (1u << ITEM_SOLAR_BROOCH);
-    save->unlocked_attacks = (1u << 0) | (1u << 1) | (1u << 2);
+    memset(salvamento, 0, sizeof(*salvamento));
+    salvamento->volume_musica = 0.70f;
+    salvamento->volume_efeitos = 0.80f;
+    salvamento->tremor_linha = true;
+    salvamento->dificuldade = DIFICULDADE_NORMAL;
+    salvamento->itens_desbloqueados = (1u << ITEM_CHA) | (1u << ITEM_VERMELHA_FITA) |
+                            (1u << ITEM_MOLHADO_MANTO) | (1u << ITEM_SOLAR_BROCHE);
+    salvamento->ataques_desbloqueados = (1u << 0) | (1u << 1) | (1u << 2);
 }
 
-bool SaveLoadPath(SaveData *save, const char *path)
+bool SalvamentoCarregarCaminho(DadosSalvos *salvamento, const char *caminho)
 {
-    SaveHeader header;
-    SaveData loaded;
-    FILE *file = fopen(path, "rb");
+    CabecalhoSalvamento cabecalho;
+    DadosSalvos carregado;
+    FILE *arquivo = fopen(caminho, "rb");
 
-    if (file == NULL) {
-        SaveSetDefaults(save);
+    if (arquivo == NULL) {
+        SalvamentoDefinirPadroes(salvamento);
         return false;
     }
-    const bool header_ok = fread(&header, sizeof(header), 1, file) == 1 && header.magic == SAVE_MAGIC;
-    bool valid = false;
-    if (header_ok && header.version == SAVE_VERSION) {
-        valid = fread(&loaded, sizeof(loaded), 1, file) == 1 && header.checksum == Checksum(&loaded);
-    } else if (header_ok && header.version == 2u) {
-        SaveDataV2 old = {0};
-        if (fread(&old, sizeof(old), 1, file) == 1 &&
-            header.checksum == ChecksumBytes(&old, sizeof(old))) {
-            SaveSetDefaults(&loaded);
-            loaded.best_floor = old.best_floor; loaded.total_runs = old.total_runs;
-            loaded.victories = old.victories; loaded.mercy_wins = old.mercy_wins;
-            loaded.damage_wins = old.damage_wins; loaded.fragments = old.fragments;
-            loaded.unlocked_items = old.unlocked_items; loaded.unlocked_attacks = old.unlocked_attacks;
-            loaded.music_volume = old.music_volume; loaded.effects_volume = old.effects_volume;
-            loaded.fullscreen = old.fullscreen; loaded.line_tremor = old.line_tremor;
-            loaded.reduced_effects = old.reduced_effects; loaded.tutorial_seen = old.tutorial_seen;
-            loaded.difficulty = old.difficulty; loaded.relic_kind = old.relic_kind; loaded.relic_id = old.relic_id;
-            loaded.tutorial_done = false;
-            valid = true;
+    const bool header_ok = fread(&cabecalho, sizeof(cabecalho), 1, arquivo) == 1 && cabecalho.assinatura == SALVAMENTO_MAGIC;
+    bool valido = false;
+    if (header_ok && cabecalho.versao == SALVAMENTO_VERSAO) {
+        valido = fread(&carregado, sizeof(carregado), 1, arquivo) == 1 && cabecalho.soma_verificacao == SomaVerificacao(&carregado);
+    } else if (header_ok && cabecalho.versao == 2u) {
+        DadosSalvosV2 antigo = {0};
+        if (fread(&antigo, sizeof(antigo), 1, arquivo) == 1 &&
+            cabecalho.soma_verificacao == SomaVerificacaoBytes(&antigo, sizeof(antigo))) {
+            SalvamentoDefinirPadroes(&carregado);
+            carregado.melhor_andar = antigo.melhor_andar; carregado.total_runs = antigo.total_runs;
+            carregado.vitorias = antigo.vitorias; carregado.vitorias_misericordia = antigo.vitorias_misericordia;
+            carregado.vitorias_dano = antigo.vitorias_dano; carregado.fragmentos = antigo.fragmentos;
+            carregado.itens_desbloqueados = antigo.itens_desbloqueados; carregado.ataques_desbloqueados = antigo.ataques_desbloqueados;
+            carregado.volume_musica = antigo.volume_musica; carregado.volume_efeitos = antigo.volume_efeitos;
+            carregado.tela_cheia = antigo.tela_cheia; carregado.tremor_linha = antigo.tremor_linha;
+            carregado.efeitos_reduzidos = antigo.efeitos_reduzidos; carregado.tutorial_visto = antigo.tutorial_visto;
+            carregado.dificuldade = antigo.dificuldade; carregado.tipo_reliquia = antigo.tipo_reliquia; carregado.id_reliquia = antigo.id_reliquia;
+            carregado.tutorial_concluido = false;
+            valido = true;
         }
     }
-    fclose(file);
-    if (!valid) {
-        SaveSetDefaults(save);
+    fclose(arquivo);
+    if (!valido) {
+        SalvamentoDefinirPadroes(salvamento);
         return false;
     }
-    *save = loaded;
+    *salvamento = carregado;
     return true;
 }
 
-bool SaveLoad(SaveData *save) { return SaveLoadPath(save, SAVE_PATH); }
+bool SalvamentoCarregar(DadosSalvos *salvamento) { return SalvamentoCarregarCaminho(salvamento, CAMINHO_SALVAMENTO); }
 
-bool SaveWritePath(const SaveData *save, const char *path)
+bool SalvamentoGravarCaminho(const DadosSalvos *salvamento, const char *caminho)
 {
-    const SaveHeader header = {SAVE_MAGIC, SAVE_VERSION, Checksum(save)};
-    FILE *file = fopen(path, "wb");
+    const CabecalhoSalvamento cabecalho = {SALVAMENTO_MAGIC, SALVAMENTO_VERSAO, SomaVerificacao(salvamento)};
+    FILE *arquivo = fopen(caminho, "wb");
 
-    if (file == NULL) return false;
-    const bool written = fwrite(&header, sizeof(header), 1, file) == 1 &&
-                         fwrite(save, sizeof(*save), 1, file) == 1;
-    fclose(file);
-    return written;
+    if (arquivo == NULL) return false;
+    const bool gravado = fwrite(&cabecalho, sizeof(cabecalho), 1, arquivo) == 1 &&
+                         fwrite(salvamento, sizeof(*salvamento), 1, arquivo) == 1;
+    fclose(arquivo);
+    return gravado;
 }
 
-bool SaveWrite(const SaveData *save) { return SaveWritePath(save, SAVE_PATH); }
+bool SalvamentoGravar(const DadosSalvos *salvamento) { return SalvamentoGravarCaminho(salvamento, CAMINHO_SALVAMENTO); }
 
-void SaveApplyUnlocks(SaveData *save)
+void SalvamentoAplicarDesbloqueios(DadosSalvos *salvamento)
 {
-    for (size_t index = 0; index < sizeof(UNLOCKS) / sizeof(UNLOCKS[0]); index++) {
-        const UnlockRule *rule = &UNLOCKS[index];
-        if (save->best_floor >= rule->floor_required && save->victories >= rule->victories_required &&
-            save->mercy_wins >= rule->mercy_required) {
-            if (rule->kind == RELIC_ITEM) save->unlocked_items |= 1u << rule->id;
-            else save->unlocked_attacks |= 1u << rule->id;
+    for (size_t indice = 0; indice < sizeof(DESBLOQUEIOS) / sizeof(DESBLOQUEIOS[0]); indice++) {
+        const RegraDesbloqueio *regra = &DESBLOQUEIOS[indice];
+        if (salvamento->melhor_andar >= regra->floor_required && salvamento->vitorias >= regra->victories_required &&
+            salvamento->vitorias_misericordia >= regra->mercy_required) {
+            if (regra->categoria == RELIQUIA_ITEM) salvamento->itens_desbloqueados |= 1u << regra->id;
+            else salvamento->ataques_desbloqueados |= 1u << regra->id;
         }
     }
 }
 
-bool SaveIsItemUnlocked(const SaveData *save, ItemId id)
+bool SalvamentoItemDesbloqueado(const DadosSalvos *salvamento, IdItem id)
 {
-    return id >= 0 && id < ITEM_COUNT && (save->unlocked_items & (1u << id)) != 0;
+    return id >= 0 && id < ITEM_TOTAL && (salvamento->itens_desbloqueados & (1u << id)) != 0;
 }
 
-bool SaveIsAttackUnlocked(const SaveData *save, int attack_id)
+bool SalvamentoAtaqueDesbloqueado(const DadosSalvos *salvamento, int id_ataque)
 {
-    return attack_id >= 0 && attack_id < SAVE_ATTACK_BITS &&
-           (save->unlocked_attacks & (1u << attack_id)) != 0;
+    return id_ataque >= 0 && id_ataque < SALVAMENTO_ATAQUE_BITS &&
+           (salvamento->ataques_desbloqueados & (1u << id_ataque)) != 0;
 }
 
-bool SaveBuyRelic(SaveData *save, RelicChoiceKind kind, int id, int price)
+bool SalvamentoComprarReliquia(DadosSalvos *salvamento, TipoEscolhaReliquia categoria, int id, int preco)
 {
-    const bool unlocked = kind == RELIC_ITEM ? SaveIsItemUnlocked(save, (ItemId)id) :
-                          SaveIsAttackUnlocked(save, id);
+    const bool unlocked = categoria == RELIQUIA_ITEM ? SalvamentoItemDesbloqueado(salvamento, (IdItem)id) :
+                          SalvamentoAtaqueDesbloqueado(salvamento, id);
 
-    if (!unlocked || save->fragments < price) return false;
-    save->fragments -= price;
-    save->relic_kind = kind;
-    save->relic_id = id;
+    if (!unlocked || salvamento->fragmentos < preco) return false;
+    salvamento->fragmentos -= preco;
+    salvamento->tipo_reliquia = categoria;
+    salvamento->id_reliquia = id;
     return true;
 }
