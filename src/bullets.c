@@ -17,6 +17,27 @@
 #define ALTA_AGRESSIVIDADE_DANO_MULTIPLICADOR 1.25f
 #define DEFESA_INICIO_TOLERANCIA_SEGUNDOS 0.35f
 #define RAIO_CRIACAO_SEGURA_ESPIRAL 34.0f
+/* A arena sempre cabe no corredor entre o inimigo e o HUD. Padrões podem
+   pedir tamanhos diferentes, mas nunca invadem a interface inferior. */
+#define DEFESA_TOPO_ARENA 148.0f
+#define DEFESA_LIMITE_INFERIOR 326.0f
+#define DEFESA_LARGURA_MINIMA 120.0f
+#define DEFESA_ALTURA_MINIMA 90.0f
+#define DEFESA_LARGURA_MAXIMA 556.0f
+
+static Rectangle CaixaDefesaAjustada(float largura_desejada, float altura_desejada)
+{
+    const float largura = Clamp(largura_desejada, DEFESA_LARGURA_MINIMA, DEFESA_LARGURA_MAXIMA);
+    const float altura_maxima = DEFESA_LIMITE_INFERIOR - DEFESA_TOPO_ARENA;
+    const float altura = Clamp(altura_desejada, DEFESA_ALTURA_MINIMA, altura_maxima);
+
+    return (Rectangle){
+        (640.0f - largura) * 0.5f,
+        DEFESA_TOPO_ARENA,
+        largura,
+        altura
+    };
+}
 
 static const PadraoProjetil PADROES[PADRAO_TOTAL] = {
 #define CARACTERISTICO(id, element, power) [id] = { .duracao = 10.8f, .largura_caixa = 320, \
@@ -332,12 +353,8 @@ void DefesaIniciar(EstadoDefesa *defesa, IdPadraoProjetil id_padrao, Rectangle c
         defesa->padrao.velocidade *= 0.90f;
     }
     defesa->caixa_inicial = caixa_menu;
-    defesa->caixa_alvo = (Rectangle){
-        (640.0f - defesa->padrao.largura_caixa) * 0.5f,
-        148.0f,
-        defesa->padrao.largura_caixa,
-        defesa->padrao.altura_caixa
-    };
+    defesa->caixa_alvo = CaixaDefesaAjustada(defesa->padrao.largura_caixa,
+                                              defesa->padrao.altura_caixa);
     defesa->caixa = caixa_menu;
     defesa->posicao_alma = (Vector2){
         defesa->caixa_alvo.x + defesa->caixa_alvo.width * 0.5f,
@@ -364,9 +381,7 @@ int DificuldadePadraoProjetil(IdPadraoProjetil id_padrao)
 
 void DefesaRedimensionarCaixa(EstadoDefesa *defesa, float width, float height)
 {
-    defesa->caixa_alvo.width = width;
-    defesa->caixa_alvo.height = height;
-    defesa->caixa_alvo.x = (640.0f - width) * 0.5f;
+    defesa->caixa_alvo = CaixaDefesaAjustada(width, height);
 }
 
 static void AtualizarAlma(EstadoDefesa *defesa, AtributosJogador *jogador,

@@ -14,10 +14,20 @@ int main(void)
         assert(defesa.id_padrao == (IdPadraoProjetil)id);
         assert(defesa.padrao.largura_caixa > 0.0f && defesa.padrao.largura_caixa <= 640.0f);
         assert(defesa.padrao.altura_caixa > 0.0f && defesa.padrao.altura_caixa <= 480.0f);
+        assert(defesa.caixa_alvo.y + defesa.caixa_alvo.height <= 326.0f);
         assert(defesa.padrao.raio_colisao > 0.0f);
         assert(defesa.padrao.projeteis_por_criacao > 0);
         assert(DificuldadePadraoProjetil((IdPadraoProjetil)id) >= 1);
     }
+
+    /* Uma arena pedida por chefe nunca pode cobrir o HUD, mesmo sendo maior
+       que o corredor livre da tela. */
+    EstadoDefesa arena_grande;
+    DefesaInicializar(&arena_grande);
+    DefesaIniciar(&arena_grande, PADRAO_SINO_ECO, caixa_menu, 50, 0, 1.0f, 1.0f);
+    DefesaRedimensionarCaixa(&arena_grande, 520.0f, 400.0f);
+    assert(arena_grande.caixa_alvo.width == 520.0f);
+    assert(arena_grande.caixa_alvo.y + arena_grande.caixa_alvo.height <= 326.0f);
     /* A faixa de fuga direita permanece utilizavel por toda a espiral de fogo,
        inclusive com agressividade maxima e multiplicador extra de velocidade. */
     EstadoDefesa fire;

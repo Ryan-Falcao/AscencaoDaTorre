@@ -950,27 +950,32 @@ void BatalhaDesenhar(const Batalha *batalha, const AtributosJogador *jogador, co
         }
     }
 
-    DrawRectangle(38, 336, 560, 49, Fade(RAYWHITE, 0.72f));
-    DrawLine(38, 336, 598, 336, (Color){69, 70, 77, 170});
-    DrawText(jogador->nome, 48, 343, 20, BLACK);
-    DrawText(TextFormat("LV %d", jogador->nivel), 154, 343, 16, DARKGRAY);
-    DrawText("HP", 214, 343, 16, BLACK);
-    DesenharBarraVida((Rectangle){242.0f, 346.0f, 128.0f, 14.0f}, batalha->vida_jogador_exibida,
+    /* Duas linhas fixas evitam que nome, HP, defesa e buffs disputem o mesmo espaco. */
+    DrawRectangle(38, 336, 560, 55, Fade(RAYWHITE, 0.82f));
+    DrawLine(38, 336, 598, 336, (Color){69, 70, 77, 190});
+    const char *nome_exibido = MeasureText(jogador->nome, 20) > 112 ?
+        TextSubtext(jogador->nome, 0, 10) : jogador->nome;
+    DrawText(nome_exibido, 48, 343, 20, BLACK);
+    DrawText(TextFormat("LV %d", jogador->nivel), 170, 345, 14, DARKGRAY);
+    DrawText("HP", 220, 343, 16, BLACK);
+    DesenharBarraVida((Rectangle){248.0f, 346.0f, 120.0f, 14.0f}, batalha->vida_jogador_exibida,
                   batalha->rastro_vida_jogador, jogador->vida_maxima,
                   (Color){104, 183, 114, 255});
-    DrawText(TextFormat("%d/%d", jogador->hp, jogador->vida_maxima), 380, 343, 16, BLACK);
-    DrawText("DEF", 446, 343, 14, BLACK);
-    DesenharIconeTipo(jogador->tipo_defesa, (Vector2){484, 351}, true);
-    DrawText(nome_tipo(jogador->tipo_defesa), 499, 343, 14, BLACK);
-    DrawText(TextFormat("MANA %d/%d  +%d/turno", jogador->mana, jogador->mana_maxima,
-                        jogador->mana_por_turno), 184, 369, 12, DARKBLUE);
-    if (jogador->sangramento > 0)
-        DrawText(TextFormat("SANG %d", jogador->sangramento), 392, 369, 12, MAROON);
-    if (jogador->turnos_buff_dano > 0) {
-        DrawRectangle(48, 367, 116, 17, (Color){243, 207, 110, 255});
-        DrawRectangleLines(48, 367, 116, 17, BLACK);
+    DrawText(TextFormat("%d/%d", jogador->hp, jogador->vida_maxima), 376, 343, 16, BLACK);
+
+    DrawText(TextFormat("MANA %d/%d  +%d/t", jogador->mana, jogador->mana_maxima,
+                        jogador->mana_por_turno), 48, 370, 12, DARKBLUE);
+    DrawText("DEF", 224, 370, 12, BLACK);
+    DesenharIconeTipo(jogador->tipo_defesa, (Vector2){259, 376}, true);
+    DrawText(nome_tipo(jogador->tipo_defesa), 274, 370, 12, BLACK);
+    if (jogador->sangramento > 0 && jogador->turnos_buff_dano > 0) {
+        DrawText(TextFormat("SANG %d | DMG +%d%% (%d)", jogador->sangramento,
+                            jogador->percentual_buff_dano, jogador->turnos_buff_dano), 390, 370, 11, MAROON);
+    } else if (jogador->sangramento > 0) {
+        DrawText(TextFormat("SANG %d", jogador->sangramento), 390, 370, 12, MAROON);
+    } else if (jogador->turnos_buff_dano > 0) {
         DrawText(TextFormat("DMG +%d%% (%d)", jogador->percentual_buff_dano,
-                            jogador->turnos_buff_dano), 53, 369, 12, BLACK);
+                            jogador->turnos_buff_dano), 390, 370, 12, (Color){133, 91, 15, 255});
     }
 
     if (batalha->fase == BATALHA_INIMIGO_TURNO) {

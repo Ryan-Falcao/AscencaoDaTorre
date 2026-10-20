@@ -12,6 +12,7 @@ Use PNG com transparencia, sem antialiasing e pixel art em escala inteira (1x, 2
 | Item | `item_<id>.png` | 24x24 |
 | Projetil | `bullet_<tipo>.png` | 16x16 ou 24x24 |
 | Titulo | `title_tower.png` | 200x300 |
+| Fundo do titulo | `bg_title.png` | 640x480 (ou qualquer proporcao 4:3) |
 | Fundo | `bg_pastel.png`, `bg_boss.png` | 640x480 |
 
 ## IDs aceitos
@@ -86,3 +87,17 @@ Para ataques grandes, use `warn_danger.png` (32x32) como marcador opcional. Use
 `fx_hit_soul.png` (32x32, ou sheet) para o impacto na alma. `arena_bg_pastel.png` e um fundo
 opcional da caixa (320x180 recomendado); `arena_border.png` e uma textura de borda simples de
 16x16. Ambos sao esticados para a arena atual e possuem fallback para fundo preto e borda branca.
+
+## Fundos elementais da torre
+
+Os fundos abaixo ocupam a tela logica inteira (640x480) e sao escolhidos automaticamente pelo
+bloco de cinco andares atual. Todos sao opcionais: se um faltar, o jogo volta para o fundo geral.
+
+| Andares | Elemento | Arquivo |
+|---|---|---|
+| 1-5 | Planta | `bg_planta.png` |
+| 6-10 | Agua | `bg_agua.png` |
+| 11-15 | Fogo | `bg_fogo.png` |
+| 16-20 | Sombra | `bg_sombra.png` |
+| 21-25 | Luz | `bg_luz.png` |
+| 26-30 | Neutro | `bg_neutro.png` |

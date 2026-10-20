@@ -40,6 +40,7 @@ static const EspecificacaoSprite ESPECIFICACOES[] = {
     {SPRITE_CHEFE_INQUISIDOR_SOL,"assets/sprites/boss_inquisidor_sol_partido.png",1,{0,0}},
     {SPRITE_ALMA, "assets/sprites/soul.png", 1, {0, 0}},
     {SPRITE_TITULO_TORRE, "assets/sprites/title_tower.png", 1, {0, 0}},
+    {SPRITE_FUNDO_TITULO, "assets/sprites/bg_title.png", 1, {0, 0}},
     {SPRITE_TIPO_FOGO, "assets/sprites/type_chama.png", 1, {0, 0}},
     {SPRITE_TIPO_AGUA, "assets/sprites/type_agua.png", 1, {0, 0}},
     {SPRITE_TIPO_PLANTA, "assets/sprites/type_planta.png", 1, {0, 0}},
@@ -78,6 +79,12 @@ static const EspecificacaoSprite ESPECIFICACOES[] = {
     ,{SPRITE_ITEM_AMULETO_AMPULHETA, "assets/sprites/item_amuleto_ampulheta.png", 1, {0, 0}}
     ,{SPRITE_FUNDO_PASTEL, "assets/sprites/bg_pastel.png", 1, {0, 0}}
     ,{SPRITE_FUNDO_CHEFE, "assets/sprites/bg_boss.png", 1, {0, 0}}
+    ,{SPRITE_FUNDO_PLANTA, "assets/sprites/bg_planta.png", 1, {0, 0}}
+    ,{SPRITE_FUNDO_AGUA, "assets/sprites/bg_agua.png", 1, {0, 0}}
+    ,{SPRITE_FUNDO_FOGO, "assets/sprites/bg_fogo.png", 1, {0, 0}}
+    ,{SPRITE_FUNDO_SOMBRA, "assets/sprites/bg_sombra.png", 1, {0, 0}}
+    ,{SPRITE_FUNDO_LUZ, "assets/sprites/bg_luz.png", 1, {0, 0}}
+    ,{SPRITE_FUNDO_NEUTRO, "assets/sprites/bg_neutro.png", 1, {0, 0}}
     ,{SPRITE_ATAQUE_BRASA, "assets/sprites/attack_brasa.png", 1, {0, 0}}
     ,{SPRITE_ATAQUE_GOTA_CLARA, "assets/sprites/attack_gota_clara.png", 1, {0, 0}}
     ,{SPRITE_ATAQUE_RAIZ_RAPIDA, "assets/sprites/attack_raiz_rapida.png", 1, {0, 0}}
@@ -279,6 +286,12 @@ IdSprite SpriteIdInimigo(IdInimigo inimigo, bool segunda_fase)
 }
 IdSprite SpriteIdTipo(Tipo tipo) { return (IdSprite)(SPRITE_TIPO_FOGO + tipo); }
 IdSprite SpriteIdProjetil(Tipo tipo) { return (IdSprite)(SPRITE_PROJETIL_FOGO + tipo); }
+IdSprite SpriteIdFundoTipo(Tipo tipo)
+{
+    static const IdSprite fundos[] = {SPRITE_FUNDO_FOGO, SPRITE_FUNDO_AGUA,
+        SPRITE_FUNDO_PLANTA, SPRITE_FUNDO_LUZ, SPRITE_FUNDO_SOMBRA, SPRITE_FUNDO_NEUTRO};
+    return tipo >= TIPO_FOGO && tipo < TIPO_TOTAL ? fundos[tipo] : SPRITE_FUNDO_NEUTRO;
+}
 IdSprite SpriteIdItem(IdItem item)
 {
     return item >= ITEM_CHA && item < ITEM_TOTAL ? (IdSprite)(SPRITE_ITEM_CHA + item) : SPRITE_ITEM_CHA;

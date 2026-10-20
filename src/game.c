@@ -37,16 +37,23 @@ static Rectangle ObterBotaoTitulo(int indice_opcao)
 static void DesenharTitulo(const EstadoJogo *jogo)
 {
     const char *opcoes[5] = {"NOVA RUN", "RELIQUIAS", "COMO JOGAR", "OPCOES", "SAIR"};
+    const bool tem_fundo_titulo = sprite_obter(&jogo->sprites, SPRITE_FUNDO_TITULO) != NULL;
 
-    DrawCircle(92, 90, 44, (Color){178, 220, 239, 255});
-    DrawCircle(551, 101, 30, (Color){255, 207, 144, 255});
-    if (sprite_obter(&jogo->sprites, SPRITE_TITULO_TORRE) != NULL) {
+    if (tem_fundo_titulo) {
+        SpriteDesenharAjustado(&jogo->sprites, SPRITE_FUNDO_TITULO,
+                               (Rectangle){0.0f, 0.0f, LOGICO_LARGURA, LOGICO_ALTURA}, WHITE);
+    } else {
+        DrawCircle(92, 90, 44, (Color){178, 220, 239, 255});
+        DrawCircle(551, 101, 30, (Color){255, 207, 144, 255});
+    }
+    if (!tem_fundo_titulo && sprite_obter(&jogo->sprites, SPRITE_TITULO_TORRE) != NULL) {
         SpriteDesenharAjustado(&jogo->sprites, SPRITE_TITULO_TORRE,
                                (Rectangle){250, 12, 140, 210}, WHITE);
-    } else {
+    } else if (!tem_fundo_titulo) {
         DesenharTorre(jogo->tempo_decorrido);
     }
 
+    if (tem_fundo_titulo) DrawRectangle(156, 218, 328, 84, (Color){255, 249, 236, 188});
     const char *titulo = "ASCENSAO";
     const char *subtitulo = "DA TORRE";
     DrawText(titulo, (LOGICO_LARGURA - MeasureText(titulo, 42)) / 2, 225, 42, BLACK);
@@ -1055,8 +1062,15 @@ void JogoDesenhar(const EstadoJogo *jogo)
 {
     RenderizacaoDesenharFundo(&jogo->renderizacao, jogo->tempo_decorrido);
     if (jogo->tela != TITULO) {
-        const IdSprite fundo = jogo->inimigo.chefe ? SPRITE_FUNDO_CHEFE : SPRITE_FUNDO_PASTEL;
-        SpriteDesenharAjustado(&jogo->sprites, fundo, (Rectangle){0, 0, LOGICO_LARGURA, LOGICO_ALTURA}, WHITE);
+        const IdSprite fundo = SpriteIdFundoTipo(TorreTipoDoAndar(jogo->torre.andar));
+        if (sprite_obter(&jogo->sprites, fundo) != NULL) {
+            SpriteDesenharAjustado(&jogo->sprites, fundo,
+                                  (Rectangle){0, 0, LOGICO_LARGURA, LOGICO_ALTURA}, WHITE);
+        } else {
+            const IdSprite fallback = jogo->inimigo.chefe ? SPRITE_FUNDO_CHEFE : SPRITE_FUNDO_PASTEL;
+            SpriteDesenharAjustado(&jogo->sprites, fallback,
+                                  (Rectangle){0, 0, LOGICO_LARGURA, LOGICO_ALTURA}, WHITE);
+        }
     }
     if (jogo->tela == TITULO) {
         DesenharTitulo(jogo);

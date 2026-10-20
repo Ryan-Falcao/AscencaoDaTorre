@@ -19,6 +19,7 @@ int main(void)
     assert(InimigoCriar(INIMIGO_CHEFE_ULTIMA_TORRE).todos_tipos);
     static const Tipo tipo_regiao[] = {TIPO_PLANTA,TIPO_AGUA,TIPO_FOGO,TIPO_SOMBRA,TIPO_LUZ,TIPO_NEUTRO};
     for (int andar = 1; andar <= TOTAL_ANDARES_TORRE; andar++) {
+        assert(TorreTipoDoAndar(andar) == tipo_regiao[(andar - 1) / 5]);
         Inimigo inimigo = InimigoCriar(TorreInimigoDoAndar(&torre, andar));
         if (TorreAndarDeChefe(andar)) assert(inimigo.chefe);
         else {

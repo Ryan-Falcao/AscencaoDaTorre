@@ -14,6 +14,14 @@ bool TorreAndarDeChefe(int andar)
     return andar > 0 && andar % 5 == 0;
 }
 
+Tipo TorreTipoDoAndar(int andar)
+{
+    static const Tipo tipos[] = {TIPO_PLANTA, TIPO_AGUA, TIPO_FOGO,
+                                 TIPO_SOMBRA, TIPO_LUZ, TIPO_NEUTRO};
+    const int regiao = (andar - 1) / 5;
+    return andar < 1 || andar > TOTAL_ANDARES_TORRE ? TIPO_NEUTRO : tipos[regiao];
+}
+
 void TorreInicializar(Torre *torre, unsigned int semente)
 {
     static const IdInimigo regioes[6][4] = {

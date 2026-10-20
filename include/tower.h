@@ -34,6 +34,7 @@ typedef struct {
 
 void TorreInicializar(Torre *torre, unsigned int semente);
 bool TorreAndarDeChefe(int andar);
+Tipo TorreTipoDoAndar(int andar);
 IdInimigo TorreInimigoDoAndar(const Torre *torre, int andar);
 void TorreEscalarInimigo(Inimigo *inimigo, int andar);
 void TorreSortearRecompensas(Torre *torre, const AtributosJogador *jogador);
