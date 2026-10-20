@@ -2,6 +2,7 @@
 #include "input.h"
 #include "patterns.h"
 #include "raymath.h"
+#include "tower.h"
 
 #include <math.h>
 #include <stdio.h>
@@ -27,10 +28,53 @@ static Rectangle ObterBotaoAcao(int indice_opcao)
     return (Rectangle){54.0f, 237.0f + indice_opcao * 21.0f, 532.0f, 20.0f};
 }
 
+static Rectangle ObterBotaoAtaque(int indice_opcao)
+{
+    return (Rectangle){54.0f + (indice_opcao / 3) * 268.0f,
+                       237.0f + (indice_opcao % 3) * 25.0f, 260.0f, 23.0f};
+}
+
 static Rectangle ObterBotaoItem(int indice_opcao)
 {
     return (Rectangle){54.0f + (indice_opcao / 4) * 268.0f,
                        237.0f + (indice_opcao % 4) * 21.0f, 260.0f, 20.0f};
+}
+
+static int IndiceInventarioConsumivel(const AtributosJogador *jogador, int ordem)
+{
+    int atual = 0;
+    for (int indice = 0; indice < MAXIMO_INVENTARIO_ITENS; indice++) {
+        if (jogador->inventario[indice].quantidade <= 0) continue;
+        if (ItemObterDefinicao(jogador->inventario[indice].id)->categoria != CATEGORIA_CONSUMIVEL) continue;
+        if (atual == ordem) return indice;
+        atual++;
+    }
+    return -1;
+}
+
+static int TotalConsumiveis(const AtributosJogador *jogador)
+{
+    int total = 0;
+    while (IndiceInventarioConsumivel(jogador, total) >= 0) total++;
+    return total;
+}
+
+static bool PadraoCausaSangramento(IdPadraoProjetil padrao)
+{
+    switch (padrao) {
+        case PADRAO_LEBRE_BARREIRAS:
+        case PADRAO_LEBRE_PARKOUR:
+        case PADRAO_LEBRE_PULOS:
+        case PADRAO_GATO_IMPACTO:
+        case PADRAO_GATO_PERSEGUICAO:
+        case PADRAO_GATO_EMBOSCADA:
+        case PADRAO_CAVALEIRO_LANCAS:
+        case PADRAO_CAVALEIRO_DESAFIO:
+        case PADRAO_CAVALEIRO_DUELO:
+            return true;
+        default:
+            return false;
+    }
 }
 
 static void MostrarMensagem(Batalha *batalha, TextoDigitado *dialogo, const char *mensagem,
@@ -50,17 +94,31 @@ static void ResolverAtaqueJogador(Batalha *batalha, AtributosJogador *jogador, I
     const Ataque *ataque = &jogador->ataques[batalha->indice_ataque_qte];
     float multiplicador_tipo = EfetividadeContraInimigo(ataque->tipo, inimigo);
     const float multiplicador_buff = JogadorMultiplicadorBuffAtaque(jogador);
+    const bool critico = resultado_qte == QTE_PERFEITO ||
+                         GetRandomValue(0, 99) < jogador->bonus_equipamento.chance_critica;
     if (inimigo->status == STATUS_MOLHADO && (ataque->tipo == TIPO_PLANTA || ataque->tipo == TIPO_LUZ)) {
         multiplicador_tipo *= 1.25f;
     }
     const float multiplicador_total = multiplicador_tipo * qte_multiplicador(resultado_qte) * multiplicador_buff;
-    const int dano = (int)ceilf((float)(ataque->dano_base + jogador->bonus_dano_permanente) *
-                                  ataque->golpes * multiplicador_total);
+    const float multiplicador_critico = critico ?
+        (1.50f + jogador->bonus_equipamento.dano_critico / 100.0f) : 1.0f;
+    const int dano = (int)ceilf((float)(ataque->dano_base + jogador->bonus_dano_permanente +
+                                  jogador->bonus_equipamento.ataque) * ataque->golpes *
+                                  multiplicador_total * multiplicador_critico);
     const bool era_poupavel = inimigo->poupavel;
     const bool estava_segunda_fase = inimigo->segunda_fase;
     char mensagem[DIALOGO_CAPACIDADE];
 
     InimigoReceberDano(inimigo, dano, multiplicador_tipo);
+    if (resultado_qte != QTE_ERRO) {
+        int sangramento = ataque->sangramento + jogador->bonus_equipamento.sangramento;
+        if (critico) sangramento += JogadorValorPassiva(jogador, PASSIVA_SANGRAMENTO_CRITICO);
+        InimigoAplicarSangramento(inimigo, sangramento);
+        if (inimigo->sangramento > 0) {
+            const int roubo = JogadorValorPassiva(jogador, PASSIVA_ROUBO_VIDA_SANGRANDO);
+            if (roubo > 0) JogadorCurar(jogador, (int)ceilf(dano * roubo / 100.0f));
+        }
+    }
     if (ataque->status != STATUS_NENHUM && resultado_qte != QTE_ERRO) {
         const bool apply_status = !ataque->critico_no_perfeito || resultado_qte == QTE_PERFEITO ||
                                   GetRandomValue(0, 99) < 45;
@@ -98,6 +156,12 @@ static void ResolverAtaqueJogador(Batalha *batalha, AtributosJogador *jogador, I
         snprintf(mensagem, sizeof(mensagem), "%s %s! %d dano.", qte_nome_resultado(resultado_qte),
                  ataque->nome, dano);
     }
+    if (critico) strncat(mensagem, " CRITICO!", sizeof(mensagem) - strlen(mensagem) - 1);
+    if (inimigo->sangramento > 0) {
+        char trecho[40];
+        snprintf(trecho, sizeof(trecho), " Sangramento: %d.", inimigo->sangramento);
+        strncat(mensagem, trecho, sizeof(mensagem) - strlen(mensagem) - 1);
+    }
     if (!era_poupavel && inimigo->poupavel && inimigo->hp > 0) {
         strncat(mensagem, " O inimigo esta exausto.", sizeof(mensagem) - strlen(mensagem) - 1);
     }
@@ -124,7 +188,8 @@ static void MostrarMensagem(Batalha *batalha, TextoDigitado *dialogo, const char
     InterfaceDefinirTexto(dialogo, mensagem);
 }
 
-static void IniciarTurnoInimigo(Batalha *batalha, Inimigo *inimigo, TextoDigitado *dialogo)
+static void IniciarTurnoInimigo(Batalha *batalha, AtributosJogador *jogador,
+                                Inimigo *inimigo, TextoDigitado *dialogo)
 {
     IdPadraoProjetil id_padrao = PADRAO_CHUVA;
     int burn_damage = 0;
@@ -132,11 +197,20 @@ static void IniciarTurnoInimigo(Batalha *batalha, Inimigo *inimigo, TextoDigitad
     float multiplicador_velocidade = 1.0f;
     float multiplicador_dano = inimigo->multiplicador_dano_projetil;
 
+    if (inimigo->todos_tipos) inimigo->tipo = (Tipo)(batalha->total_turnos % (TIPO_TOTAL - 1));
+
+    const int dano_sangramento = InimigoProcessarSangramento(inimigo);
+    if (dano_sangramento > 0 && inimigo->hp == 0) {
+        MostrarMensagem(batalha, dialogo, "O sangramento derrubou o inimigo.", BATALHA_VITORIA);
+        return;
+    }
     if (InimigoAvancarStatus(inimigo, &burn_damage) && inimigo->hp == 0) {
         MostrarMensagem(batalha, dialogo, "As chamas consumiram o inimigo.", BATALHA_VITORIA);
         return;
     }
     if (status_ativo == STATUS_ATORDOAR) {
+        JogadorAvancarRecargasAtaques(jogador);
+        JogadorIniciarTurno(jogador);
         MostrarMensagem(batalha, dialogo, "O inimigo ficou atordoado e perdeu o turno!", BATALHA_JOGADOR_MENU);
         return;
     }
@@ -150,9 +224,11 @@ static void IniciarTurnoInimigo(Batalha *batalha, Inimigo *inimigo, TextoDigitad
 
     batalha->fase = BATALHA_INIMIGO_TURNO;
     batalha->total_turnos++;
+    batalha->dano_recebido_turno = 0;
     DefesaIniciar(&batalha->defesa, id_padrao, (Rectangle){42.0f, 228.0f, 556.0f, 94.0f},
                  inimigo->agressividade, inimigo->bonus_dano_projetil,
                  multiplicador_dano, multiplicador_velocidade);
+    batalha->defesa.padrao.tipo = inimigo->tipo;
     if (inimigo->chefe && inimigo->segunda_fase) {
         if (PadraoEhCaracteristico(id_padrao)) PadraoDefinirSegundaFase(&batalha->defesa);
         DefesaRedimensionarCaixa(&batalha->defesa, PadraoEhCaracteristico(id_padrao) ? 290.0f : 250.0f,
@@ -284,21 +360,40 @@ static void AtualizarListaAcoes(Batalha *batalha, AtributosJogador *jogador, Ini
 
     if (batalha->menu_acao == ACAO_ATAQUES) option_count = jogador->total_ataques;
     if (batalha->menu_acao == ACAO_ACOES) option_count = inimigo->total_acoes;
-    if (batalha->menu_acao == ACAO_ITENS) option_count = MAXIMO_INVENTARIO_ITENS;
-
-    if (entrada_cima_pressionada()) {
-        batalha->selecao_acao = (batalha->selecao_acao + option_count - 1) % option_count;
+    if (batalha->menu_acao == ACAO_ITENS) option_count = TotalConsumiveis(jogador);
+    if (option_count <= 0) {
+        MostrarMensagem(batalha, dialogo, "Voce nao tem consumiveis.", BATALHA_JOGADOR_MENU);
+        return;
     }
-    if (entrada_baixo_pressionada()) {
-        batalha->selecao_acao = (batalha->selecao_acao + 1) % option_count;
+    if (batalha->selecao_acao >= option_count) batalha->selecao_acao = option_count - 1;
+
+    if (batalha->menu_acao == ACAO_ATAQUES) {
+        const int coluna = batalha->selecao_acao / 3;
+        const int inicio_coluna = coluna * 3;
+        int total_coluna = option_count - inicio_coluna;
+        if (total_coluna > 3) total_coluna = 3;
+        int linha = batalha->selecao_acao - inicio_coluna;
+        if (entrada_cima_pressionada()) linha = (linha + total_coluna - 1) % total_coluna;
+        if (entrada_baixo_pressionada()) linha = (linha + 1) % total_coluna;
+        batalha->selecao_acao = inicio_coluna + linha;
+        if (entrada_esquerda_pressionada() && batalha->selecao_acao >= 3)
+            batalha->selecao_acao -= 3;
+        if (entrada_direita_pressionada() && batalha->selecao_acao + 3 < option_count)
+            batalha->selecao_acao += 3;
+    } else {
+        if (entrada_cima_pressionada())
+            batalha->selecao_acao = (batalha->selecao_acao + option_count - 1) % option_count;
+        if (entrada_baixo_pressionada())
+            batalha->selecao_acao = (batalha->selecao_acao + 1) % option_count;
     }
     if (entrada_cancelar_pressionada()) {
         EntrarMenuJogador(batalha, dialogo);
         return;
     }
     for (int indice_opcao = 0; indice_opcao < option_count; indice_opcao++) {
-        const Rectangle option = batalha->menu_acao == ACAO_ITENS ?
-                                 ObterBotaoItem(indice_opcao) : ObterBotaoAcao(indice_opcao);
+        const Rectangle option = batalha->menu_acao == ACAO_ITENS ? ObterBotaoItem(indice_opcao) :
+                                 (batalha->menu_acao == ACAO_ATAQUES ? ObterBotaoAtaque(indice_opcao) :
+                                                                       ObterBotaoAcao(indice_opcao));
         if (CheckCollisionPointRec(posicao_mouse, option)) {
             batalha->selecao_acao = indice_opcao;
             if (mouse_pressionado) confirmado = true;
@@ -329,7 +424,11 @@ static void AtualizarListaAcoes(Batalha *batalha, AtributosJogador *jogador, Ini
             return;
         }
         if (acao->efeito == INIMIGO_ACAO_ANALISAR) {
-            if (inimigo->possui_tipo2) {
+            if (inimigo->todos_tipos) {
+                snprintf(mensagem, sizeof(mensagem),
+                         "Tipo revelado: todos. A afinidade atual muda a cada turno: %s.",
+                         nome_tipo(inimigo->tipo));
+            } else if (inimigo->possui_tipo2) {
                 snprintf(mensagem, sizeof(mensagem), "Tipos revelados: %s e %s. Novas acoes de AGIR foram liberadas.",
                          nome_tipo(inimigo->tipo), nome_tipo(inimigo->tipo2));
             } else {
@@ -347,7 +446,8 @@ static void AtualizarListaAcoes(Batalha *batalha, AtributosJogador *jogador, Ini
         int valor_aplicado;
         char mensagem[DIALOGO_CAPACIDADE];
 
-        if (!JogadorUsarItem(jogador, batalha->selecao_acao, &item, &valor_aplicado)) {
+        const int indice_inventario = IndiceInventarioConsumivel(jogador, batalha->selecao_acao);
+        if (!JogadorUsarItem(jogador, indice_inventario, &item, &valor_aplicado)) {
             MostrarMensagem(batalha, dialogo, "Nao sobrou nenhum desse item.", BATALHA_JOGADOR_MENU);
             return;
         }
@@ -423,7 +523,7 @@ ResultadoBatalha BatalhaAtualizar(Batalha *batalha, AtributosJogador *jogador, I
             const bool retry_attack = batalha->proxima_fase == BATALHA_JOGADOR_ACAO;
             if ((retry_attack && entrada_cancelar_pressionada()) || (confirm && InterfaceConfirmarTexto(dialogo))) {
                 if (batalha->proxima_fase == BATALHA_INIMIGO_TURNO) {
-                    IniciarTurnoInimigo(batalha, inimigo, dialogo);
+                    IniciarTurnoInimigo(batalha, jogador, inimigo, dialogo);
                 } else if (batalha->proxima_fase == BATALHA_JOGADOR_MENU) {
                     EntrarMenuJogador(batalha, dialogo);
                 } else if (retry_attack) {
@@ -448,14 +548,39 @@ ResultadoBatalha BatalhaAtualizar(Batalha *batalha, AtributosJogador *jogador, I
         const int vida_antes = jogador->hp;
         const ResultadoDefesa resultado = DefesaAtualizar(&batalha->defesa, jogador, tempo_delta);
 
-        if (jogador->hp < vida_antes) AudioTocar(audio, AUDIO_DANO_RECEBIDO);
+        if (jogador->hp < vida_antes) {
+            batalha->dano_recebido_turno += vida_antes - jogador->hp;
+            AudioTocar(audio, AUDIO_DANO_RECEBIDO);
+        }
+        if (jogador->hp < vida_antes) {
+            const int refletir = JogadorValorPassiva(jogador, PASSIVA_REFLETIR_DANO);
+            if (refletir > 0) InimigoReceberDano(inimigo,
+                (int)ceilf((vida_antes - jogador->hp) * refletir / 100.0f), 1.0f);
+        }
+
+        if (inimigo->hp <= 0) {
+            MostrarMensagem(batalha, dialogo, "O dano refletido derrubou o inimigo.", BATALHA_VITORIA);
+            return (ResultadoBatalha){0};
+        }
 
         if (resultado == DEFESA_JOGADOR_DERROTADO) {
             MostrarMensagem(batalha, dialogo, "Sua alma se desfez no escuro.", BATALHA_DERROTA);
         } else if (resultado == DEFESA_CONCLUIDA) {
             InimigoAvancarTurno(inimigo);
             JogadorAvancarRecargasAtaques(jogador);
-            MostrarMensagem(batalha, dialogo, "O turno da mariposa terminou.", BATALHA_JOGADOR_MENU);
+            if (batalha->dano_recebido_turno > 0 && PadraoCausaSangramento(batalha->defesa.id_padrao))
+                JogadorAplicarSangramento(jogador, 2 + batalha->andar / 5);
+            const int dano_sangramento = JogadorProcessarSangramento(jogador);
+            if (jogador->hp <= 0) {
+                MostrarMensagem(batalha, dialogo, "O sangramento venceu sua resistencia.", BATALHA_DERROTA);
+            } else {
+                JogadorIniciarTurno(jogador);
+                if (dano_sangramento > 0) {
+                    char mensagem[96];
+                    snprintf(mensagem, sizeof(mensagem), "O turno terminou. Sangramento causou %d dano.", dano_sangramento);
+                    MostrarMensagem(batalha, dialogo, mensagem, BATALHA_JOGADOR_MENU);
+                } else MostrarMensagem(batalha, dialogo, "O turno inimigo terminou.", BATALHA_JOGADOR_MENU);
+            }
         }
     } else if (batalha->fase == BATALHA_VITORIA) {
         const bool confirm = ConfirmacaoPressionada() ||
@@ -666,11 +791,12 @@ static void DesenharListaAcoes(const Batalha *batalha, const AtributosJogador *j
 {
     const int option_count = batalha->menu_acao == ACAO_ATAQUES ? jogador->total_ataques :
                              (batalha->menu_acao == ACAO_ACOES ? inimigo->total_acoes :
-                                                                  MAXIMO_INVENTARIO_ITENS);
+                                                                  TotalConsumiveis(jogador));
 
     for (int linha = 0; linha < option_count; linha++) {
         const Rectangle area = batalha->menu_acao == ACAO_ITENS ? ObterBotaoItem(linha) :
-                               ObterBotaoAcao(linha);
+                               (batalha->menu_acao == ACAO_ATAQUES ? ObterBotaoAtaque(linha) :
+                                                                    ObterBotaoAcao(linha));
         const int y = (int)area.y + 3;
         const bool selecionado = batalha->selecao_acao == linha;
 
@@ -681,24 +807,23 @@ static void DesenharListaAcoes(const Batalha *batalha, const AtributosJogador *j
             InterfaceDesenharLinhaOpcao(area, selecionado, disponivel, (Color){225, 95, 122, 255});
             if (sprite_obter(sprites, SpriteIdAtaque(ataque->id)) != NULL) {
                 SpriteDesenharCentralizadoEscalado(sprites, SpriteIdAtaque(ataque->id),
-                    (Vector2){area.x + 19.0f, area.y + 10.0f}, WHITE, 0.0f, 0.70f,
+                    (Vector2){area.x + 15.0f, area.y + 11.0f}, WHITE, 0.0f, 0.62f,
                     sprites->depurar_limites);
             } else {
-                DesenharIconeAtaque((Vector2){area.x + 19.0f, area.y + 10.0f},
+                DesenharIconeAtaque((Vector2){area.x + 15.0f, area.y + 11.0f},
                                     disponivel ? cor_tipo(ataque->tipo) : GRAY);
             }
-            DesenharIconeTipo(ataque->tipo, (Vector2){area.x + 251.0f, area.y + 10.0f}, disponivel);
-            DrawText(ataque->nome, (int)area.x + 36, y, 14, disponivel ? BLACK : GRAY);
-            DrawText(nome_tipo(ataque->tipo), (int)area.x + 265, y + 1, 12,
-                     disponivel ? cor_tipo(ataque->tipo) : GRAY);
-            DrawText(TextFormat("DANO %d", ataque->dano_base), (int)area.x + 353, y + 1, 12,
-                     disponivel ? BLACK : GRAY);
+            DrawText(ataque->nome, (int)area.x + 29, y + 1, 12, disponivel ? BLACK : GRAY);
+            if (disponivel) {
+                DrawText(TextFormat("D%d", ataque->dano_base), (int)area.x + 162, y + 2, 11, BLACK);
+                DrawText(TextFormat("MP%d", ataque->custo_mana), (int)area.x + 194, y + 2, 11, DARKBLUE);
+                DesenharIconeTipo(ataque->tipo, (Vector2){area.x + 242.0f, area.y + 11.0f}, true);
+            }
             if (!disponivel) {
-                const int largura = MeasureText(motivo, 10) + 12;
-                const int x_estado = (int)(area.x + area.width) - largura - 6;
-                DrawRectangle(x_estado, y, largura, 15, (Color){211, 207, 203, 255});
-                DrawRectangleLines(x_estado, y, largura, 15, GRAY);
-                DrawText(motivo, x_estado + 6, y + 2, 10, DARKGRAY);
+                const int largura = MeasureText(motivo, 9) + 8;
+                const int x_estado = (int)(area.x + area.width) - largura - 5;
+                DrawRectangle(x_estado, y + 1, largura, 15, (Color){211, 207, 203, 255});
+                DrawText(motivo, x_estado + 4, y + 3, 9, DARKGRAY);
             }
         } else if (batalha->menu_acao == ACAO_ACOES) {
             char motivo[48] = "";
@@ -721,7 +846,8 @@ static void DesenharListaAcoes(const Batalha *batalha, const AtributosJogador *j
             }
             if (!disponivel) DrawText(motivo, (int)area.x + 407, y + 2, 11, GRAY);
         } else if (batalha->menu_acao == ACAO_ITENS) {
-            const ItemInventario *item = &jogador->inventario[linha];
+            const int indice_inventario = IndiceInventarioConsumivel(jogador, linha);
+            const ItemInventario *item = &jogador->inventario[indice_inventario];
             const DefinicaoItem *definicao = ItemObterDefinicao(item->id);
             const bool disponivel = item->quantidade > 0;
 
@@ -757,7 +883,7 @@ void BatalhaDesenhar(const Batalha *batalha, const AtributosJogador *jogador, co
             if (particle->ativo) DrawCircleV(particle->posicao, 3.0f, particle->cor);
         }
     }
-    DrawText(TextFormat("ANDAR %d/10", batalha->andar), 470, 28, 16, DARKGRAY);
+    DrawText(TextFormat("ANDAR %d/%d", batalha->andar, TOTAL_ANDARES_TORRE), 470, 28, 16, DARKGRAY);
     if (batalha->temporizador_dano_flutuante > 0.0f) {
         const int y = (int)(102.0f - (0.85f - batalha->temporizador_dano_flutuante) * 34.0f);
         const int tamanho = batalha->ultima_efetividade >= 2.0f ? 28 : 20;
@@ -766,7 +892,10 @@ void BatalhaDesenhar(const Batalha *batalha, const AtributosJogador *jogador, co
         DrawText(TextFormat("-%d", batalha->dano_flutuante), 344, y, tamanho, cor);
     }
     DrawText(inimigo->nome, 54, 32, 21, BLACK);
-    if (inimigo->analisado && inimigo->possui_tipo2) {
+    if (inimigo->analisado && inimigo->todos_tipos) {
+        DrawText(TextFormat("TODOS | ATUAL: %s", nome_tipo(inimigo->tipo)),
+                 54, 58, 14, cor_tipo(inimigo->tipo));
+    } else if (inimigo->analisado && inimigo->possui_tipo2) {
         DrawText(TextFormat("%s / %s", nome_tipo(inimigo->tipo), nome_tipo(inimigo->tipo2)),
                  54, 58, 14, cor_tipo(inimigo->tipo));
     } else {
@@ -786,6 +915,9 @@ void BatalhaDesenhar(const Batalha *batalha, const AtributosJogador *jogador, co
     if (inimigo->turnos_status > 0) {
         DrawText(TextFormat("%s %d", JogadorNomeStatus(inimigo->status), inimigo->turnos_status),
                  54, 133, 12, cor_tipo(inimigo->tipo));
+    }
+    if (inimigo->sangramento > 0) {
+        DrawText(TextFormat("SANGRAMENTO %d", inimigo->sangramento), 54, 150, 12, MAROON);
     }
     if (batalha->temporizador_mudanca_status > 0.0f) {
         const int deslocamento = (int)((0.8f - batalha->temporizador_mudanca_status) * 18.0f);
@@ -811,7 +943,8 @@ void BatalhaDesenhar(const Batalha *batalha, const AtributosJogador *jogador, co
         DesenharListaAcoes(batalha, jogador, inimigo, sprites);
         InterfaceDesenharAtalho("X  voltar", 505, 204);
         if (batalha->menu_acao == ACAO_ITENS) {
-            const ItemInventario *selecionado = &jogador->inventario[batalha->selecao_acao];
+            const int indice_inventario = IndiceInventarioConsumivel(jogador, batalha->selecao_acao);
+            const ItemInventario *selecionado = &jogador->inventario[indice_inventario];
             const DefinicaoItem *definicao = ItemObterDefinicao(selecionado->id);
             DrawText(definicao->descricao, 54, 323, 11, DARKGRAY);
         }
@@ -829,6 +962,10 @@ void BatalhaDesenhar(const Batalha *batalha, const AtributosJogador *jogador, co
     DrawText("DEF", 446, 343, 14, BLACK);
     DesenharIconeTipo(jogador->tipo_defesa, (Vector2){484, 351}, true);
     DrawText(nome_tipo(jogador->tipo_defesa), 499, 343, 14, BLACK);
+    DrawText(TextFormat("MANA %d/%d  +%d/turno", jogador->mana, jogador->mana_maxima,
+                        jogador->mana_por_turno), 184, 369, 12, DARKBLUE);
+    if (jogador->sangramento > 0)
+        DrawText(TextFormat("SANG %d", jogador->sangramento), 392, 369, 12, MAROON);
     if (jogador->turnos_buff_dano > 0) {
         DrawRectangle(48, 367, 116, 17, (Color){243, 207, 110, 255});
         DrawRectangleLines(48, 367, 116, 17, BLACK);

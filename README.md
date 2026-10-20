@@ -1,6 +1,6 @@
 # Ascensao da Torre
 
-Roguelike 2D de batalhas por turnos, feito em C11 e Raylib. A jornada possui 10 andares e nao tem exploracao: cada decisao acontece em menus, recompensas e combates.
+Roguelike 2D de batalhas por turnos, feito em C11 e Raylib. A jornada possui 30 andares e nao tem exploracao: cada decisao acontece em menus, recompensas e combates.
 
 ## Estado atual
 
@@ -72,10 +72,27 @@ olhar que exige ficar parado, duelos de espada, ecos e prensas.
 - QTE de ritmo: acerte tres zonas sucessivas usando a mesma tecla de confirmacao
 - QTE de carga: segure Espaco, Enter ou Z e solte na faixa verde
 - Esc: pausar
+- Durante a run, Tab abre a grade de 24 espacos e os oito equipamentos
+- No inventario, Q alterna entre mochila/equipamentos, Espaco equipa ou retira, Delete descarta uma unidade e Tab fecha
 
 AGIR, ITEM e POUPAR gastam o turno: depois da mensagem, o inimigo atacara. POUPAR da mais
 moedas e XP, mas so encerra a batalha quando a misericordia chegar a 100% ou o inimigo estiver
 exausto (menos de 25% de HP), desde que a agressividade esteja abaixo de 67.
+
+## Equipamentos, mana e sangramento
+
+Os ataques disponiveis agora pertencem ao armamento equipado. Tecnicas elementais consomem mana;
+a mana comeca zerada em cada batalha e e regenerada no inicio de cada turno do jogador. Armadura,
+escudo, armamento, calca, botas e tres amuletos somam seus bonus, permitindo builds de ataque,
+defesa, velocidade, critico, mana, vida e sangramento. A defesa usa reducao gradual, sem tornar o
+jogador invulneravel.
+
+Cada item possui raridade fixa. Comum tem uma linha de atributo, Rara duas, Epica tres e Lendaria
+quatro; uma passiva ocupa uma dessas linhas. Equipamentos comuns e raros nao recebem passivas,
+com excecao dos amuletos, que podem ter uma passiva como unico atributo desde Comum.
+
+Sangramento acumula e causa o valor total ao fim do turno. Ele nao diminui sozinho: permanece ate
+ser removido por um item ou efeito especifico. A Erva Lunar cura HP e limpa todo o sangramento.
 
 ## Tipos
 
@@ -107,8 +124,9 @@ Efeitos reduzidos remove tremores visuais; Calmo recebe 25% menos dano, Normal u
 e Dificil recebe 25% mais dano e sobe um nivel na dificuldade dos QTEs. Todas as constantes de
 curva ficam centralizadas em `include/balance.h`.
 
-A tela **Como jogar** fica no titulo e no menu de pausa. A pausa agora oferece continuar, opcoes,
-como jogar, desistir com confirmacao ou voltar ao titulo. Ela congela defesa e QTE normalmente.
+A tela **Como jogar** fica no titulo e no menu de pausa. A pausa agora oferece continuar,
+inventario, opcoes, como jogar, desistir com confirmacao ou voltar ao titulo. Ela congela defesa e
+QTE normalmente.
 
 ### Simulacao de balanceamento
 
@@ -165,16 +183,17 @@ Os testes podem ser executados com `cmake --build build --target test_qte` ou `m
 
 Em `src/enemy.c`, cada caso de `InimigoCriar` preenche `inimigo.acoes` com ate quatro
 `AcaoInimigo`. `Analisar` usa `INIMIGO_ACAO_ANALISAR` e fica sempre disponivel; as demais usam
-`ENEMY_ACTION_SOCIAL`. Os campos importantes sao:
+`INIMIGO_ACAO_SOCIAL`. Os campos importantes sao:
 
-- `mercy_delta` e `aggression_delta`: mudancas, positivas ou negativas, limitadas entre 0 e 100.
-- `max_uses`: limite por batalha (`0` significa ilimitado).
-- `cooldown_turns`: quantos turnos precisam passar ate poder repetir a acao.
-- `repeat_penalty`: multiplicador aplicado quando a mesma acao e repetida consecutivamente.
-- `max_aggression_required`: agressividade maxima para a acao funcionar.
+- `variacao_misericordia` e `variacao_agressividade`: mudancas limitadas entre 0 e 100.
+- `maximo_usos`: limite por batalha (`0` significa ilimitado).
+- `turnos_recarga`: quantos turnos precisam passar ate poder repetir a acao.
+- `penalidade_repeticao`: multiplicador aplicado quando a mesma acao e repetida consecutivamente.
+- `agressividade_maxima_exigida`: agressividade maxima para a acao funcionar.
 
-Exemplo: `Elogiar` da Mariposa usa `mercy_delta = 30`, `aggression_delta = -5`, pode ser usada
-duas vezes, tem um turno de cooldown e `repeat_penalty = 0.50f`; repetida, ela rende so metade.
+Exemplo: `Elogiar` da Mariposa usa `variacao_misericordia = 30`, `variacao_agressividade = -5`,
+pode ser usada duas vezes, tem um turno de recarga e `penalidade_repeticao = 0.50f`; repetida, ela
+rende so metade.
 `Acalmar` tambem demonstra um efeito condicional: ela funciona melhor contra o tipo Sombra e piora
 quando o inimigo esta muito agressivo. A interface mostra acoes indisponiveis em cinza, com o motivo.
 
@@ -186,8 +205,10 @@ agressividade estiver em 67 ou mais: primeiro e preciso acalmar o inimigo.
 ### Criar um item
 
 Adicione uma entrada em `DEFINICOES_ITENS`, em `src/items.c`, e o respectivo id em `IdItem` no
-arquivo `include/items.h`. Os efeitos disponiveis sao `ITEM_EFFECT_HEAL`,
-`ITEM_EFEITO_BUFF_DANO`, `ITEM_EFEITO_TIPO_DEFESA` e `ITEM_EFEITO_DANO_SURPRESA`.
+arquivo `include/items.h`. Consumiveis usam os valores de `EfeitoItem`. Equipamentos informam
+espaco, raridade, `BonusAtributos`, passiva e familias de drop. `ItemRaridadeValida` verifica se a
+quantidade de linhas de atributo corresponde a raridade e se a passiva respeita a regra dos
+equipamentos comuns, raros e amuletos.
 Para colocar o item inicial na mochila, acrescente o id e a quantidade em `JogadorInicializar`.
 
 O teste da Fase 6 verifica misericordia, exaustao e buffs: execute
@@ -196,9 +217,9 @@ O teste da Fase 6 verifica misericordia, exaustao e buffs: execute
 ### Torre, chefes e recompensas
 
 `Torre`, em `include/tower.h`, guarda a semente, o andar, as moedas e a lista de inimigos sorteados.
-`TOWER_FLOORS` controla a quantidade de andares. Os andares 5 e 10 sao chefes; os demais sorteiam
-inimigos comuns sem repetir o mesmo inimigo consecutivamente. Depois do andar 3 ocorre descanso,
-depois do 6 ocorre loja e depois do 9 ocorre descanso. A escala de HP, dano de projeteis e moedas
+`TOTAL_ANDARES_TORRE` controla a quantidade de andares. Cada regiao dura cinco andares e termina
+em chefe; os demais sorteiam inimigos comuns do elemento da regiao sem repeticao consecutiva.
+Descansos e lojas reaparecem entre os chefes. A escala de HP, dano de projeteis e moedas
 fica em `TorreEscalarInimigo`, em `src/tower.c`.
 
 As recompensas sao sorteadas em `TorreSortearRecompensas`: ataque, item ou atributo. Ataques ficam na

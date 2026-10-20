@@ -51,7 +51,11 @@ int main(void)
     assert(tired_moth.esgotado && tired_moth.poupavel);
 
     JogadorInicializar(&jogador);
-    assert(JogadorUsarItem(&jogador, 1, &item_usado, &valor_aplicado));
+    int indice_fita = -1;
+    for (int i = 0; i < MAXIMO_INVENTARIO_ITENS; i++)
+        if (jogador.inventario[i].quantidade > 0 && jogador.inventario[i].id == ITEM_VERMELHA_FITA) indice_fita = i;
+    assert(indice_fita >= 0);
+    assert(JogadorUsarItem(&jogador, indice_fita, &item_usado, &valor_aplicado));
     assert(item_usado->efeito == ITEM_EFEITO_DANO_BUFF);
     assert(JogadorMultiplicadorBuffAtaque(&jogador) == 1.5f);
     JogadorConsumirBuffAtaque(&jogador);

@@ -6,6 +6,8 @@
 #include <stdio.h>
 #include <string.h>
 
+static Color CorRaridade(RaridadeItem raridade);
+
 static void DesenharTorre(float tempo)
 {
     const float oscilacao = sinf(tempo * 1.4f) * 2.0f;
@@ -110,34 +112,78 @@ static bool AtualizarSelecaoMouse(const EstadoJogo *jogo, int *selecao, int tota
 
 static const char *NomeRecompensa(const RecompensaTorre *recompensa)
 {
-    if (recompensa->categoria == RECOMPENSA_ATAQUE) return JogadorAtaqueRecompensa(recompensa->id).nome;
+    if (recompensa->categoria == RECOMPENSA_EQUIPAMENTO) return ItemObterDefinicao((IdItem)recompensa->id)->nome;
     if (recompensa->categoria == RECOMPENSA_ITEM) return ItemObterDefinicao((IdItem)recompensa->id)->nome;
     return recompensa->categoria == RECOMPENSA_VIDA ? "+ HP MAX" : "+ DANO BASE";
 }
 
+static Rectangle AreaRecompensa(int indice)
+{
+    return (Rectangle){52.0f, 148.0f + indice * 84.0f, 536.0f, 76.0f};
+}
+
+static bool RecompensaEhItem(const RecompensaTorre *recompensa)
+{
+    return recompensa->categoria == RECOMPENSA_EQUIPAMENTO || recompensa->categoria == RECOMPENSA_ITEM;
+}
+
 static void DesenharRecompensa(const EstadoJogo *jogo)
 {
-    InterfaceDesenharPainel((Rectangle){62, 72, 516, 325});
-    DrawText("RECOMPENSA", 223, 94, 26, BLACK);
+    InterfaceDesenharPainel((Rectangle){30, 34, 580, 414});
+    DrawText("ITENS RECEBIDOS", 193, 56, 26, BLACK);
     DrawText(TextFormat("%d moedas  |  %d XP  |  %s", jogo->ultimo_resultado_batalha.moedas,
                         jogo->ultimo_resultado_batalha.xp,
                         jogo->ultimo_resultado_batalha.desfecho == BATALHA_OUTCOME_MISERICORDIA ? "POUPAR: BONUS" : "VITORIA"),
-             114, 130, 16, DARKGRAY);
-    if (jogo->substituindo_ataque) {
-        DrawText("Escolha o ataque para substituir:", 104, 172, 18, BLACK);
-        DrawText("W/S ou setas: escolher | ESPACO/ENTER: confirmar | X: voltar",
-                 104, 383, 13, DARKGRAY);
-        for (int indice = 0; indice < jogo->jogador.total_ataques; indice++) {
-            DesenharEscolha(208 + indice * 30, jogo->jogador.ataques[indice].nome,
-                       jogo->selecao_substituicao == indice);
-        }
-    } else {
-        DrawText("Escolha uma opcao:", 104, 172, 18, BLACK);
-        for (int indice = 0; indice < 3; indice++) {
-            DesenharEscolha(208 + indice * 42, NomeRecompensa(&jogo->torre.recompensas[indice]),
-                       jogo->selecao_recompensa == indice);
+             102, 94, 16, DARKGRAY);
+    DrawText("Escolha uma recompensa", 52, 121, 16, BLACK);
+    for (int indice = 0; indice < 3; indice++) {
+        const RecompensaTorre *recompensa = &jogo->torre.recompensas[indice];
+        const Rectangle area = AreaRecompensa(indice);
+        const bool selecionada = jogo->selecao_recompensa == indice;
+        DrawRectangleRec(area, selecionada ? (Color){248, 220, 129, 255} : (Color){232, 230, 224, 255});
+        DrawRectangleLinesEx(area, selecionada ? 3.0f : 1.0f, selecionada ? MAROON : DARKGRAY);
+
+        if (RecompensaEhItem(recompensa)) {
+            const DefinicaoItem *item = ItemObterDefinicao((IdItem)recompensa->id);
+            if (sprite_obter(&jogo->sprites, SpriteIdItem(item->id)) != NULL)
+                SpriteDesenharCentralizadoEscalado(&jogo->sprites, SpriteIdItem(item->id),
+                    (Vector2){area.x + 38.0f, area.y + 38.0f}, WHITE, 0.0f, 1.65f,
+                    jogo->sprites.depurar_limites);
+            DrawText(item->nome, (int)area.x + 76, (int)area.y + 9, 17,
+                     item->categoria == CATEGORIA_EQUIPAMENTO ? CorRaridade(item->raridade) : BLACK);
+            if (item->categoria == CATEGORIA_EQUIPAMENTO) {
+                const char *tipo = item->tipo_elemental != TIPO_NEUTRO ? nome_tipo(item->tipo_elemental) : NULL;
+                DrawText(tipo != NULL ? TextFormat("%s | %s | TIPO %s", ItemNomeRaridade(item->raridade),
+                                                   ItemNomeEspaco(item->espaco), tipo) :
+                                        TextFormat("%s | %s", ItemNomeRaridade(item->raridade),
+                                                   ItemNomeEspaco(item->espaco)),
+                         (int)area.x + 76, (int)area.y + 31, 12, CorRaridade(item->raridade));
+            } else {
+                DrawText(TextFormat("CONSUMIVEL | quantidade %d", recompensa->valor),
+                         (int)area.x + 76, (int)area.y + 31, 12, DARKGRAY);
+            }
+            DrawText(item->descricao, (int)area.x + 76, (int)area.y + 50, 12, DARKGRAY);
+        } else {
+            const bool vida = recompensa->categoria == RECOMPENSA_VIDA;
+            if (vida) {
+                DrawCircle((int)area.x + 31, (int)area.y + 32, 11, (Color){210, 67, 77, 255});
+                DrawCircle((int)area.x + 45, (int)area.y + 32, 11, (Color){210, 67, 77, 255});
+                DrawTriangle((Vector2){area.x + 21, area.y + 36}, (Vector2){area.x + 55, area.y + 36},
+                             (Vector2){area.x + 38, area.y + 60}, (Color){210, 67, 77, 255});
+            } else {
+                DrawLineEx((Vector2){area.x + 25, area.y + 55}, (Vector2){area.x + 51, area.y + 20},
+                           6.0f, (Color){92, 95, 105, 255});
+                DrawLineEx((Vector2){area.x + 23, area.y + 43}, (Vector2){area.x + 38, area.y + 55},
+                           4.0f, (Color){92, 95, 105, 255});
+            }
+            DrawText(NomeRecompensa(recompensa), (int)area.x + 76, (int)area.y + 13, 17, BLACK);
+            DrawText(vida ? TextFormat("Vida maxima %+d", recompensa->valor) :
+                            TextFormat("Poder de ataque permanente %+d", recompensa->valor / 2),
+                     (int)area.x + 76, (int)area.y + 42, 13, DARKGRAY);
         }
     }
+    if (jogo->mensagem_tela[0] != '\0') DrawText(jogo->mensagem_tela, 52, 406, 12, MAROON);
+    InterfaceDesenharAtalho("I inventario  |  ESPACO escolher", 196, 426);
 }
 
 static void DesenharDescanso(const EstadoJogo *jogo)
@@ -179,7 +225,7 @@ static void DesenharReliquias(const EstadoJogo *jogo)
     DrawText("RELIQUIAS", 246, 132, 28, BLACK);
     DrawText(TextFormat("FRAGMENTOS: %d", jogo->salvamento.fragmentos), 218, 169, 18, DARKGRAY);
     DesenharEscolha(220, "Erva Lunar inicial - 8 fragmentos", jogo->selecao_reliquia == 0);
-    DesenharEscolha(264, "Raio Manso inicial - 10 fragmentos", jogo->selecao_reliquia == 1);
+    DesenharEscolha(264, "Espada da Luz inicial - 10 fragmentos", jogo->selecao_reliquia == 1);
     DrawText("X/Backspace: voltar", 205, 331, 14, DARKGRAY);
 }
 
@@ -314,9 +360,159 @@ static void DesenharDepuracaoEfeitos(const EstadoJogo *jogo)
     DefesaDesenhar(&jogo->batalha.defesa, !jogo->salvamento.efeitos_reduzidos, &jogo->sprites);
 }
 
+static Color CorRaridade(RaridadeItem raridade)
+{
+    static const Color cores[] = {
+        {105, 108, 112, 255}, {54, 116, 196, 255},
+        {145, 67, 184, 255}, {214, 143, 25, 255}
+    };
+    return cores[raridade >= RARIDADE_COMUM && raridade <= RARIDADE_LENDARIA ? raridade : 0];
+}
+
+static Rectangle AreaInventario(int indice)
+{
+    return (Rectangle){42.0f + (indice % 6) * 43.0f, 126.0f + (indice / 6) * 43.0f, 38.0f, 38.0f};
+}
+
+static Rectangle AreaEquipamento(int espaco)
+{
+    static const Vector2 posicoes[ESPACO_EQUIPADO_TOTAL] = {
+        {401, 105}, {501, 105}, {501, 180}, {401, 180}, {451, 225},
+        {373, 267}, {451, 267}, {529, 267}, {548, 225}
+    };
+    return (Rectangle){posicoes[espaco].x, posicoes[espaco].y, 38.0f, 38.0f};
+}
+
+static void DesenharIconeEquipamento(EspacoEquipamento espaco, Vector2 centro, Color cor)
+{
+    if (espaco == ESPACO_ARMADURA) {
+        DrawRectangleLines((int)centro.x - 8, (int)centro.y - 8, 16, 18, cor);
+        DrawLine((int)centro.x - 8, (int)centro.y - 8, (int)centro.x - 13, (int)centro.y - 3, cor);
+        DrawLine((int)centro.x + 8, (int)centro.y - 8, (int)centro.x + 13, (int)centro.y - 3, cor);
+    } else if (espaco == ESPACO_ESCUDO) {
+        DrawPolyLines(centro, 5, 11, -90, cor);
+        DrawLine((int)centro.x, (int)centro.y - 8, (int)centro.x, (int)centro.y + 8, cor);
+    } else if (espaco == ESPACO_ARMAMENTO) {
+        DrawLineEx((Vector2){centro.x - 8, centro.y + 9}, (Vector2){centro.x + 8, centro.y - 8}, 3, cor);
+        DrawLineEx((Vector2){centro.x - 10, centro.y + 3}, (Vector2){centro.x - 3, centro.y + 10}, 2, cor);
+    } else if (espaco == ESPACO_CALCA) {
+        DrawLineEx((Vector2){centro.x - 6, centro.y - 9}, (Vector2){centro.x - 7, centro.y + 9}, 5, cor);
+        DrawLineEx((Vector2){centro.x + 6, centro.y - 9}, (Vector2){centro.x + 7, centro.y + 9}, 5, cor);
+        DrawLineEx((Vector2){centro.x - 6, centro.y - 8}, (Vector2){centro.x + 6, centro.y - 8}, 4, cor);
+    } else if (espaco == ESPACO_BOTAS) {
+        DrawLineEx((Vector2){centro.x - 5, centro.y - 9}, (Vector2){centro.x - 5, centro.y + 7}, 5, cor);
+        DrawLineEx((Vector2){centro.x - 5, centro.y + 7}, (Vector2){centro.x + 8, centro.y + 7}, 5, cor);
+    } else if (espaco == ESPACO_AMULETO_TIPO) {
+        DrawPolyLines(centro, 4, 9, 45, cor);
+        DrawLine((int)centro.x - 10, (int)centro.y, (int)centro.x - 14, (int)centro.y, cor);
+        DrawLine((int)centro.x + 10, (int)centro.y, (int)centro.x + 14, (int)centro.y, cor);
+        DrawLine((int)centro.x, (int)centro.y - 10, (int)centro.x, (int)centro.y - 14, cor);
+    } else {
+        DrawCircleLines((int)centro.x, (int)centro.y + 4, 6, cor);
+        DrawLine((int)centro.x - 8, (int)centro.y - 9, (int)centro.x, (int)centro.y - 2, cor);
+        DrawLine((int)centro.x + 8, (int)centro.y - 9, (int)centro.x, (int)centro.y - 2, cor);
+    }
+}
+
+static void DesenharBonusItem(const DefinicaoItem *item, int x, int y)
+{
+    const BonusAtributos *b = &item->bonus;
+    int linha = 0;
+#define BONUS(TEXTO, VALOR) do { if ((VALOR) != 0) { \
+    DrawText(TextFormat(TEXTO " %+d", (VALOR)), x, y + linha * 15, 12, DARKGRAY); linha++; } } while (0)
+    BONUS("Ataque", b->ataque); BONUS("Defesa", b->defesa); BONUS("Vida", b->vida);
+    BONUS("Velocidade", b->velocidade); BONUS("Mana maxima", b->mana_maxima);
+    BONUS("Mana/turno", b->mana_por_turno); BONUS("Critico %%", b->chance_critica);
+    BONUS("Dano critico %%", b->dano_critico); BONUS("Sangramento", b->sangramento);
+    BONUS("Resist. sangramento", b->resistencia_sangramento);
+#undef BONUS
+    if (item->passiva != PASSIVA_NENHUMA)
+        DrawText(TextFormat("%s: %d%%", ItemNomePassiva(item->passiva), item->valor_passiva),
+                 x, y + linha * 15, 12, MAROON);
+}
+
+static void DesenharInventario(const EstadoJogo *jogo)
+{
+    InterfaceDesenharPainel((Rectangle){20, 28, 600, 424});
+    DrawText("INVENTARIO", 38, 48, 25, BLACK);
+    DrawText("24 ESPACOS", 190, 55, 13, DARKGRAY);
+    for (int indice = 0; indice < MAXIMO_INVENTARIO_ITENS; indice++) {
+        const Rectangle area = AreaInventario(indice);
+        const ItemInventario *pilha = &jogo->jogador.inventario[indice];
+        const bool selecionado = !jogo->inventario_foco_equipamento && jogo->selecao_inventario == indice;
+        DrawRectangleRec(area, selecionado ? (Color){248, 220, 129, 255} : (Color){215, 213, 207, 255});
+        DrawRectangleLinesEx(area, selecionado ? 3.0f : 1.0f, selecionado ? MAROON : DARKGRAY);
+        if (pilha->quantidade > 0) {
+            const DefinicaoItem *item = ItemObterDefinicao(pilha->id);
+            if (ItemEhEquipamento(pilha->id)) DrawRectangle((int)area.x + 3, (int)area.y + 3, 5,
+                                                           (int)area.height - 6, CorRaridade(item->raridade));
+            if (sprite_obter(&jogo->sprites, SpriteIdItem(pilha->id)) != NULL)
+                SpriteDesenharCentralizadoEscalado(&jogo->sprites, SpriteIdItem(pilha->id),
+                    (Vector2){area.x + 19, area.y + 18}, WHITE, 0.0f, 0.72f, jogo->sprites.depurar_limites);
+            else if (ItemEhEquipamento(pilha->id))
+                DesenharIconeEquipamento(item->espaco, (Vector2){area.x + 19, area.y + 18},
+                                         CorRaridade(item->raridade));
+            else DrawText("+", (int)area.x + 14, (int)area.y + 8, 20, BLACK);
+            DrawText(TextFormat("%d", pilha->quantidade), (int)area.x + 27, (int)area.y + 25, 10, BLACK);
+        }
+    }
+
+    DrawText("EQUIPADO", 413, 48, 20, BLACK);
+    DrawCircle(470, 137, 17, (Color){91, 93, 105, 255});
+    DrawRectangle(453, 154, 34, 67, (Color){91, 93, 105, 255});
+    DrawLineEx((Vector2){453, 165}, (Vector2){430, 200}, 8, (Color){91, 93, 105, 255});
+    DrawLineEx((Vector2){487, 165}, (Vector2){510, 200}, 8, (Color){91, 93, 105, 255});
+    DrawLineEx((Vector2){461, 218}, (Vector2){448, 255}, 9, (Color){91, 93, 105, 255});
+    DrawLineEx((Vector2){479, 218}, (Vector2){492, 255}, 9, (Color){91, 93, 105, 255});
+    DrawText("TIPO", 553, 212, 9, DARKGRAY);
+    for (int espaco = 0; espaco < ESPACO_EQUIPADO_TOTAL; espaco++) {
+        const Rectangle area = AreaEquipamento(espaco);
+        const bool selecionado = jogo->inventario_foco_equipamento && jogo->selecao_equipamento == espaco;
+        const IdItem id = jogo->jogador.equipamentos[espaco];
+        DrawRectangleRec(area, selecionado ? (Color){248, 220, 129, 255} : (Color){225, 223, 217, 255});
+        DrawRectangleLinesEx(area, selecionado ? 3.0f : 1.0f, selecionado ? MAROON : DARKGRAY);
+        if (id != ITEM_NENHUM) {
+            const DefinicaoItem *item = ItemObterDefinicao(id);
+            DrawRectangle((int)area.x + 3, (int)area.y + 3, 5, (int)area.height - 6, CorRaridade(item->raridade));
+            if (sprite_obter(&jogo->sprites, SpriteIdItem(id)) != NULL)
+                SpriteDesenharCentralizadoEscalado(&jogo->sprites, SpriteIdItem(id),
+                    (Vector2){area.x + 20, area.y + 19}, WHITE, 0.0f, 1.0f,
+                    jogo->sprites.depurar_limites);
+            else DesenharIconeEquipamento((EspacoEquipamento)espaco,
+                    (Vector2){area.x + 20, area.y + 19}, CorRaridade(item->raridade));
+        } else DrawText("+", (int)area.x + 14, (int)area.y + 7, 22, GRAY);
+    }
+
+    const DefinicaoItem *selecionado = NULL;
+    if (jogo->inventario_foco_equipamento) {
+        const IdItem id = jogo->jogador.equipamentos[jogo->selecao_equipamento];
+        if (id != ITEM_NENHUM) selecionado = ItemObterDefinicao(id);
+    } else {
+        const ItemInventario *pilha = &jogo->jogador.inventario[jogo->selecao_inventario];
+        if (pilha->quantidade > 0) selecionado = ItemObterDefinicao(pilha->id);
+    }
+    DrawRectangle(38, 312, 564, 104, (Color){239, 238, 232, 255});
+    DrawRectangleLines(38, 312, 564, 104, DARKGRAY);
+    if (selecionado != NULL) {
+        const Color cor = selecionado->categoria == CATEGORIA_EQUIPAMENTO ? CorRaridade(selecionado->raridade) : DARKGRAY;
+        DrawText(selecionado->nome, 52, 324, 17, cor);
+        DrawText(selecionado->descricao, 52, 348, 12, DARKGRAY);
+        if (selecionado->categoria == CATEGORIA_EQUIPAMENTO) {
+            DrawText(TextFormat("%s | %s", ItemNomeRaridade(selecionado->raridade),
+                                ItemNomeEspaco(selecionado->espaco)), 52, 370, 12, cor);
+            DesenharBonusItem(selecionado, 310, 324);
+        }
+    }
+    DrawText(TextFormat("ATQ %d  DEF %d  VEL %+d%%  MANA %d (+%d)",
+        jogo->jogador.bonus_equipamento.ataque, jogo->jogador.bonus_equipamento.defesa,
+        jogo->jogador.bonus_equipamento.velocidade, jogo->jogador.mana_maxima,
+        jogo->jogador.mana_por_turno), 52, 425, 12, BLACK);
+    InterfaceDesenharAtalho("Q alternar | SETAS mover | ESPACO equipar | DEL descartar | TAB fechar", 62, 439);
+}
+
 static void DesenharPausa(const EstadoJogo *jogo)
 {
-    const char *opcoes[] = {"CONTINUAR", "OPCOES", "COMO JOGAR", "DESISTIR DA RUN", "TITULO"};
+    const char *opcoes[] = {"CONTINUAR", "INVENTARIO", "OPCOES", "COMO JOGAR", "DESISTIR DA RUN", "TITULO"};
     InterfaceDesenharPainel((Rectangle){136, 92, 368, 292});
     DrawText("PAUSADO", 248, 119, 27, BLACK);
     if (jogo->pausa_confirmar_saida) {
@@ -332,8 +528,8 @@ static void DesenharPausa(const EstadoJogo *jogo)
         InterfaceDesenharAtalho("ESPACO confirmar  |  X cancelar", 206, 278);
         return;
     }
-    for (int indice = 0; indice < 5; indice++)
-        DesenharEscolhaCompacta(170 + indice * 34, opcoes[indice], jogo->selecao_pausa == indice);
+    for (int indice = 0; indice < 6; indice++)
+        DesenharEscolhaCompacta(158 + indice * 34, opcoes[indice], jogo->selecao_pausa == indice);
 }
 
 static void DesenharConfirmacaoExclusao(const EstadoJogo *jogo)
@@ -350,6 +546,8 @@ static void IniciarAndar(EstadoJogo *jogo)
     TorreEscalarInimigo(&jogo->inimigo, jogo->torre.andar);
     RenderizacaoDefinirAndar(&jogo->renderizacao, jogo->torre.andar, jogo->inimigo.chefe);
     BatalhaInicializar(&jogo->batalha, &jogo->dialogo, jogo->torre.andar);
+    JogadorIniciarBatalha(&jogo->jogador);
+    JogadorIniciarTurno(&jogo->jogador);
     jogo->batalha.dificuldade_qte = BalanceamentoDificuldadeQte(jogo->torre.andar, jogo->salvamento.dificuldade);
     jogo->temporizador_transicao = 0.70f;
     jogo->tela = BATALHA;
@@ -360,10 +558,12 @@ static void IniciarPartida(EstadoJogo *jogo)
     jogo->contador_partidas++;
     jogo->partida_iniciada_em = (float)GetTime();
     JogadorInicializar(&jogo->jogador);
-    jogo->jogador.multiplicador_dano_recebido = BalanceamentoMultiplicadorDanoRecebido(jogo->salvamento.dificuldade);
+    jogo->jogador.multiplicador_dificuldade = BalanceamentoMultiplicadorDanoRecebido(jogo->salvamento.dificuldade);
+    JogadorRecalcularAtributos(&jogo->jogador);
     if (jogo->salvamento.tipo_reliquia == RELIQUIA_ITEM) JogadorAdicionarItem(&jogo->jogador, (IdItem)jogo->salvamento.id_reliquia, 1);
-    if (jogo->salvamento.tipo_reliquia == RELIQUIA_ATAQUE) JogadorAdicionarAtaque(&jogo->jogador,
-        JogadorAtaqueRecompensa(jogo->salvamento.id_reliquia), -1);
+    if (jogo->salvamento.tipo_reliquia == RELIQUIA_ARMAMENTO)
+        JogadorAdicionarItem(&jogo->jogador,
+            jogo->salvamento.id_reliquia == ATAQUE_CHAMA_ALTA ? ITEM_ESPADA_FOGO : ITEM_ESPADA_LUZ, 1);
     TorreInicializar(&jogo->torre, (unsigned int)(GetTime() * 1000.0) + jogo->contador_partidas * 7919u);
     jogo->ultimo_resultado_batalha = (ResultadoBatalha){0};
     jogo->mensagem_tela[0] = '\0';
@@ -412,32 +612,85 @@ static void AplicarRecompensa(EstadoJogo *jogo, int selecao)
 {
     const RecompensaTorre recompensa = jogo->torre.recompensas[selecao];
 
-    if (recompensa.categoria == RECOMPENSA_ATAQUE) {
-        const Ataque ataque = JogadorAtaqueRecompensa(recompensa.id);
-        if (jogo->jogador.total_ataques >= MAXIMO_EQUIPADOS_ATAQUES && !jogo->substituindo_ataque) {
-            jogo->substituindo_ataque = true;
-            jogo->selecao_substituicao = 0;
-            return;
-        }
-        if (!JogadorAdicionarAtaque(&jogo->jogador, ataque,
-                             jogo->jogador.total_ataques >= MAXIMO_EQUIPADOS_ATAQUES ?
-                             jogo->selecao_substituicao : -1)) {
-            /* Uma recompensa nunca se perde silenciosamente se o ataque ja estiver equipado. */
+    if (recompensa.categoria == RECOMPENSA_EQUIPAMENTO || recompensa.categoria == RECOMPENSA_ITEM) {
+        if (!JogadorAdicionarItem(&jogo->jogador, (IdItem)recompensa.id, recompensa.valor)) {
             snprintf(jogo->mensagem_tela, sizeof(jogo->mensagem_tela),
-                     "Esse ataque ja esta equipado.");
-            jogo->substituindo_ataque = false;
+                     "Inventario cheio. Abra espaco antes de escolher.");
             return;
         }
-    } else if (recompensa.categoria == RECOMPENSA_ITEM) {
-        JogadorAdicionarItem(&jogo->jogador, (IdItem)recompensa.id, recompensa.valor);
     } else if (recompensa.categoria == RECOMPENSA_VIDA) {
-        jogo->jogador.vida_maxima += recompensa.valor;
+        jogo->jogador.vida_base += recompensa.valor;
+        JogadorRecalcularAtributos(&jogo->jogador);
         JogadorCurar(&jogo->jogador, recompensa.valor * 2);
     } else {
         jogo->jogador.bonus_dano_permanente += recompensa.valor / 2;
     }
-    jogo->substituindo_ataque = false;
     ContinuarAposRecompensa(jogo);
+}
+
+static EspacoEquipamento EspacoPreferidoParaItem(const EstadoJogo *jogo, IdItem id)
+{
+    const DefinicaoItem *item = ItemObterDefinicao(id);
+    if (item->espaco == ESPACO_AMULETO_TIPO) return ESPACO_AMULETO_TIPO;
+    if (item->espaco != ESPACO_AMULETO_1) return item->espaco;
+    for (int espaco = ESPACO_AMULETO_1; espaco <= ESPACO_AMULETO_3; espaco++)
+        if (jogo->jogador.equipamentos[espaco] == ITEM_NENHUM) return (EspacoEquipamento)espaco;
+    if (jogo->selecao_equipamento >= ESPACO_AMULETO_1 && jogo->selecao_equipamento <= ESPACO_AMULETO_3)
+        return (EspacoEquipamento)jogo->selecao_equipamento;
+    return ESPACO_AMULETO_1;
+}
+
+static void AtualizarInventario(EstadoJogo *jogo)
+{
+    if (IsKeyPressed(KEY_TAB)) {
+        jogo->tela = jogo->tela_antes_inventario;
+        return;
+    }
+    if (IsKeyPressed(KEY_Q)) jogo->inventario_foco_equipamento = !jogo->inventario_foco_equipamento;
+    for (int indice = 0; indice < MAXIMO_INVENTARIO_ITENS; indice++) {
+        if (CheckCollisionPointRec(jogo->posicao_mouse, AreaInventario(indice))) {
+            jogo->selecao_inventario = indice;
+            jogo->inventario_foco_equipamento = false;
+            if (jogo->mouse_pressionado) {
+                const ItemInventario *pilha = &jogo->jogador.inventario[indice];
+                if (pilha->quantidade > 0 && ItemEhEquipamento(pilha->id))
+                    JogadorEquiparDoInventario(&jogo->jogador, indice, EspacoPreferidoParaItem(jogo, pilha->id));
+            }
+        }
+    }
+    for (int espaco = 0; espaco < ESPACO_EQUIPADO_TOTAL; espaco++) {
+        if (CheckCollisionPointRec(jogo->posicao_mouse, AreaEquipamento(espaco))) {
+            jogo->selecao_equipamento = espaco;
+            jogo->inventario_foco_equipamento = true;
+            if (jogo->mouse_pressionado) JogadorDesequipar(&jogo->jogador, (EspacoEquipamento)espaco);
+        }
+    }
+    if (jogo->inventario_foco_equipamento) {
+        if (entrada_cima_pressionada() || entrada_esquerda_pressionada())
+            jogo->selecao_equipamento = (jogo->selecao_equipamento + ESPACO_EQUIPADO_TOTAL - 1) % ESPACO_EQUIPADO_TOTAL;
+        if (entrada_baixo_pressionada() || entrada_direita_pressionada())
+            jogo->selecao_equipamento = (jogo->selecao_equipamento + 1) % ESPACO_EQUIPADO_TOTAL;
+        if (entrada_confirmar_pressionada())
+            JogadorDesequipar(&jogo->jogador, (EspacoEquipamento)jogo->selecao_equipamento);
+    } else {
+        if (entrada_esquerda_pressionada()) jogo->selecao_inventario =
+            (jogo->selecao_inventario + MAXIMO_INVENTARIO_ITENS - 1) % MAXIMO_INVENTARIO_ITENS;
+        if (entrada_direita_pressionada()) jogo->selecao_inventario =
+            (jogo->selecao_inventario + 1) % MAXIMO_INVENTARIO_ITENS;
+        if (entrada_cima_pressionada()) jogo->selecao_inventario =
+            (jogo->selecao_inventario + MAXIMO_INVENTARIO_ITENS - 6) % MAXIMO_INVENTARIO_ITENS;
+        if (entrada_baixo_pressionada()) jogo->selecao_inventario =
+            (jogo->selecao_inventario + 6) % MAXIMO_INVENTARIO_ITENS;
+        if (entrada_confirmar_pressionada()) {
+            const ItemInventario *pilha = &jogo->jogador.inventario[jogo->selecao_inventario];
+            if (pilha->quantidade > 0 && ItemEhEquipamento(pilha->id))
+                JogadorEquiparDoInventario(&jogo->jogador, jogo->selecao_inventario,
+                                           EspacoPreferidoParaItem(jogo, pilha->id));
+        }
+    }
+    if (!jogo->inventario_foco_equipamento && IsKeyPressed(KEY_DELETE))
+        JogadorDescartarItem(&jogo->jogador, jogo->selecao_inventario);
+    if (entrada_cancelar_pressionada() || IsKeyPressed(KEY_ESCAPE)) jogo->tela = jogo->tela_antes_inventario;
 }
 
 void JogoInicializar(EstadoJogo *jogo)
@@ -446,6 +699,7 @@ void JogoInicializar(EstadoJogo *jogo)
     jogo->tela = TITULO;
     jogo->fase_espera_tutorial = -1;
     jogo->tela_antes_pausa = TITULO;
+    jogo->tela_antes_inventario = TITULO;
     jogo->selecao_titulo = 0;
     jogo->tempo_decorrido = 0.0f;
     jogo->saida_solicitada = false;
@@ -464,6 +718,13 @@ void JogoInicializar(EstadoJogo *jogo)
 
 void JogoAtualizar(EstadoJogo *jogo)
 {
+    bool abriu_inventario = false;
+    const Vector2 posicao_mouse_atual = jogo->posicao_mouse;
+    const bool mouse_moveu = fabsf(posicao_mouse_atual.x - jogo->ultima_posicao_mouse.x) > 0.1f ||
+                             fabsf(posicao_mouse_atual.y - jogo->ultima_posicao_mouse.y) > 0.1f;
+    jogo->ultima_posicao_mouse = posicao_mouse_atual;
+    if (!mouse_moveu && !jogo->mouse_pressionado)
+        jogo->posicao_mouse = (Vector2){-1000.0f, -1000.0f};
     if ((jogo->tela == BATALHA || jogo->tela == DEPURAR_EFEITOS) && !IsWindowFocused()) {
         AudioAtualizar(&jogo->audio, GetFrameTime());
         return;
@@ -492,6 +753,14 @@ void JogoAtualizar(EstadoJogo *jogo)
         jogo->batalha.defesa.depurar_invencivel = true;
     }
 #endif
+
+    if (IsKeyPressed(KEY_TAB) &&
+        (jogo->tela == BATALHA || jogo->tela == RECOMPENSA || jogo->tela == DESCANSO ||
+         jogo->tela == LOJA || jogo->tela == PAUSA)) {
+        jogo->tela_antes_inventario = jogo->tela;
+        jogo->tela = INVENTARIO;
+        abriu_inventario = true;
+    }
 
     if (jogo->tela == TITULO) {
         bool confirmado = entrada_confirmar_pressionada();
@@ -536,7 +805,7 @@ void JogoAtualizar(EstadoJogo *jogo)
             AudioTocar(&jogo->audio, resultado.desfecho == BATALHA_OUTCOME_MISERICORDIA ? AUDIO_VITORIA : AUDIO_DANO_CAUSADO);
             TorreSortearRecompensas(&jogo->torre, &jogo->jogador);
             jogo->selecao_recompensa = 0;
-            jogo->substituindo_ataque = false;
+            jogo->mensagem_tela[0] = '\0';
             jogo->tela = RECOMPENSA;
         }
         if (resultado.desfecho == BATALHA_OUTCOME_DERROTA) {
@@ -566,40 +835,41 @@ void JogoAtualizar(EstadoJogo *jogo)
                 jogo->tela = FIM_JOGO;
             }
         } else {
-            bool confirmou_mouse = AtualizarSelecaoMouse(jogo, &jogo->selecao_pausa, 5, 170, 34, true);
-            if (entrada_cima_pressionada()) jogo->selecao_pausa = (jogo->selecao_pausa + 4) % 5;
-            if (entrada_baixo_pressionada()) jogo->selecao_pausa = (jogo->selecao_pausa + 1) % 5;
+            bool confirmou_mouse = AtualizarSelecaoMouse(jogo, &jogo->selecao_pausa, 6, 158, 34, true);
+            if (entrada_cima_pressionada()) jogo->selecao_pausa = (jogo->selecao_pausa + 5) % 6;
+            if (entrada_baixo_pressionada()) jogo->selecao_pausa = (jogo->selecao_pausa + 1) % 6;
             if (IsKeyPressed(KEY_ESCAPE) || entrada_cancelar_pressionada()) RetomarPartidaPausada(jogo);
             if (entrada_confirmar_pressionada() || confirmou_mouse) {
                 if (jogo->selecao_pausa == 0) RetomarPartidaPausada(jogo);
-                else if (jogo->selecao_pausa == 1) jogo->tela = OPCOES;
-                else if (jogo->selecao_pausa == 2) jogo->tela = COMO_JOGAR;
-                else if (jogo->selecao_pausa == 3) jogo->pausa_confirmar_saida = true;
+                else if (jogo->selecao_pausa == 1) {
+                    jogo->tela_antes_inventario = PAUSA;
+                    jogo->tela = INVENTARIO;
+                }
+                else if (jogo->selecao_pausa == 2) jogo->tela = OPCOES;
+                else if (jogo->selecao_pausa == 3) jogo->tela = COMO_JOGAR;
+                else if (jogo->selecao_pausa == 4) jogo->pausa_confirmar_saida = true;
                 else jogo->tela = TITULO;
             }
         }
+    } else if (jogo->tela == INVENTARIO) {
+        if (!abriu_inventario) AtualizarInventario(jogo);
     } else if (jogo->tela == RECOMPENSA) {
-        if (jogo->substituindo_ataque) {
-            bool confirmou_mouse = AtualizarSelecaoMouse(jogo, &jogo->selecao_substituicao,
-                jogo->jogador.total_ataques, 208, 30, false);
-            if (entrada_cima_pressionada() || entrada_esquerda_pressionada()) {
-                jogo->selecao_substituicao = (jogo->selecao_substituicao +
-                    jogo->jogador.total_ataques - 1) % jogo->jogador.total_ataques;
-            }
-            if (entrada_baixo_pressionada() || entrada_direita_pressionada()) {
-                jogo->selecao_substituicao = (jogo->selecao_substituicao + 1) %
-                    jogo->jogador.total_ataques;
-            }
-            if (entrada_confirmar_pressionada() || confirmou_mouse)
-                AplicarRecompensa(jogo, jogo->selecao_recompensa);
-            if (entrada_cancelar_pressionada()) jogo->substituindo_ataque = false;
-        } else {
-            bool confirmou_mouse = AtualizarSelecaoMouse(jogo, &jogo->selecao_recompensa, 3, 208, 42, false);
-            if (entrada_cima_pressionada()) jogo->selecao_recompensa = (jogo->selecao_recompensa + 2) % 3;
-            if (entrada_baixo_pressionada()) jogo->selecao_recompensa = (jogo->selecao_recompensa + 1) % 3;
-            if (entrada_confirmar_pressionada() || confirmou_mouse)
-                AplicarRecompensa(jogo, jogo->selecao_recompensa);
+        if (IsKeyPressed(KEY_I)) {
+            jogo->tela_antes_inventario = RECOMPENSA;
+            jogo->tela = INVENTARIO;
+            return;
         }
+        bool confirmou_mouse = false;
+        for (int indice = 0; indice < 3; indice++) {
+            if (CheckCollisionPointRec(jogo->posicao_mouse, AreaRecompensa(indice))) {
+                jogo->selecao_recompensa = indice;
+                confirmou_mouse = jogo->mouse_pressionado;
+            }
+        }
+        if (entrada_cima_pressionada()) jogo->selecao_recompensa = (jogo->selecao_recompensa + 2) % 3;
+        if (entrada_baixo_pressionada()) jogo->selecao_recompensa = (jogo->selecao_recompensa + 1) % 3;
+        if (entrada_confirmar_pressionada() || confirmou_mouse)
+            AplicarRecompensa(jogo, jogo->selecao_recompensa);
     } else if (jogo->tela == DESCANSO) {
         bool confirmou_mouse = AtualizarSelecaoMouse(jogo, &jogo->selecao_descanso, 2, 222, 42, false);
         if (entrada_cima_pressionada() || entrada_baixo_pressionada()) jogo->selecao_descanso = 1 - jogo->selecao_descanso;
@@ -654,7 +924,7 @@ void JogoAtualizar(EstadoJogo *jogo)
         if (entrada_cima_pressionada() || entrada_baixo_pressionada()) jogo->selecao_reliquia = 1 - jogo->selecao_reliquia;
         if (entrada_confirmar_pressionada() || confirmou_mouse) {
             if (jogo->selecao_reliquia == 0) SalvamentoComprarReliquia(&jogo->salvamento, RELIQUIA_ITEM, ITEM_LUA_ERVA, 8);
-            else SalvamentoComprarReliquia(&jogo->salvamento, RELIQUIA_ATAQUE, 3, 10);
+            else SalvamentoComprarReliquia(&jogo->salvamento, RELIQUIA_ARMAMENTO, ATAQUE_RAIO_MANSO, 10);
             SalvamentoGravar(&jogo->salvamento);
         }
         if (entrada_cancelar_pressionada()) jogo->tela = TITULO;
@@ -694,7 +964,10 @@ void JogoAtualizar(EstadoJogo *jogo)
                 SalvamentoGravar(&jogo->salvamento);
             }
         }
-        if (entrada_cancelar_pressionada()) { SalvamentoGravar(&jogo->salvamento); jogo->tela = TITULO; }
+        if (entrada_cancelar_pressionada()) {
+            SalvamentoGravar(&jogo->salvamento);
+            jogo->tela = jogo->tela_antes_pausa == BATALHA ? PAUSA : TITULO;
+        }
     } else if (jogo->tela == CONFIRMAR_EXCLUSAO) {
         int selecao_exclusao = jogo->excluir_sim ? 0 : 1;
         bool confirmou_mouse = AtualizarSelecaoMouse(jogo, &selecao_exclusao, 2, 245, 30, true);
@@ -706,7 +979,8 @@ void JogoAtualizar(EstadoJogo *jogo)
             jogo->tela = OPCOES;
         }
     } else if (jogo->tela == COMO_JOGAR) {
-        if (entrada_cancelar_pressionada() || entrada_confirmar_pressionada()) jogo->tela = TITULO;
+        if (entrada_cancelar_pressionada() || entrada_confirmar_pressionada())
+            jogo->tela = jogo->tela_antes_pausa == BATALHA ? PAUSA : TITULO;
     } else if (jogo->tela == DEPURAR_EFEITOS) {
         bool trocar_padrao = false;
         if (IsKeyPressed(KEY_F9)) {
@@ -798,6 +1072,8 @@ void JogoDesenhar(const EstadoJogo *jogo)
         }
     } else if (jogo->tela == PAUSA) {
         DesenharPausa(jogo);
+    } else if (jogo->tela == INVENTARIO) {
+        DesenharInventario(jogo);
     } else if (jogo->tela == RECOMPENSA) {
         DesenharRecompensa(jogo);
     } else if (jogo->tela == DESCANSO) {
@@ -814,7 +1090,7 @@ void JogoDesenhar(const EstadoJogo *jogo)
     } else if (jogo->tela == VITORIA) {
         InterfaceDesenharPainel((Rectangle){62, 104, 516, 276});
         DrawText("TORRE CONCLUIDA", 185, 136, 29, BLACK);
-        DrawText(TextFormat("10 andares | %d moedas", jogo->torre.moedas), 205, 190, 18, DARKGRAY);
+        DrawText(TextFormat("%d andares | %d moedas", TOTAL_ANDARES_TORRE, jogo->torre.moedas), 205, 190, 18, DARKGRAY);
         DrawText(TextFormat("Poupar: %d  |  Dano: %d", jogo->torre.vitorias_misericordia,
                             jogo->torre.vitorias_dano), 205, 218, 18, DARKGRAY);
         DesenharEscolha(292, "TITULO", true);

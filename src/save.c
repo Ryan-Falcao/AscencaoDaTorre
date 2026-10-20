@@ -33,9 +33,9 @@ typedef struct {
 } RegraDesbloqueio;
 
 static const RegraDesbloqueio DESBLOQUEIOS[] = {
-    {2, 0, 0, RELIQUIA_ITEM, ITEM_LUA_ERVA}, {3, 0, 0, RELIQUIA_ATAQUE, 3},
-    {5, 0, 0, RELIQUIA_ITEM, ITEM_TORRE_SINO}, {5, 0, 0, RELIQUIA_ATAQUE, 6},
-    {1, 1, 0, RELIQUIA_ATAQUE, 9}, {1, 0, 10, RELIQUIA_ITEM, ITEM_ESPINHO_BOMBA}
+    {2, 0, 0, RELIQUIA_ITEM, ITEM_LUA_ERVA}, {3, 0, 0, RELIQUIA_ARMAMENTO, 3},
+    {5, 0, 0, RELIQUIA_ITEM, ITEM_TORRE_SINO}, {5, 0, 0, RELIQUIA_ARMAMENTO, 6},
+    {1, 1, 0, RELIQUIA_ARMAMENTO, 9}, {1, 0, 10, RELIQUIA_ITEM, ITEM_ESPINHO_BOMBA}
 };
 
 static uint32_t SomaVerificacaoBytes(const void *data, size_t tamanho)

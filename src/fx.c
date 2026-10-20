@@ -51,11 +51,27 @@ void EfeitoDesenhar(const EfeitoAtaque *efeito, const SistemaSprites *sprites, b
                                (efeito->resultado == QTE_RUIM ? 0.75f : 1.0f);
     const Color cor = efeito->resultado == QTE_ERRO ? GRAY : cor_tipo(efeito->tipo);
     IdSprite id = SpriteIdEfeitoAtaque(efeito->id_ataque);
+    bool usando_icone_ataque = false;
 
     if (sprite_obter(sprites, id) == NULL) id = SpriteIdEfeitoTipo(efeito->tipo);
+    if (sprite_obter(sprites, id) == NULL) {
+        id = SpriteIdAtaque(efeito->id_ataque);
+        usando_icone_ataque = true;
+    }
     if (!efeitos_reduzidos && efeito->resultado != QTE_ERRO && sprite_obter(sprites, id) != NULL) {
-        SpriteDesenharCentralizadoEscalado(sprites, id, efeito->posicao, cor, efeito->temporizador, result_scale,
-                                 sprites->depurar_limites);
+        if (usando_icone_ataque) {
+            const float progresso = efeito->temporizador / efeito->duracao;
+            Vector2 centro = efeito->posicao;
+            if (efeito->estilo == EFEITO_PROJETIL)
+                centro = (Vector2){112.0f + 208.0f * progresso, 300.0f - 163.0f * progresso};
+            const float pulso = 2.3f + sinf(progresso * 3.14159f) * 1.4f;
+            SpriteDesenharCentralizadoRotacionado(sprites, id, centro, WHITE, efeito->temporizador,
+                efeito->estilo == EFEITO_CORTE ? -35.0f + progresso * 70.0f : progresso * 18.0f,
+                pulso * result_scale, sprites->depurar_limites);
+        } else {
+            SpriteDesenharCentralizadoEscalado(sprites, id, efeito->posicao, cor, efeito->temporizador,
+                                     result_scale, sprites->depurar_limites);
+        }
     } else {
         DesenharAlternativa(efeito, efeitos_reduzidos ? 0.7f : result_scale, cor);
     }

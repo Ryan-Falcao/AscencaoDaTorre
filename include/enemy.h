@@ -20,6 +20,15 @@ typedef enum {
     INIMIGO_PETALA_CAVALEIRO,
     INIMIGO_CHEFE_SINEIRO,
     INIMIGO_CHEFE_ULTIMA_TORRE,
+    INIMIGO_SOLDADO_SARCAS, INIMIGO_HERBALISTA_PESTE,
+    INIMIGO_LEGIONARIO_AFOGADO, INIMIGO_BRUXA_LODO, INIMIGO_REVENANTE_GELO,
+    INIMIGO_ESQUELETO_CARBONIZADO, INIMIGO_ACENDEDOR_FORJA,
+    INIMIGO_PENITENTE_SEM_ROSTO, INIMIGO_LADRAO_MORTALHA,
+    INIMIGO_ACOLITO_VITRAL, INIMIGO_GOBLIN_LANCEIRO, INIMIGO_AUTOMATO_PEDRA,
+    INIMIGO_MERCENARIO_FERRUGEM, INIMIGO_CARCEREIRO_CORRENTES,
+    INIMIGO_CHEFE_CULTISTA_RAIZES, INIMIGO_CHEFE_AFOGADO_CORAL,
+    INIMIGO_CHEFE_MAGO_CINZAS, INIMIGO_CHEFE_GOBLIN_CRIPTA,
+    INIMIGO_CHEFE_INQUISIDOR_SOL,
     INIMIGO_TOTAL
 } IdInimigo;
 
@@ -56,6 +65,7 @@ typedef struct {
     Tipo tipo;
     Tipo tipo2;
     bool possui_tipo2;
+    bool todos_tipos;
     int agressividade;
     int misericordia;
     bool poupavel;
@@ -82,6 +92,7 @@ typedef struct {
     int bonus_recompensa;
     EfeitoStatus status;
     int turnos_status;
+    int sangramento;
 } Inimigo;
 
 Inimigo InimigoCriar(IdInimigo id);
@@ -93,5 +104,8 @@ bool InimigoPodePoupar(const Inimigo *inimigo);
 bool InimigoAcaoDisponivel(const Inimigo *inimigo, int indice_acao, char *motivo, int tamanho_motivo);
 void InimigoAplicarStatus(Inimigo *inimigo, EfeitoStatus status, int turnos);
 bool InimigoAvancarStatus(Inimigo *inimigo, int *dano);
+int InimigoAplicarSangramento(Inimigo *inimigo, int quantidade);
+int InimigoProcessarSangramento(Inimigo *inimigo);
+void InimigoCurarSangramento(Inimigo *inimigo);
 
 #endif

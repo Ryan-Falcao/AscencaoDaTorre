@@ -18,6 +18,26 @@ static const EspecificacaoSprite ESPECIFICACOES[] = {
     {SPRITE_CHEFE_SINEIRO_P2, "assets/sprites/boss_sineiro_p2.png", 1, {0, 0}},
     {SPRITE_CHEFE_ULTIMA_TORRE_P1, "assets/sprites/boss_torre_final_p1.png", 1, {0, 0}},
     {SPRITE_CHEFE_ULTIMA_TORRE_P2, "assets/sprites/boss_torre_final_p2.png", 1, {0, 0}},
+    {SPRITE_INIMIGO_SOLDADO_SARCAS,"assets/sprites/enemy_soldado_sarcas.png",1,{0,0}},
+    {SPRITE_INIMIGO_HERBALISTA_PESTE,"assets/sprites/enemy_herbalista_peste.png",1,{0,0}},
+    {SPRITE_INIMIGO_LEGIONARIO_AFOGADO,"assets/sprites/enemy_legionario_afogado.png",1,{0,0}},
+    {SPRITE_INIMIGO_BRUXA_LODO,"assets/sprites/enemy_bruxa_lodo.png",1,{0,0}},
+    {SPRITE_INIMIGO_REVENANTE_GELO,"assets/sprites/enemy_revenante_gelo.png",1,{0,0}},
+    {SPRITE_INIMIGO_ESQUELETO_CARBONIZADO,"assets/sprites/enemy_esqueleto_carbonizado.png",1,{0,0}},
+    {SPRITE_INIMIGO_ACENDEDOR_FORJA,"assets/sprites/enemy_acendedor_forja.png",1,{0,0}},
+    {SPRITE_INIMIGO_PENITENTE_SEM_ROSTO,"assets/sprites/enemy_penitente_sem_rosto.png",1,{0,0}},
+    {SPRITE_INIMIGO_LADRAO_MORTALHA,"assets/sprites/enemy_ladrao_mortalha.png",1,{0,0}},
+    {SPRITE_INIMIGO_ACOLITO_VITRAL,"assets/sprites/enemy_acolito_vitral.png",1,{0,0}},
+    {SPRITE_INIMIGO_GOBLIN_LANCEIRO,"assets/sprites/enemy_goblin_lanceiro.png",1,{0,0}},
+    {SPRITE_INIMIGO_AUTOMATO_PEDRA,"assets/sprites/enemy_automato_pedra.png",1,{0,0}},
+    {SPRITE_INIMIGO_MERCENARIO_FERRUGEM,"assets/sprites/enemy_mercenario_ferrugem.png",1,{0,0}},
+    {SPRITE_INIMIGO_CARCEREIRO_CORRENTES,"assets/sprites/enemy_carcereiro_correntes.png",1,{0,0}},
+    {SPRITE_CHEFE_CULTISTA_RAIZES,"assets/sprites/boss_cultista_raizes.png",1,{0,0}},
+    {SPRITE_CHEFE_AFOGADO_CORAL,"assets/sprites/boss_afogado_coral.png",1,{0,0}},
+    {SPRITE_CHEFE_MAGO_CINZAS,"assets/sprites/boss_mago_cinzas.png",1,{0,0}},
+    {SPRITE_CHEFE_ONI_BRASAS,"assets/sprites/boss_oni_brasas.png",1,{0,0}},
+    {SPRITE_CHEFE_GOBLIN_CRIPTA,"assets/sprites/boss_goblin_cripta.png",1,{0,0}},
+    {SPRITE_CHEFE_INQUISIDOR_SOL,"assets/sprites/boss_inquisidor_sol_partido.png",1,{0,0}},
     {SPRITE_ALMA, "assets/sprites/soul.png", 1, {0, 0}},
     {SPRITE_TITULO_TORRE, "assets/sprites/title_tower.png", 1, {0, 0}},
     {SPRITE_TIPO_FOGO, "assets/sprites/type_chama.png", 1, {0, 0}},
@@ -40,6 +60,22 @@ static const EspecificacaoSprite ESPECIFICACOES[] = {
     ,{SPRITE_ITEM_SOLAR_BROCHE, "assets/sprites/item_broche_solar.png", 1, {0, 0}}
     ,{SPRITE_ITEM_ESTALINHO, "assets/sprites/item_fogos.png", 1, {0, 0}}
     ,{SPRITE_ITEM_ESPINHO_BOMBA, "assets/sprites/item_bomba_espinho.png", 1, {0, 0}}
+    ,{SPRITE_ITEM_ARMADURA_CASCA, "assets/sprites/item_armadura_casca.png", 1, {0, 0}}
+    ,{SPRITE_ITEM_ESCUDO_MARE, "assets/sprites/item_escudo_mare.png", 1, {0, 0}}
+    ,{SPRITE_ITEM_ESPADA_NATUREZA, "assets/sprites/item_espada_natureza.png", 1, {0, 0}}
+    ,{SPRITE_ITEM_ESPADA_LUZ, "assets/sprites/item_espada_luz.png", 1, {0, 0}}
+    ,{SPRITE_ITEM_ESPADA_FOGO, "assets/sprites/item_espada_fogo.png", 1, {0, 0}}
+    ,{SPRITE_ITEM_CAJADO_GELO, "assets/sprites/item_cajado_gelo.png", 1, {0, 0}}
+    ,{SPRITE_ITEM_CALCA_FERRUGEM, "assets/sprites/item_calca_ferrugem.png", 1, {0, 0}}
+    ,{SPRITE_ITEM_BOTAS_CINZA, "assets/sprites/item_botas_cinza.png", 1, {0, 0}}
+    ,{SPRITE_ITEM_AMULETO_ESPELHO, "assets/sprites/item_amuleto_espelho.png", 1, {0, 0}}
+    ,{SPRITE_ITEM_AMULETO_DENTE, "assets/sprites/item_amuleto_dente.png", 1, {0, 0}}
+    ,{SPRITE_ITEM_AMULETO_OLHO, "assets/sprites/item_amuleto_olho.png", 1, {0, 0}}
+    ,{SPRITE_ITEM_ARMADURA_ESPINHEIRO, "assets/sprites/item_armadura_espinheiro.png", 1, {0, 0}}
+    ,{SPRITE_ITEM_BOTAS_CARNICEIRO, "assets/sprites/item_botas_carniceiro.png", 1, {0, 0}}
+    ,{SPRITE_ITEM_ESCUDO_INQUISIDOR, "assets/sprites/item_escudo_inquisidor.png", 1, {0, 0}}
+    ,{SPRITE_ITEM_CALCA_AFOGADO, "assets/sprites/item_calca_afogado.png", 1, {0, 0}}
+    ,{SPRITE_ITEM_AMULETO_AMPULHETA, "assets/sprites/item_amuleto_ampulheta.png", 1, {0, 0}}
     ,{SPRITE_FUNDO_PASTEL, "assets/sprites/bg_pastel.png", 1, {0, 0}}
     ,{SPRITE_FUNDO_CHEFE, "assets/sprites/bg_boss.png", 1, {0, 0}}
     ,{SPRITE_ATAQUE_BRASA, "assets/sprites/attack_brasa.png", 1, {0, 0}}
@@ -98,6 +134,59 @@ static const EspecificacaoSprite ESPECIFICACOES[] = {
     ,{SPRITE_PROJETIL_PADRAO_CATA_VENTO, "assets/sprites/bullet_pinwheel.png", 1, {0, 0}}
     ,{SPRITE_PROJETIL_PADRAO_GRAVIDADE_INVERSAO, "assets/sprites/bullet_gravity_flip.png", 1, {0, 0}}
     ,{SPRITE_PROJETIL_PADRAO_SOMBRA_FLORACAO, "assets/sprites/bullet_shadow_bloom.png", 1, {0, 0}}
+    ,{SPRITE_DEFESA_MARIPOSA_ASAS, "assets/sprites/defense_mariposa_asas.png", 1, {0, 0}}
+    ,{SPRITE_DEFESA_SAPO_SALTOS, "assets/sprites/defense_sapo_saltos.png", 1, {0, 0}}
+    ,{SPRITE_DEFESA_PASSARO_MERGULHO, "assets/sprites/defense_passaro_mergulho.png", 1, {0, 0}}
+    ,{SPRITE_DEFESA_LIMO_CRESCIMENTO, "assets/sprites/defense_limo_crescimento.png", 1, {0, 0}}
+    ,{SPRITE_DEFESA_FAGULHA_LUZ, "assets/sprites/defense_fagulha_luz.png", 1, {0, 0}}
+    ,{SPRITE_DEFESA_LEBRE_PULOS, "assets/sprites/defense_lebre_pulos.png", 1, {0, 0}}
+    ,{SPRITE_DEFESA_GATO_EMBOSCADA, "assets/sprites/defense_gato_emboscada.png", 1, {0, 0}}
+    ,{SPRITE_DEFESA_CAVALEIRO_DUELO, "assets/sprites/defense_cavaleiro_duelo.png", 1, {0, 0}}
+    ,{SPRITE_DEFESA_SINO_ECO, "assets/sprites/defense_sino_eco.png", 1, {0, 0}}
+    ,{SPRITE_DEFESA_TORRE_ESMAGAMENTO, "assets/sprites/defense_torre_esmagamento.png", 1, {0, 0}}
+    ,{SPRITE_DEFESA_MARIPOSA_TRAMA, "assets/sprites/defense_mariposa_trama.png", 1, {0, 0}}
+    ,{SPRITE_DEFESA_MARIPOSA_CORRENTE, "assets/sprites/defense_mariposa_corrente.png", 1, {0, 0}}
+    ,{SPRITE_DEFESA_SAPO_BARREIRAS, "assets/sprites/defense_sapo_barreiras.png", 1, {0, 0}}
+    ,{SPRITE_DEFESA_SAPO_VITORIAS_REGIAS, "assets/sprites/defense_sapo_vitorias_regias.png", 1, {0, 0}}
+    ,{SPRITE_DEFESA_PASSARO_FOGO_CRUZADO, "assets/sprites/defense_passaro_fogo_cruzado.png", 1, {0, 0}}
+    ,{SPRITE_DEFESA_PASSARO_TUNEL, "assets/sprites/defense_passaro_tunel.png", 1, {0, 0}}
+    ,{SPRITE_DEFESA_CHUVA_FOGO, "assets/sprites/defense_chuva_fogo.png", 1, {0, 0}}
+    ,{SPRITE_DEFESA_LIMO_MARE, "assets/sprites/defense_limo_mare.png", 1, {0, 0}}
+    ,{SPRITE_DEFESA_LIMO_BALSAS, "assets/sprites/defense_limo_balsas.png", 1, {0, 0}}
+    ,{SPRITE_DEFESA_FAGULHA_CANHOES, "assets/sprites/defense_fagulha_canhoes.png", 1, {0, 0}}
+    ,{SPRITE_DEFESA_FAGULHA_ORBITA, "assets/sprites/defense_fagulha_orbita.png", 1, {0, 0}}
+    ,{SPRITE_DEFESA_LEBRE_BARREIRAS, "assets/sprites/defense_lebre_barreiras.png", 1, {0, 0}}
+    ,{SPRITE_DEFESA_LEBRE_PARKOUR, "assets/sprites/defense_lebre_parkour.png", 1, {0, 0}}
+    ,{SPRITE_DEFESA_GATO_IMPACTO, "assets/sprites/defense_gato_impacto.png", 1, {0, 0}}
+    ,{SPRITE_DEFESA_GATO_PERSEGUICAO, "assets/sprites/defense_gato_perseguicao.png", 1, {0, 0}}
+    ,{SPRITE_DEFESA_CAVALEIRO_LANCAS, "assets/sprites/defense_cavaleiro_lancas.png", 1, {0, 0}}
+    ,{SPRITE_DEFESA_CAVALEIRO_DESAFIO, "assets/sprites/defense_cavaleiro_desafio.png", 1, {0, 0}}
+    ,{SPRITE_DEFESA_SINO_CANHOES, "assets/sprites/defense_sino_canhoes.png", 1, {0, 0}}
+    ,{SPRITE_DEFESA_SINO_IMPACTO, "assets/sprites/defense_sino_impacto.png", 1, {0, 0}}
+    ,{SPRITE_DEFESA_SINO_DESAFIO, "assets/sprites/defense_sino_desafio.png", 1, {0, 0}}
+    ,{SPRITE_DEFESA_SINO_GAS_SOMBRA, "assets/sprites/defense_sino_gas_sombra.png", 1, {0, 0}}
+    ,{SPRITE_DEFESA_TORRE_PARKOUR, "assets/sprites/defense_torre_parkour.png", 1, {0, 0}}
+    ,{SPRITE_DEFESA_TORRE_CANHOES, "assets/sprites/defense_torre_canhoes.png", 1, {0, 0}}
+    ,{SPRITE_DEFESA_TORRE_DESAFIO, "assets/sprites/defense_torre_desafio.png", 1, {0, 0}}
+    ,{SPRITE_DEFESA_SARCAS_PORTOES, "assets/sprites/defense_sarcas_portoes.png", 1, {0, 0}}
+    ,{SPRITE_DEFESA_HERBALISTA_FRASCOS, "assets/sprites/defense_herbalista_frascos.png", 1, {0, 0}}
+    ,{SPRITE_DEFESA_LEGIONARIO_ESCUDOS, "assets/sprites/defense_legionario_escudos.png", 1, {0, 0}}
+    ,{SPRITE_DEFESA_BRUXA_CALDEIRAO, "assets/sprites/defense_bruxa_caldeirao.png", 1, {0, 0}}
+    ,{SPRITE_DEFESA_REVENANTE_PRISAO, "assets/sprites/defense_revenante_prisao.png", 1, {0, 0}}
+    ,{SPRITE_DEFESA_ESQUELETO_ESTOUPIDO, "assets/sprites/defense_esqueleto_estoupido.png", 1, {0, 0}}
+    ,{SPRITE_DEFESA_ACENDEDOR_MARTELO, "assets/sprites/defense_acendedor_martelo.png", 1, {0, 0}}
+    ,{SPRITE_DEFESA_PENITENTE_INCENSARIO, "assets/sprites/defense_penitente_incensario.png", 1, {0, 0}}
+    ,{SPRITE_DEFESA_LADRAO_REFLEXO, "assets/sprites/defense_ladrao_reflexo.png", 1, {0, 0}}
+    ,{SPRITE_DEFESA_ACOLITO_VITRAL, "assets/sprites/defense_acolito_vitral.png", 1, {0, 0}}
+    ,{SPRITE_DEFESA_GOBLIN_ESTOCADAS, "assets/sprites/defense_goblin_estocadas.png", 1, {0, 0}}
+    ,{SPRITE_DEFESA_AUTOMATO_ENGRENAGENS, "assets/sprites/defense_automato_engrenagens.png", 1, {0, 0}}
+    ,{SPRITE_DEFESA_MERCENARIO_RICOCHETE, "assets/sprites/defense_mercenario_ricochete.png", 1, {0, 0}}
+    ,{SPRITE_DEFESA_CARCEREIRO_GRADE, "assets/sprites/defense_carcereiro_grade.png", 1, {0, 0}}
+    ,{SPRITE_DEFESA_CULTISTA_LABIRINTO, "assets/sprites/defense_cultista_labirinto.png", 1, {0, 0}}
+    ,{SPRITE_DEFESA_AFOGADO_MARE_CORAL, "assets/sprites/defense_afogado_mare_coral.png", 1, {0, 0}}
+    ,{SPRITE_DEFESA_MAGO_ESPIRAL_CINZAS, "assets/sprites/defense_mago_espiral_cinzas.png", 1, {0, 0}}
+    ,{SPRITE_DEFESA_GOBLIN_EXERCITO, "assets/sprites/defense_goblin_exercito.png", 1, {0, 0}}
+    ,{SPRITE_DEFESA_INQUISIDOR_VEREDITO, "assets/sprites/defense_inquisidor_veredito.png", 1, {0, 0}}
     ,{SPRITE_ARENA_BORDA, "assets/sprites/arena_border.png", 1, {0, 0}}
     ,{SPRITE_ARENA_FUNDO, "assets/sprites/arena_bg_pastel.png", 1, {0, 0}}
     ,{SPRITE_AVISO_PERIGO, "assets/sprites/warn_danger.png", 1, {0, 0}}
@@ -179,6 +268,13 @@ IdSprite SpriteIdInimigo(IdInimigo inimigo, bool segunda_fase)
 {
     if (inimigo == INIMIGO_CHEFE_SINEIRO) return segunda_fase ? SPRITE_CHEFE_SINEIRO_P2 : SPRITE_CHEFE_SINEIRO_P1;
     if (inimigo == INIMIGO_CHEFE_ULTIMA_TORRE) return segunda_fase ? SPRITE_CHEFE_ULTIMA_TORRE_P2 : SPRITE_CHEFE_ULTIMA_TORRE_P1;
+    if (inimigo >= INIMIGO_SOLDADO_SARCAS && inimigo <= INIMIGO_CARCEREIRO_CORRENTES)
+        return (IdSprite)(SPRITE_INIMIGO_SOLDADO_SARCAS + inimigo - INIMIGO_SOLDADO_SARCAS);
+    if (inimigo == INIMIGO_CHEFE_CULTISTA_RAIZES) return SPRITE_CHEFE_CULTISTA_RAIZES;
+    if (inimigo == INIMIGO_CHEFE_AFOGADO_CORAL) return SPRITE_CHEFE_AFOGADO_CORAL;
+    if (inimigo == INIMIGO_CHEFE_MAGO_CINZAS) return segunda_fase ? SPRITE_CHEFE_ONI_BRASAS : SPRITE_CHEFE_MAGO_CINZAS;
+    if (inimigo == INIMIGO_CHEFE_GOBLIN_CRIPTA) return SPRITE_CHEFE_GOBLIN_CRIPTA;
+    if (inimigo == INIMIGO_CHEFE_INQUISIDOR_SOL) return SPRITE_CHEFE_INQUISIDOR_SOL;
     return (IdSprite)(SPRITE_INIMIGO_POEIRA_MARIPOSA + inimigo);
 }
 IdSprite SpriteIdTipo(Tipo tipo) { return (IdSprite)(SPRITE_TIPO_FOGO + tipo); }
@@ -189,8 +285,11 @@ IdSprite SpriteIdItem(IdItem item)
 }
 IdSprite SpriteIdPadraoProjetil(IdPadraoProjetil padrao)
 {
-    return padrao >= PADRAO_CHUVA && padrao < PADRAO_TOTAL ?
-        (IdSprite)(SPRITE_PROJETIL_PADRAO_CHUVA + padrao) : SPRITE_PROJETIL_PADRAO_CHUVA;
+    if (padrao >= PADRAO_CHUVA && padrao <= PADRAO_SOMBRA_FLORACAO)
+        return (IdSprite)(SPRITE_PROJETIL_PADRAO_CHUVA + padrao);
+    if (padrao >= PADRAO_MARIPOSA_ASAS && padrao < PADRAO_TOTAL)
+        return (IdSprite)(SPRITE_DEFESA_MARIPOSA_ASAS + padrao - PADRAO_MARIPOSA_ASAS);
+    return SPRITE_TOTAL;
 }
 IdSprite SpriteIdAtaque(IdAtaque ataque) { return (IdSprite)(SPRITE_ATAQUE_BRASA + ataque); }
 IdSprite SpriteIdEfeitoAtaque(IdAtaque ataque) { return (IdSprite)(SPRITE_EFEITO_ATAQUE_BRASA + ataque); }
@@ -296,7 +395,7 @@ void SpritesExportarModelos(void)
         "wide_wave", "tight_spiral", "petal_orbit", "bounce_orbs", "moving_wall",
         "split_shots", "cross_lasers", "pause_darts", "ring_burst", "diagonal_rain",
         "chase_wave", "pinwheel", "gravity_flip", "shadow_bloom"};
-    for (int indice = 0; indice < PADRAO_TOTAL; indice++) {
+    for (int indice = PADRAO_CHUVA; indice <= PADRAO_SOMBRA_FLORACAO; indice++) {
         char caminho[128];
         snprintf(caminho, sizeof(caminho), "assets/sprites_template/bullet_%s.png", pattern_names[indice]);
         ExportarVazio(caminho, 16, 16, BLANK);

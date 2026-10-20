@@ -20,6 +20,7 @@ typedef enum {
     RECOMPENSA,
     DESCANSO,
     LOJA,
+    INVENTARIO,
     PAUSA,
     FIM_JOGO,
     VITORIA,
@@ -32,6 +33,7 @@ typedef enum {
 typedef struct {
     TelaJogo tela;
     TelaJogo tela_antes_pausa;
+    TelaJogo tela_antes_inventario;
     int selecao_titulo;
     float tempo_decorrido;
     bool saida_solicitada;
@@ -42,11 +44,10 @@ typedef struct {
     Qte qte;
     ResultadoBatalha ultimo_resultado_batalha;
     Vector2 posicao_mouse;
+    Vector2 ultima_posicao_mouse;
     bool mouse_pressionado;
     Torre torre;
     int selecao_recompensa;
-    int selecao_substituicao;
-    bool substituindo_ataque;
     int selecao_descanso;
     int selecao_loja;
     int selecao_final;
@@ -59,6 +60,9 @@ typedef struct {
     int selecao_opcao;
     bool excluir_sim;
     int selecao_pausa;
+    int selecao_inventario;
+    int selecao_equipamento;
+    bool inventario_foco_equipamento;
     bool pausa_confirmar_saida;
     int dica_tutorial;
     float temporizador_tutorial;

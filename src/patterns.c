@@ -1,5 +1,6 @@
 #include "patterns.h"
 #include "motion_patterns.h"
+#include "sprites.h"
 #include "raymath.h"
 #include <math.h>
 
@@ -194,7 +195,25 @@ void PadraoAtualizar(EstadoDefesa *d, float tempo_delta)
     d->temporizador_especial += tempo_delta;
 }
 
-static void DesenharPerigosCaracteristicos(const EstadoDefesa *d)
+static void DesenharSpriteDoPerigo(const EstadoDefesa *d, const SistemaSprites *sprites,
+                                   const Perigo *perigo, bool aviso)
+{
+    if (aviso || sprites == NULL) return;
+    IdSprite id = SpriteIdPadraoProjetil(d->id_padrao);
+    if (sprite_obter(sprites, id) == NULL) id = SpriteIdProjetil(d->padrao.tipo);
+    if (sprite_obter(sprites, id) == NULL) return;
+    Vector2 centro = perigo->forma == PERIGO_RETANGULO ?
+        (Vector2){perigo->retangulo.x + perigo->retangulo.width * .5f,
+                  perigo->retangulo.y + perigo->retangulo.height * .5f} : perigo->centro;
+    float tamanho = perigo->forma == PERIGO_RETANGULO ?
+        fminf(perigo->retangulo.width, perigo->retangulo.height) : perigo->raio * 2.0f;
+    float escala = Clamp(tamanho / 16.0f, .75f, 2.5f);
+    SpriteDesenharCentralizadoEscalado(sprites, id, centro, WHITE,
+                                       d->temporizador_especial, escala,
+                                       sprites->depurar_limites);
+}
+
+static void DesenharPerigosCaracteristicos(const EstadoDefesa *d, const SistemaSprites *sprites)
 {
     for (int i = 0; i < MAXIMO_PERIGOS; i++) {
         const Perigo *h = &d->perigos.perigos[i];
@@ -277,14 +296,15 @@ static void DesenharPerigosCaracteristicos(const EstadoDefesa *d)
                             Fade(cor, aviso ? .25f : .65f));
             }
         }
+        DesenharSpriteDoPerigo(d, sprites, h, aviso);
     }
 }
 
-void PadraoDesenhar(const EstadoDefesa *d)
+void PadraoDesenhar(const EstadoDefesa *d, const SistemaSprites *sprites)
 {
-    if (PadraoMovimentoEh(d->id_padrao)) { PadraoMovimentoDesenhar(d); return; }
+    if (PadraoMovimentoEh(d->id_padrao)) { PadraoMovimentoDesenhar(d, sprites); return; }
     if (d->total_criacoes == 0) return;
-    DesenharPerigosCaracteristicos(d);
+    DesenharPerigosCaracteristicos(d, sprites);
     const float t = d->temporizador_especial;
     const float w = d->aviso_ataque;
     const Vector2 p = d->alvo_ataque;

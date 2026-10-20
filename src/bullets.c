@@ -56,6 +56,25 @@ static const PadraoProjetil PADROES[PADRAO_TOTAL] = {
     CARACTERISTICO(PADRAO_TORRE_DESAFIO, TIPO_NEUTRO, 5),
     CARACTERISTICO(PADRAO_SINO_GAS_SOMBRA, TIPO_SOMBRA, 5),
     CARACTERISTICO(PADRAO_CHUVA_FOGO, TIPO_FOGO, 4),
+    CARACTERISTICO(PADRAO_SARCAS_PORTOES, TIPO_PLANTA, 4),
+    CARACTERISTICO(PADRAO_HERBALISTA_FRASCOS, TIPO_PLANTA, 4),
+    CARACTERISTICO(PADRAO_LEGIONARIO_ESCUDOS, TIPO_AGUA, 4),
+    CARACTERISTICO(PADRAO_BRUXA_CALDEIRAO, TIPO_AGUA, 4),
+    CARACTERISTICO(PADRAO_REVENANTE_PRISAO, TIPO_AGUA, 5),
+    CARACTERISTICO(PADRAO_ESQUELETO_ESTOUPIDO, TIPO_FOGO, 5),
+    CARACTERISTICO(PADRAO_ACENDEDOR_MARTELO, TIPO_FOGO, 5),
+    CARACTERISTICO(PADRAO_PENITENTE_INCENSARIO, TIPO_SOMBRA, 5),
+    CARACTERISTICO(PADRAO_LADRAO_REFLEXO, TIPO_SOMBRA, 5),
+    CARACTERISTICO(PADRAO_ACOLITO_VITRAL, TIPO_LUZ, 5),
+    CARACTERISTICO(PADRAO_GOBLIN_ESTOCADAS, TIPO_NEUTRO, 5),
+    CARACTERISTICO(PADRAO_AUTOMATO_ENGRENAGENS, TIPO_NEUTRO, 5),
+    CARACTERISTICO(PADRAO_MERCENARIO_RICOCHETE, TIPO_NEUTRO, 5),
+    CARACTERISTICO(PADRAO_CARCEREIRO_GRADE, TIPO_NEUTRO, 5),
+    CARACTERISTICO(PADRAO_CULTISTA_LABIRINTO, TIPO_PLANTA, 6),
+    CARACTERISTICO(PADRAO_AFOGADO_MARE_CORAL, TIPO_AGUA, 6),
+    CARACTERISTICO(PADRAO_MAGO_ESPIRAL_CINZAS, TIPO_FOGO, 6),
+    CARACTERISTICO(PADRAO_GOBLIN_EXERCITO, TIPO_SOMBRA, 6),
+    CARACTERISTICO(PADRAO_INQUISIDOR_VEREDITO, TIPO_LUZ, 6),
 #undef CARACTERISTICO
     [PADRAO_CHUVA] = {
         6.0f, 300.0f, 154.0f, 0.34f, 2, 106.0f, 6.0f, 0.0f,
@@ -350,10 +369,11 @@ void DefesaRedimensionarCaixa(EstadoDefesa *defesa, float width, float height)
     defesa->caixa_alvo.x = (640.0f - width) * 0.5f;
 }
 
-static void AtualizarAlma(EstadoDefesa *defesa, EntradaDefesa entrada, float tempo_delta)
+static void AtualizarAlma(EstadoDefesa *defesa, AtributosJogador *jogador,
+                          EntradaDefesa entrada, float tempo_delta)
 {
     Vector2 movimento = entrada.movimento;
-    const float velocidade = VELOCIDADE_MOVIMENTO_DEFESA;
+    const float velocidade = JogadorVelocidadeDefesa(jogador);
 
     if (movimento.x != 0.0f && movimento.y != 0.0f) movimento = Vector2Scale(movimento, 0.7071f);
 
@@ -397,7 +417,7 @@ static void AtualizarPadraoEspecial(EstadoDefesa *defesa, AtributosJogador *joga
                   1.0f, defesa->depurar_invencivel || defesa->temporizador_invencibilidade > 0.0f);
     if (jogador->hp < vida_antes) {
         defesa->ultimo_dano = vida_antes - jogador->hp;
-        defesa->multiplicador_ultimo_dano = efetividade_tipo(defesa->padrao.tipo, jogador->tipo_defesa);
+        defesa->multiplicador_ultimo_dano = JogadorEfetividadeDanoRecebido(jogador, defesa->padrao.tipo);
         defesa->temporizador_popup_dano = 0.75f;
         defesa->temporizador_invencibilidade = 1.0f;
     }
@@ -476,7 +496,7 @@ static void AtualizarProjeteis(EstadoDefesa *defesa, AtributosJogador *jogador, 
         if (!defesa->depurar_invencivel && defesa->temporizador_invencibilidade <= 0.0f &&
             CheckCollisionCircles(defesa->posicao_alma, defesa->raio_alma,
                                   projetil->posicao, projetil->raio)) {
-            const float multiplicador = efetividade_tipo(projetil->tipo, jogador->tipo_defesa);
+            const float multiplicador = JogadorEfetividadeDanoRecebido(jogador, projetil->tipo);
             int dano = (int)ceilf((float)projetil->dano * multiplicador *
                                     jogador->multiplicador_dano_recebido);
 
@@ -519,11 +539,11 @@ static ResultadoDefesa PassoDefesa(EstadoDefesa *defesa, AtributosJogador *jogad
             defesa->posicao_alma = Vector2Add(
                 defesa->posicao_alma,
                 Vector2Scale(direcao_dash, DISTANCIA_DASH_DEFESA));
-            defesa->temporizador_recarga_dash = RECARGA_DASH_DEFESA;
+            defesa->temporizador_recarga_dash = JogadorRecargaDash(jogador);
         }
         if (PadraoMovimentoEh(defesa->id_padrao)) PadraoMovimentoAtualizar(defesa, jogador, entrada, tempo_delta);
         else {
-            AtualizarAlma(defesa, entrada, tempo_delta);
+            AtualizarAlma(defesa, jogador, entrada, tempo_delta);
             if (PadraoEhCaracteristico(defesa->id_padrao)) PadraoAtualizar(defesa, tempo_delta);
         }
         if (PadraoEhCaracteristico(defesa->id_padrao) || defesa->id_padrao == PADRAO_GRAVIDADE_INVERSAO || defesa->id_padrao == PADRAO_SOMBRA_FLORACAO) {
@@ -603,7 +623,7 @@ void DefesaDesenhar(const EstadoDefesa *defesa, bool desenhar_efeitos, const Sis
     }
 
     if (defesa->fase == DEFESA_ATIVA) {
-        if (PadraoEhCaracteristico(defesa->id_padrao)) PadraoDesenhar(defesa);
+        if (PadraoEhCaracteristico(defesa->id_padrao)) PadraoDesenhar(defesa, sprites);
         else PerigosDesenhar(&defesa->perigos, !desenhar_efeitos, sprites, sprites->depurar_limites);
         if (defesa->temporizador_padrao < 0.40f && defesa->padrao.raio >= 6.0f) {
             const Vector2 aviso = {defesa->caixa.x + defesa->caixa.width * 0.5f,

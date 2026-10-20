@@ -4,11 +4,11 @@
 #include "enemy.h"
 #include "items.h"
 
-#define TOTAL_ANDARES_TORRE 10
+#define TOTAL_ANDARES_TORRE 30
 #define TORRE_RECOMPENSA_OPCOES 3
 
 typedef enum {
-    RECOMPENSA_ATAQUE,
+    RECOMPENSA_EQUIPAMENTO,
     RECOMPENSA_ITEM,
     RECOMPENSA_VIDA,
     RECOMPENSA_DANO

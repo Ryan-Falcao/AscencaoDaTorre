@@ -12,7 +12,7 @@
 typedef enum {
     RELIQUIA_NENHUM,
     RELIQUIA_ITEM,
-    RELIQUIA_ATAQUE
+    RELIQUIA_ARMAMENTO
 } TipoEscolhaReliquia;
 
 typedef enum {

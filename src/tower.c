@@ -11,15 +11,23 @@ static unsigned int ProximoAleatorio(unsigned int *semente)
 
 bool TorreAndarDeChefe(int andar)
 {
-    return andar == 5 || andar == TOTAL_ANDARES_TORRE;
+    return andar > 0 && andar % 5 == 0;
 }
 
 void TorreInicializar(Torre *torre, unsigned int semente)
 {
-    static const IdInimigo common_enemies[] = {
-        INIMIGO_POEIRA_MARIPOSA, INIMIGO_BRILHO_SAPO, INIMIGO_BRASA_PASSARO, INIMIGO_MENTA_LIMO,
-        INIMIGO_LANTERNA_FAGULHA, INIMIGO_ESPINHO_LEBRE, INIMIGO_SOMBRA_GATO, INIMIGO_PETALA_CAVALEIRO
+    static const IdInimigo regioes[6][4] = {
+        {INIMIGO_SOLDADO_SARCAS,INIMIGO_HERBALISTA_PESTE,INIMIGO_MENTA_LIMO,INIMIGO_ESPINHO_LEBRE},
+        {INIMIGO_LEGIONARIO_AFOGADO,INIMIGO_BRUXA_LODO,INIMIGO_REVENANTE_GELO,INIMIGO_BRILHO_SAPO},
+        {INIMIGO_ESQUELETO_CARBONIZADO,INIMIGO_ACENDEDOR_FORJA,INIMIGO_BRASA_PASSARO,INIMIGO_BRASA_PASSARO},
+        {INIMIGO_PENITENTE_SEM_ROSTO,INIMIGO_LADRAO_MORTALHA,INIMIGO_POEIRA_MARIPOSA,INIMIGO_SOMBRA_GATO},
+        {INIMIGO_ACOLITO_VITRAL,INIMIGO_PETALA_CAVALEIRO,INIMIGO_LANTERNA_FAGULHA,INIMIGO_LANTERNA_FAGULHA},
+        {INIMIGO_GOBLIN_LANCEIRO,INIMIGO_AUTOMATO_PEDRA,INIMIGO_MERCENARIO_FERRUGEM,INIMIGO_CARCEREIRO_CORRENTES}
     };
+    static const IdInimigo chefes[6] = {INIMIGO_CHEFE_CULTISTA_RAIZES,INIMIGO_CHEFE_AFOGADO_CORAL,
+        INIMIGO_CHEFE_MAGO_CINZAS,INIMIGO_CHEFE_GOBLIN_CRIPTA,INIMIGO_CHEFE_INQUISIDOR_SOL,
+        INIMIGO_CHEFE_ULTIMA_TORRE};
+    static const unsigned int total_por_regiao[6] = {4,4,3,4,3,4};
     unsigned int aleatorio = semente == 0 ? 1u : semente;
 
     memset(torre, 0, sizeof(*torre));
@@ -28,13 +36,14 @@ void TorreInicializar(Torre *torre, unsigned int semente)
     for (int indice = 0; indice < TOTAL_ANDARES_TORRE; indice++) {
         IdInimigo inimigo;
 
-        if (indice + 1 == 5) inimigo = INIMIGO_CHEFE_SINEIRO;
-        else if (indice + 1 == TOTAL_ANDARES_TORRE) inimigo = INIMIGO_CHEFE_ULTIMA_TORRE;
+        const int regiao = indice / 5;
+        if ((indice + 1) % 5 == 0) inimigo = chefes[regiao];
         else {
-            const int disponivel = indice < 3 ? 4 : (indice < 7 ? 6 : 8);
-            inimigo = common_enemies[ProximoAleatorio(&aleatorio) % (unsigned int)disponivel];
+            unsigned int escolha = ProximoAleatorio(&aleatorio) % total_por_regiao[regiao];
+            inimigo = regioes[regiao][escolha];
             if (indice > 0 && inimigo == torre->inimigos[indice - 1]) {
-                inimigo = common_enemies[(ProximoAleatorio(&aleatorio) + 1u) % (unsigned int)disponivel];
+                escolha = (escolha + 1u) % total_por_regiao[regiao];
+                inimigo = regioes[regiao][escolha];
             }
         }
         torre->inimigos[indice] = inimigo;
@@ -63,19 +72,15 @@ void TorreEscalarInimigo(Inimigo *inimigo, int andar)
 void TorreSortearRecompensas(Torre *torre, const AtributosJogador *jogador)
 {
     unsigned int aleatorio = torre->semente;
-    int id_ataque = (int)(ProximoAleatorio(&aleatorio) % (unsigned int)JogadorTotalAtaquesRecompensa());
-    const int total_ataques = JogadorTotalAtaquesRecompensa();
+    static const uint32_t familias[] = {FAMILIA_DROP_PLANTA,FAMILIA_DROP_AGUA,FAMILIA_DROP_FOGO,
+        FAMILIA_DROP_SOMBRA,FAMILIA_DROP_LUZ,FAMILIA_DROP_NEUTRO};
+    const uint32_t familia = familias[(torre->andar - 1) / 5];
+    const IdItem equipamento = ItemSortearDaFamilia(familia, &aleatorio, true);
+    const IdItem consumivel = ItemSortearDaFamilia(familia, &aleatorio, false);
+    (void)jogador;
 
-    /* Busca circularmente para nunca oferecer um duplicado na ultima posicao da tabela. */
-    for (int attempt = 0; attempt < total_ataques; attempt++) {
-        const int candidate = (id_ataque + attempt) % total_ataques;
-        if (!JogadorPossuiAtaque(jogador, JogadorAtaqueRecompensa(candidate))) {
-            id_ataque = candidate;
-            break;
-        }
-    }
-    torre->recompensas[0] = (RecompensaTorre){RECOMPENSA_ATAQUE, id_ataque, 0};
-    torre->recompensas[1] = (RecompensaTorre){RECOMPENSA_ITEM, (int)(ProximoAleatorio(&aleatorio) % ITEM_TOTAL), 1};
+    torre->recompensas[0] = (RecompensaTorre){RECOMPENSA_EQUIPAMENTO, equipamento, 1};
+    torre->recompensas[1] = (RecompensaTorre){RECOMPENSA_ITEM, consumivel, 1};
     torre->recompensas[2] = (RecompensaTorre){ProximoAleatorio(&aleatorio) % 2u ? RECOMPENSA_VIDA : RECOMPENSA_DANO, 0, 4};
     torre->semente = aleatorio;
 }
@@ -92,5 +97,5 @@ void TorreSortearLoja(Torre *torre)
     torre->semente = aleatorio;
 }
 
-bool TorreDeveDescansar(int andar_concluido) { return andar_concluido == 3 || andar_concluido == 9; }
-bool TorreDeveTerLoja(int andar_concluido) { return andar_concluido == 6; }
+bool TorreDeveDescansar(int andar_concluido) { return andar_concluido > 0 && andar_concluido % 5 == 4; }
+bool TorreDeveTerLoja(int andar_concluido) { return andar_concluido > 5 && andar_concluido % 5 == 2; }

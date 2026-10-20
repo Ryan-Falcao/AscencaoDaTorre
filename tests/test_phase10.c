@@ -12,25 +12,29 @@ int main(void)
     int burn_damage = 0;
 
     JogadorInicializar(&jogador);
-    ataque = JogadorAtaqueRecompensa(ATAQUE_RAIZ_RAPIDA);
+    ataque = JogadorObterAtaque(ATAQUE_CHAMA_ALTA);
+    jogador.mana = jogador.mana_maxima;
     assert(JogadorAtaqueDisponivel(&jogador, &ataque, motivo, (int)sizeof(motivo)));
     JogadorUsarAtaque(&jogador, &ataque);
     assert(!JogadorAtaqueDisponivel(&jogador, &ataque, motivo, (int)sizeof(motivo)));
     JogadorAvancarRecargasAtaques(&jogador);
+    jogador.mana = jogador.mana_maxima;
     assert(JogadorAtaqueDisponivel(&jogador, &ataque, motivo, (int)sizeof(motivo)));
 
     /* Todo ataque continua reutilizavel depois de centenas de ativacoes. Apenas
        sua recarga pode impedir temporariamente outra ativacao. */
-    for (int id = 0; id < JogadorTotalAtaquesRecompensa(); id++) {
+    for (int id = 0; id < JOGADOR_ATAQUE_TOTAL; id++) {
         JogadorInicializar(&jogador);
-        ataque = JogadorAtaqueRecompensa(id);
+        ataque = JogadorObterAtaque((IdAtaque)id);
         for (int use = 0; use < 200; use++) {
+            jogador.mana = jogador.mana_maxima;
             assert(JogadorAtaqueDisponivel(&jogador, &ataque, motivo, (int)sizeof(motivo)));
             JogadorUsarAtaque(&jogador, &ataque);
             if (ataque.turnos_recarga > 0)
                 assert(!JogadorAtaqueDisponivel(&jogador, &ataque, motivo, (int)sizeof(motivo)));
             for (int turn = 0; turn < ataque.turnos_recarga; turn++) JogadorAvancarRecargasAtaques(&jogador);
         }
+        jogador.mana = jogador.mana_maxima;
         assert(JogadorAtaqueDisponivel(&jogador, &ataque, motivo, (int)sizeof(motivo)));
     }
 

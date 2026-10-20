@@ -65,7 +65,7 @@ bool CirculoPerigoAtingeCirculo(Vector2 primeiro, float raio_primeiro, Vector2 s
 
 static void AplicarDanoPerigo(Perigo *perigo, AtributosJogador *jogador, float multiplicador_dano)
 {
-    int dano = (int)ceilf((float)perigo->dano * efetividade_tipo(perigo->tipo, jogador->tipo_defesa) *
+    int dano = (int)ceilf((float)perigo->dano * JogadorEfetividadeDanoRecebido(jogador, perigo->tipo) *
                             jogador->multiplicador_dano_recebido * multiplicador_dano);
     if (dano < 1) dano = 1;
     jogador->hp -= dano;

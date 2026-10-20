@@ -23,6 +23,55 @@ static AcaoInimigo CriarAcao(const char *nome, const char *resposta, EfeitoAcaoI
                          false, TIPO_NEUTRO, 1.0f, 50, 1.0f, 1.0f};
 }
 
+typedef struct {
+    const char *nome, *descricao;
+    Tipo tipo;
+    int vida, agressividade;
+    bool chefe;
+    IdPadraoProjetil padroes[5];
+    int total_padroes;
+} ModeloInimigoNovo;
+
+static Inimigo CriarInimigoNovo(IdInimigo id)
+{
+    static const ModeloInimigoNovo modelos[] = {
+        {"Soldado das Sarcas","Um guerreiro tomado por madeira funeraria.",TIPO_PLANTA,52,55,false,{PADRAO_SARCAS_PORTOES,PADRAO_LEBRE_BARREIRAS,PADRAO_CAVALEIRO_DUELO},3},
+        {"Herbalista da Peste","Mistura cura e veneno no mesmo almofariz.",TIPO_PLANTA,48,48,false,{PADRAO_HERBALISTA_FRASCOS,PADRAO_LIMO_MARE,PADRAO_LIMO_CRESCIMENTO},3},
+        {"Legionario Afogado","Ainda marcha sob o peso do oceano.",TIPO_AGUA,58,58,false,{PADRAO_LEGIONARIO_ESCUDOS,PADRAO_PASSARO_FOGO_CRUZADO,PADRAO_SAPO_SALTOS},3},
+        {"Bruxa do Lodo","Molda o pantano como uma armadilha viva.",TIPO_AGUA,50,52,false,{PADRAO_BRUXA_CALDEIRAO,PADRAO_MARIPOSA_CORRENTE,PADRAO_LIMO_CRESCIMENTO},3},
+        {"Revenante de Gelo","Cada passo deixa uma prisao congelada.",TIPO_AGUA,62,62,false,{PADRAO_REVENANTE_PRISAO,PADRAO_CAVALEIRO_DESAFIO,PADRAO_TORRE_ESMAGAMENTO},3},
+        {"Esqueleto Carbonizado","Seus ossos estalam antes de explodir.",TIPO_FOGO,59,67,false,{PADRAO_ESQUELETO_ESTOUPIDO,PADRAO_PASSARO_TUNEL,PADRAO_PASSARO_MERGULHO},3},
+        {"Acendedor da Forja","Golpeia o campo como metal em uma bigorna.",TIPO_FOGO,64,64,false,{PADRAO_ACENDEDOR_MARTELO,PADRAO_TORRE_DESAFIO,PADRAO_FAGULHA_LUZ},3},
+        {"Penitente sem Rosto","Reza para uma sombra que responde.",TIPO_SOMBRA,66,60,false,{PADRAO_PENITENTE_INCENSARIO,PADRAO_MARIPOSA_TRAMA,PADRAO_SINO_ECO},3},
+        {"Ladrao da Mortalha","Ataca apenas quando sua rota parece segura.",TIPO_SOMBRA,57,72,false,{PADRAO_LADRAO_REFLEXO,PADRAO_GATO_PERSEGUICAO,PADRAO_GATO_EMBOSCADA},3},
+        {"Acolito do Vitral","Divide a luz em laminas coloridas.",TIPO_LUZ,68,63,false,{PADRAO_ACOLITO_VITRAL,PADRAO_FAGULHA_ORBITA,PADRAO_FAGULHA_LUZ},3},
+        {"Goblin Lanceiro","Controla distancia com estocadas precisas.",TIPO_NEUTRO,63,66,false,{PADRAO_GOBLIN_ESTOCADAS,PADRAO_CAVALEIRO_DESAFIO,PADRAO_CAVALEIRO_DUELO},3},
+        {"Automato de Pedra","Obedece a um ritmo gravado no granito.",TIPO_NEUTRO,78,55,false,{PADRAO_AUTOMATO_ENGRENAGENS,PADRAO_SINO_IMPACTO,PADRAO_TORRE_ESMAGAMENTO},3},
+        {"Mercenario Ferrugem","Troca espaco por golpes pesados.",TIPO_NEUTRO,70,69,false,{PADRAO_MERCENARIO_RICOCHETE,PADRAO_PASSARO_FOGO_CRUZADO,PADRAO_TORRE_ESMAGAMENTO},3},
+        {"Carcereiro Correntes","Fecha rotas antes de puxar as correntes.",TIPO_NEUTRO,74,70,false,{PADRAO_CARCEREIRO_GRADE,PADRAO_SINO_DESAFIO,PADRAO_GATO_EMBOSCADA},3},
+        {"Cultista das Raizes","O altar cresce atraves de sua armadura.",TIPO_PLANTA,125,64,true,{PADRAO_CULTISTA_LABIRINTO,PADRAO_LEBRE_BARREIRAS,PADRAO_LIMO_MARE,PADRAO_LEBRE_PARKOUR,PADRAO_CAVALEIRO_DUELO},5},
+        {"Afogado de Coral","Uma mare morta veste uma armadura de coral.",TIPO_AGUA,150,66,true,{PADRAO_AFOGADO_MARE_CORAL,PADRAO_SAPO_VITORIAS_REGIAS,PADRAO_LIMO_BALSAS,PADRAO_PASSARO_FOGO_CRUZADO,PADRAO_SINO_ECO},5},
+        {"Mago das Cinzas","Na segunda fase, a mascara revela um oni em brasas.",TIPO_FOGO,180,70,true,{PADRAO_MAGO_ESPIRAL_CINZAS,PADRAO_PASSARO_MERGULHO,PADRAO_FAGULHA_CANHOES,PADRAO_PASSARO_TUNEL,PADRAO_TORRE_ESMAGAMENTO},5},
+        {"Goblin da Cripta","Comanda sombras como soldados enterrados.",TIPO_SOMBRA,205,73,true,{PADRAO_GOBLIN_EXERCITO,PADRAO_MARIPOSA_CORRENTE,PADRAO_SINO_GAS_SOMBRA,PADRAO_GATO_PERSEGUICAO,PADRAO_SINO_ECO},5},
+        {"Inquisidor Sol","Condena cada quadrante com luz impiedosa.",TIPO_LUZ,230,76,true,{PADRAO_INQUISIDOR_VEREDITO,PADRAO_FAGULHA_ORBITA,PADRAO_CAVALEIRO_LANCAS,PADRAO_CAVALEIRO_DESAFIO,PADRAO_FAGULHA_LUZ},5}
+    };
+    const ModeloInimigoNovo *m = &modelos[id - INIMIGO_SOLDADO_SARCAS];
+    Inimigo inimigo = {0};
+    inimigo.id=id; inimigo.tipo=m->tipo; inimigo.vida_maxima=m->vida; inimigo.hp=m->vida;
+    inimigo.agressividade=m->agressividade; inimigo.chefe=m->chefe; inimigo.multiplicador_dano_projetil=1.0f;
+    inimigo.indice_ultima_acao=-1; snprintf(inimigo.nome,sizeof(inimigo.nome),"%s",m->nome);
+    snprintf(inimigo.descricao,sizeof(inimigo.descricao),"%s",m->descricao);
+    inimigo.total_padroes=m->total_padroes;
+    for(int i=0;i<m->total_padroes;i++) inimigo.ids_padroes[i]=m->padroes[i];
+    for(int i=0;i<MAXIMO_ACOES_INIMIGO;i++) inimigo.ultimo_turno_acoes[i]=-1;
+    inimigo.acoes[0]=CriarAcao("Analisar","",INIMIGO_ACAO_ANALISAR,0,0,0,0,1.0f,100);
+    inimigo.acoes[1]=CriarAcao("Observar","Ele revela o ritmo do proximo golpe.",INIMIGO_ACAO_SOCIAL,25,-12,2,1,.55f,100);
+    inimigo.acoes[2]=CriarAcao("Intimidar","Ele responde com violencia.",INIMIGO_ACAO_SOCIAL,-15,30,1,2,1.0f,100);
+    inimigo.acoes[3]=CriarAcao("Negociar","A arma baixa por um instante.",INIMIGO_ACAO_SOCIAL,18,-20,3,1,.55f,65);
+    inimigo.total_acoes=4;
+    return inimigo;
+}
+
 void InimigoAtualizarPoupavel(Inimigo *inimigo)
 {
     inimigo->esgotado = inimigo->hp * 4 < inimigo->vida_maxima;
@@ -54,8 +103,29 @@ bool InimigoAvancarStatus(Inimigo *inimigo, int *dano)
     return *dano > 0;
 }
 
+int InimigoAplicarSangramento(Inimigo *inimigo, int quantidade)
+{
+    if (quantidade <= 0) return 0;
+    inimigo->sangramento += quantidade;
+    return quantidade;
+}
+
+int InimigoProcessarSangramento(Inimigo *inimigo)
+{
+    int dano = inimigo->sangramento;
+    if (dano > inimigo->hp) dano = inimigo->hp;
+    if (dano > 0) InimigoReceberDano(inimigo, dano, 1.0f);
+    return dano;
+}
+
+void InimigoCurarSangramento(Inimigo *inimigo)
+{
+    inimigo->sangramento = 0;
+}
+
 Inimigo InimigoCriar(IdInimigo id)
 {
+    if (id >= INIMIGO_SOLDADO_SARCAS && id < INIMIGO_TOTAL) return CriarInimigoNovo(id);
     Inimigo inimigo;
 
     memset(&inimigo, 0, sizeof(inimigo));
@@ -178,7 +248,8 @@ Inimigo InimigoCriar(IdInimigo id)
             inimigo.total_acoes = 4; break;
         case INIMIGO_CHEFE_ULTIMA_TORRE:
             snprintf(inimigo.nome, sizeof(inimigo.nome), "A Ultima Torre");
-            inimigo.vida_maxima = 145; inimigo.hp = inimigo.vida_maxima; inimigo.tipo = TIPO_NEUTRO; inimigo.chefe = true; inimigo.agressividade = 62;
+            inimigo.vida_maxima = 145; inimigo.hp = inimigo.vida_maxima; inimigo.tipo = TIPO_FOGO;
+            inimigo.todos_tipos = true; inimigo.chefe = true; inimigo.agressividade = 62;
             inimigo.ids_padroes[0] = PADRAO_TORRE_PARKOUR;
             inimigo.ids_padroes[1] = PADRAO_TORRE_CANHOES;
             inimigo.ids_padroes[2] = PADRAO_TORRE_DESAFIO;

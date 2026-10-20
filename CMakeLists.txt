@@ -102,6 +102,11 @@ if(BUILD_TYPE_TESTS)
     target_include_directories(test_hazards PRIVATE include)
     target_compile_options(test_hazards PRIVATE -Wall -Wextra)
     target_link_libraries(test_hazards PRIVATE raylib)
+
+    add_executable(test_equipment tests/test_equipment.c src/player.c src/items.c src/enemy.c src/types.c)
+    target_include_directories(test_equipment PRIVATE include)
+    target_compile_options(test_equipment PRIVATE -Wall -Wextra)
+    target_link_libraries(test_equipment PRIVATE raylib)
 endif()
 
 set(CMAKE_C_FLAGS_RELEASE "-O2 -DNDEBUG" CACHE STRING "Release flags" FORCE)

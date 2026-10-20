@@ -76,6 +76,7 @@ typedef struct {
     float temporizador_pausa_impacto;
     int vida_inicial_jogador;
     int total_turnos;
+    int dano_recebido_turno;
     int resultados_qte[4];
     float vida_inimigo_exibida;
     float rastro_vida_inimigo;

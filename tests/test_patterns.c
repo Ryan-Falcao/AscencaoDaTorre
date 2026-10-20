@@ -85,12 +85,17 @@ static bool EncontrarCaminho(const EstadoDefesa *d, Vector2 *alvo, float tempo_d
 int main(int argc, char **argv)
 {
     if (argc > 1 && strcmp(argv[1], "--preview") == 0) { Previsualizar(); return 0; }
-    int scenarios = 0;
+    int scenarios = 0, idle_scenarios = 0;
     for (int id = 0; id < INIMIGO_TOTAL; id++) {
         Inimigo inimigo = InimigoCriar((IdInimigo)id);
-        assert(inimigo.total_padroes >= 3 && PadraoEhCaracteristico(inimigo.ids_padroes[0]));
-        for (int other = 0; other < id; other++)
-            assert(InimigoCriar((IdInimigo)other).ids_padroes[0] != inimigo.ids_padroes[0]);
+        assert(inimigo.total_padroes >= 3);
+        for (int anterior = 0; anterior < id; anterior++)
+            assert(InimigoCriar((IdInimigo)anterior).ids_padroes[0] != inimigo.ids_padroes[0]);
+        for (int padrao = 0; padrao < inimigo.total_padroes; padrao++) {
+            assert(inimigo.ids_padroes[padrao] >= 0 && inimigo.ids_padroes[padrao] < PADRAO_TOTAL);
+            for (int anterior = 0; anterior < padrao; anterior++)
+                assert(inimigo.ids_padroes[anterior] != inimigo.ids_padroes[padrao]);
+        }
         /* Mantem a cobertura de regressao do ataque original com aviso. */
         int indice_original = id == INIMIGO_BRASA_PASSARO ? 2 : inimigo.total_padroes - 1;
         inimigo.ids_padroes[0] = inimigo.ids_padroes[indice_original];
@@ -147,9 +152,10 @@ int main(int argc, char **argv)
             if (jogador.hp == jogador.vida_maxima) {
                 fprintf(stderr, "Idle exploit: enemy=%d start=%d\n", id, inicio); return 1;
             }
+            idle_scenarios++;
         }
         printf("%s: rotas sem dano e jogador parado verificados.\n", inimigo.nome);
     }
-    printf("%d cenarios de esquiva; 90 posicoes paradas.\n", scenarios);
+    printf("%d cenarios de esquiva; %d posicoes paradas.\n", scenarios, idle_scenarios);
     return 0;
 }

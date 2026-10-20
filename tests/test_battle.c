@@ -39,8 +39,8 @@ int main(void)
         Qte qte = {0}; EstadoAudio audio = {0};
         Inimigo inimigo = InimigoCriar((IdInimigo)id);
         inimigo.agressividade = agressividade;
-        int total_esperado = id == INIMIGO_CHEFE_SINEIRO ? 5 :
-                             (id == INIMIGO_BRASA_PASSARO || inimigo.chefe ? 4 : 3);
+        int total_esperado = id == INIMIGO_CHEFE_ULTIMA_TORRE ? 4 :
+                             (id == INIMIGO_BRASA_PASSARO ? 4 : (inimigo.chefe ? 5 : 3));
         assert(inimigo.total_padroes == total_esperado);
         JogadorInicializar(&jogador); BatalhaInicializar(&batalha, &dialogo, 1);
         for (int turn = 0; turn < inimigo.total_padroes * 2; turn++) {
