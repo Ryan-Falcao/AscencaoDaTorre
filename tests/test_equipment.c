@@ -22,17 +22,20 @@ int main(void)
     assert(ItemObterDefinicao(ITEM_AMULETO_ESPELHO)->passiva != PASSIVA_NENHUMA);
 
     JogadorInicializar(&jogador);
-    assert(jogador.bonus_equipamento.ataque == 4);
-    assert(jogador.bonus_equipamento.defesa == 7);
-    assert(jogador.vida_maxima == 51);
+    /* Uma run inicia leve: broche e espada de treino, sem armadura gratis. */
+    assert(jogador.bonus_equipamento.ataque == 1);
+    assert(jogador.bonus_equipamento.defesa == 0);
+    assert(jogador.vida_maxima == 40);
     assert(jogador.total_ataques == 3 && jogador.ataques[0].tipo == TIPO_PLANTA);
-    assert(fabsf(jogador.multiplicador_dano_recebido - 60.0f / 67.0f) < 0.001f);
+    assert(fabsf(jogador.multiplicador_dano_recebido - 1.0f) < 0.001f);
 
+    assert(JogadorAdicionarItem(&jogador, ITEM_ESCUDO_MARE, 1));
     int indice = EncontrarItem(&jogador, ITEM_ESCUDO_MARE);
     assert(indice >= 0 && JogadorEquiparDoInventario(&jogador, indice, ESPACO_ESCUDO));
-    assert(jogador.bonus_equipamento.defesa == 11);
-    assert(jogador.multiplicador_dano_recebido < 60.0f / 67.0f);
+    assert(jogador.bonus_equipamento.defesa == 4);
+    assert(jogador.multiplicador_dano_recebido < 1.0f);
 
+    assert(JogadorAdicionarItem(&jogador, ITEM_CAJADO_GELO, 1));
     indice = EncontrarItem(&jogador, ITEM_CAJADO_GELO);
     assert(indice >= 0 && JogadorEquiparDoInventario(&jogador, indice, ESPACO_ARMAMENTO));
     assert(jogador.ataques[0].tipo == TIPO_AGUA);
@@ -43,11 +46,13 @@ int main(void)
     JogadorIniciarTurno(&jogador);
     assert(jogador.mana == 11);
 
+    assert(JogadorAdicionarItem(&jogador, ITEM_SOLAR_BROCHE, 1));
     indice = EncontrarItem(&jogador, ITEM_SOLAR_BROCHE);
     assert(indice >= 0 && JogadorEquiparDoInventario(&jogador, indice, ESPACO_AMULETO_TIPO));
     assert(jogador.total_ataques == 6);
     assert(jogador.ataques[0].tipo == TIPO_AGUA && jogador.ataques[3].tipo == TIPO_LUZ);
 
+    assert(JogadorAdicionarItem(&jogador, ITEM_BOTAS_CINZA, 1));
     indice = EncontrarItem(&jogador, ITEM_BOTAS_CINZA);
     assert(indice >= 0 && JogadorEquiparDoInventario(&jogador, indice, ESPACO_BOTAS));
     assert(jogador.bonus_equipamento.velocidade == 8);

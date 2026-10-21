@@ -1,3 +1,5 @@
+#include "pilot_patterns.h"
+#include "ui.h"
 #include "game.h"
 #include "input.h"
 #include "balance.h"
@@ -66,11 +68,11 @@ static void DesenharTitulo(const EstadoJogo *jogo)
     } else {
         const char *titulo = "ASCENSAO";
         const char *subtitulo = "DA TORRE";
-        DrawText(titulo, (LOGICO_LARGURA - MeasureText(titulo, 42)) / 2, 225, 42, BLACK);
-        DrawText(subtitulo, (LOGICO_LARGURA - MeasureText(subtitulo, 23)) / 2, 266, 23,
+        InterfaceDesenharTexto(titulo, (LOGICO_LARGURA - InterfaceMedirTexto(titulo, 42)) / 2, 225, 42, BLACK);
+        InterfaceDesenharTexto(subtitulo, (LOGICO_LARGURA - InterfaceMedirTexto(subtitulo, 23)) / 2, 266, 23,
                  (Color){73, 77, 85, 255});
     }
-    DrawText(TextFormat("melhor andar: %d  |  vitorias: %d", jogo->salvamento.melhor_andar,
+    InterfaceDesenharTexto(TextFormat("melhor andar: %d  |  vitorias: %d", jogo->salvamento.melhor_andar,
                         jogo->salvamento.vitorias), 188, 298, 13, (Color){86, 88, 96, 255});
 
     for (int indice_opcao = 0; indice_opcao < 5; indice_opcao++) {
@@ -84,9 +86,9 @@ static void DesenharTitulo(const EstadoJogo *jogo)
 static void DesenharMarcador(const char *titulo, const char *subtitulo)
 {
     InterfaceDesenharPainel((Rectangle){62.0f, 122.0f, 516.0f, 238.0f});
-    DrawText(titulo, 96, 160, 32, BLACK);
-    DrawText(subtitulo, 96, 218, 18, (Color){75, 78, 84, 255});
-    DrawText("Aperte X para voltar ao titulo.", 96, 306, 16, (Color){105, 106, 111, 255});
+    InterfaceDesenharTexto(titulo, 96, 160, 32, BLACK);
+    InterfaceDesenharTextoQuebrado(subtitulo, (Rectangle){96, 218, 448, 70}, 18, 3, (Color){75, 78, 84, 255});
+    InterfaceDesenharTexto("Aperte X para voltar ao titulo.", 96, 306, 16, (Color){105, 106, 111, 255});
 }
 
 static Rectangle ObterAreaEscolha(int y)
@@ -103,14 +105,14 @@ static void DesenharEscolha(int y, const char *texto, bool selecionado)
 {
     const Rectangle area = ObterAreaEscolha(y);
     InterfaceDesenharLinhaOpcao(area, selecionado, true, (Color){225, 95, 122, 255});
-    DrawText(texto, 108, y, 17, BLACK);
+    InterfaceDesenharTextoAjustado(texto, (Rectangle){112, y, 426, 19}, 17, BLACK);
 }
 
 static void DesenharEscolhaCompacta(int y, const char *texto, bool selecionado)
 {
     const Rectangle area = ObterAreaEscolhaCompacta(y);
     InterfaceDesenharLinhaOpcao(area, selecionado, true, (Color){225, 95, 122, 255});
-    DrawText(texto, 182, y, 17, BLACK);
+    InterfaceDesenharTextoAjustado(texto, (Rectangle){186, y, 278, 19}, 17, BLACK);
 }
 
 static bool AtualizarSelecaoMouse(const EstadoJogo *jogo, int *selecao, int total,
@@ -147,12 +149,12 @@ static bool RecompensaEhItem(const RecompensaTorre *recompensa)
 static void DesenharRecompensa(const EstadoJogo *jogo)
 {
     InterfaceDesenharPainel((Rectangle){30, 34, 580, 414});
-    DrawText("ITENS RECEBIDOS", 193, 56, 26, BLACK);
-    DrawText(TextFormat("%d moedas  |  %d XP  |  %s", jogo->ultimo_resultado_batalha.moedas,
+    InterfaceDesenharTexto("ITENS RECEBIDOS", (640 - InterfaceMedirTexto("ITENS RECEBIDOS", 26)) / 2, 56, 26, BLACK);
+    InterfaceDesenharTexto(TextFormat("%d moedas  |  %d XP  |  %s", jogo->ultimo_resultado_batalha.moedas,
                         jogo->ultimo_resultado_batalha.xp,
                         jogo->ultimo_resultado_batalha.desfecho == BATALHA_OUTCOME_MISERICORDIA ? "POUPAR: BONUS" : "VITORIA"),
              102, 94, 16, DARKGRAY);
-    DrawText("Escolha uma recompensa", 52, 121, 16, BLACK);
+    InterfaceDesenharTexto("Escolha uma recompensa", 52, 121, 16, BLACK);
     for (int indice = 0; indice < 3; indice++) {
         const RecompensaTorre *recompensa = &jogo->torre.recompensas[indice];
         const Rectangle area = AreaRecompensa(indice);
@@ -166,20 +168,20 @@ static void DesenharRecompensa(const EstadoJogo *jogo)
                 SpriteDesenharCentralizadoEscalado(&jogo->sprites, SpriteIdItem(item->id),
                     (Vector2){area.x + 38.0f, area.y + 38.0f}, WHITE, 0.0f, 1.65f,
                     jogo->sprites.depurar_limites);
-            DrawText(item->nome, (int)area.x + 76, (int)area.y + 9, 17,
+            InterfaceDesenharTexto(item->nome, (int)area.x + 76, (int)area.y + 9, 17,
                      item->categoria == CATEGORIA_EQUIPAMENTO ? CorRaridade(item->raridade) : BLACK);
             if (item->categoria == CATEGORIA_EQUIPAMENTO) {
                 const char *tipo = item->tipo_elemental != TIPO_NEUTRO ? nome_tipo(item->tipo_elemental) : NULL;
-                DrawText(tipo != NULL ? TextFormat("%s | %s | TIPO %s", ItemNomeRaridade(item->raridade),
+                InterfaceDesenharTexto(tipo != NULL ? TextFormat("%s | %s | TIPO %s", ItemNomeRaridade(item->raridade),
                                                    ItemNomeEspaco(item->espaco), tipo) :
                                         TextFormat("%s | %s", ItemNomeRaridade(item->raridade),
                                                    ItemNomeEspaco(item->espaco)),
                          (int)area.x + 76, (int)area.y + 31, 12, CorRaridade(item->raridade));
             } else {
-                DrawText(TextFormat("CONSUMIVEL | quantidade %d", recompensa->valor),
+                InterfaceDesenharTexto(TextFormat("CONSUMIVEL | quantidade %d", recompensa->valor),
                          (int)area.x + 76, (int)area.y + 31, 12, DARKGRAY);
             }
-            DrawText(item->descricao, (int)area.x + 76, (int)area.y + 50, 12, DARKGRAY);
+            InterfaceDesenharTextoQuebrado(item->descricao, (Rectangle){area.x + 76, area.y + 48, area.width - 88, 25}, 12, 1, DARKGRAY);
         } else {
             const bool vida = recompensa->categoria == RECOMPENSA_VIDA;
             if (vida) {
@@ -193,21 +195,21 @@ static void DesenharRecompensa(const EstadoJogo *jogo)
                 DrawLineEx((Vector2){area.x + 23, area.y + 43}, (Vector2){area.x + 38, area.y + 55},
                            4.0f, (Color){92, 95, 105, 255});
             }
-            DrawText(NomeRecompensa(recompensa), (int)area.x + 76, (int)area.y + 13, 17, BLACK);
-            DrawText(vida ? TextFormat("Vida maxima %+d", recompensa->valor) :
+            InterfaceDesenharTexto(NomeRecompensa(recompensa), (int)area.x + 76, (int)area.y + 13, 17, BLACK);
+            InterfaceDesenharTexto(vida ? TextFormat("Vida maxima %+d", recompensa->valor) :
                             TextFormat("Poder de ataque permanente %+d", recompensa->valor / 2),
                      (int)area.x + 76, (int)area.y + 42, 13, DARKGRAY);
         }
     }
-    if (jogo->mensagem_tela[0] != '\0') DrawText(jogo->mensagem_tela, 52, 406, 12, MAROON);
+    if (jogo->mensagem_tela[0] != '\0') InterfaceDesenharTexto(jogo->mensagem_tela, 52, 406, 12, MAROON);
     InterfaceDesenharAtalho("I inventario  |  ESPACO escolher", 196, 426);
 }
 
 static void DesenharDescanso(const EstadoJogo *jogo)
 {
     InterfaceDesenharPainel((Rectangle){62, 104, 516, 260});
-    DrawText("PONTO DE DESCANSO", 175, 132, 26, BLACK);
-    DrawText(TextFormat("HP %d / %d", jogo->jogador.hp, jogo->jogador.vida_maxima), 225, 170, 18, DARKGRAY);
+    InterfaceDesenharTexto("PONTO DE DESCANSO", (640 - InterfaceMedirTexto("PONTO DE DESCANSO", 26)) / 2, 132, 26, BLACK);
+    InterfaceDesenharTexto(TextFormat("HP %d / %d", jogo->jogador.hp, jogo->jogador.vida_maxima), 225, 170, 18, DARKGRAY);
     DesenharEscolha(222, "DESCANSAR  (+50% HP)", jogo->selecao_descanso == 0);
     DesenharEscolha(264, "TREINAR  (+1 dano permanente)", jogo->selecao_descanso == 1);
 }
@@ -215,8 +217,8 @@ static void DesenharDescanso(const EstadoJogo *jogo)
 static void DesenharLoja(const EstadoJogo *jogo)
 {
     InterfaceDesenharPainel((Rectangle){62, 78, 516, 322});
-    DrawText("LOJA DA TORRE", 205, 104, 26, BLACK);
-    DrawText(TextFormat("MOEDAS: %d", jogo->torre.moedas), 235, 140, 18, DARKGRAY);
+    InterfaceDesenharTexto("LOJA DA TORRE", (640 - InterfaceMedirTexto("LOJA DA TORRE", 26)) / 2, 104, 26, BLACK);
+    InterfaceDesenharTexto(TextFormat("MOEDAS: %d", jogo->torre.moedas), 235, 140, 18, DARKGRAY);
     for (int indice = 0; indice < 3; indice++) {
         const DefinicaoItem *item = ItemObterDefinicao(jogo->torre.itens_loja[indice]);
         if (sprite_obter(&jogo->sprites, SpriteIdItem(item->id)) != NULL) {
@@ -230,27 +232,27 @@ static void DesenharLoja(const EstadoJogo *jogo)
     }
     DesenharEscolha(325, "SAIR E SUBIR", jogo->selecao_loja == 3);
     if (jogo->selecao_loja < 3) {
-        DrawText(ItemObterDefinicao(jogo->torre.itens_loja[jogo->selecao_loja])->descricao,
-                 103, 365, 14, DARKGRAY);
+        InterfaceDesenharTextoQuebrado(ItemObterDefinicao(jogo->torre.itens_loja[jogo->selecao_loja])->descricao,
+                 (Rectangle){103, 354, 446, 26}, 13, 1, DARKGRAY);
     }
-    if (jogo->mensagem_tela[0] != '\0') DrawText(jogo->mensagem_tela, 103, 382, 14, MAROON);
+    if (jogo->mensagem_tela[0] != '\0') InterfaceDesenharTexto(jogo->mensagem_tela, 103, 382, 14, MAROON);
 }
 
 static void DesenharReliquias(const EstadoJogo *jogo)
 {
     InterfaceDesenharPainel((Rectangle){62, 104, 516, 270});
-    DrawText("RELIQUIAS", 246, 132, 28, BLACK);
-    DrawText(TextFormat("FRAGMENTOS: %d", jogo->salvamento.fragmentos), 218, 169, 18, DARKGRAY);
+    InterfaceDesenharTexto("RELIQUIAS", (640 - InterfaceMedirTexto("RELIQUIAS", 28)) / 2, 132, 28, BLACK);
+    InterfaceDesenharTexto(TextFormat("FRAGMENTOS: %d", jogo->salvamento.fragmentos), 218, 169, 18, DARKGRAY);
     DesenharEscolha(220, "Erva Lunar inicial - 8 fragmentos", jogo->selecao_reliquia == 0);
     DesenharEscolha(264, "Espada da Luz inicial - 10 fragmentos", jogo->selecao_reliquia == 1);
-    DrawText("X/Backspace: voltar", 205, 331, 14, DARKGRAY);
+    InterfaceDesenharTexto("X/Backspace: voltar", 205, 331, 14, DARKGRAY);
 }
 
 static void DesenharOpcoes(const EstadoJogo *jogo)
 {
     static const char *difficulty_names[] = {"CALMO", "NORMAL", "DIFICIL"};
     InterfaceDesenharPainel((Rectangle){62, 30, 516, 420});
-    DrawText("OPCOES", 260, 55, 28, BLACK);
+    InterfaceDesenharTexto("OPCOES", (640 - InterfaceMedirTexto("OPCOES", 28)) / 2, 55, 28, BLACK);
     DesenharEscolha(105, TextFormat("Musica: %d%%", (int)(jogo->salvamento.volume_musica * 100.0f)), jogo->selecao_opcao == 0);
     DesenharEscolha(141, TextFormat("Efeitos: %d%%", (int)(jogo->salvamento.volume_efeitos * 100.0f)), jogo->selecao_opcao == 1);
     DesenharEscolha(177, TextFormat("Tela cheia: %s", jogo->salvamento.tela_cheia ? "SIM" : "NAO"), jogo->selecao_opcao == 2);
@@ -327,7 +329,7 @@ static void DesenharTutorial(const EstadoJogo *jogo)
     const Rectangle caixa = {54, 166, 532, 92};
     DrawRectangle(0, 0, LOGICO_LARGURA, LOGICO_ALTURA, (Color){0, 0, 0, 140});
     InterfaceDesenharPainel(caixa);
-    DrawText("DICA", 72, 179, 14, (Color){203, 84, 104, 255});
+    InterfaceDesenharTexto("DICA", 72, 179, 14, (Color){203, 84, 104, 255});
     InterfaceDesenharTextoQuebrado(TextoTutorial(jogo->dica_tutorial),
                 (Rectangle){72, 199, 496, 35}, 14, 2, BLACK);
     InterfaceDesenharAtalho("ESPACO  fechar", 444, 234);
@@ -345,10 +347,10 @@ static void DesenharComoJogar(void)
         "MERCI alta e ESTRESSE baixo permitem encerrar a luta sem atacar."
     };
     InterfaceDesenharPainel((Rectangle){48, 38, 544, 404});
-    DrawText("COMO JOGAR", 232, 57, 26, BLACK);
+    InterfaceDesenharTexto("COMO JOGAR", (640 - InterfaceMedirTexto("COMO JOGAR", 26)) / 2, 57, 26, BLACK);
     for (int indice = 0; indice < 6; indice++) {
         int y = 98 + indice * 49;
-        DrawText(titulos[indice], 72, y, 12, (Color){203, 84, 104, 255});
+        InterfaceDesenharTexto(titulos[indice], 72, y, 12, (Color){203, 84, 104, 255});
         InterfaceDesenharTextoQuebrado(textos[indice],
                     (Rectangle){72, (float)y + 15, 496, 31}, 14, 2, BLACK);
     }
@@ -359,14 +361,16 @@ static void DesenharDepuracaoEfeitos(const EstadoJogo *jogo)
 {
     const IdSprite enemy_id = SpriteIdInimigo((IdInimigo)jogo->inimigo_depuracao_padrao, false);
 
-    DrawText("TESTE DE PADROES", 195, 28, 25, BLACK);
-    DrawText(TextFormat("Padrao %d | inimigo %d", jogo->id_depuracao_padrao, jogo->inimigo_depuracao_padrao),
+    InterfaceDesenharPainel((Rectangle){12, 12, 616, 82});
+    InterfaceDesenharPainel((Rectangle){12, 428, 616, 46});
+    InterfaceDesenharTexto("TESTE DE PADROES", (640 - InterfaceMedirTexto("TESTE DE PADROES", 25)) / 2, 28, 25, BLACK);
+    InterfaceDesenharTexto(TextFormat("Padrao %d | inimigo %d", jogo->id_depuracao_padrao, jogo->inimigo_depuracao_padrao),
              70, 66, 18, DARKGRAY);
-    DrawText(TextFormat("HP %d/%d | dano: %s", jogo->jogador.hp, jogo->jogador.vida_maxima,
+    InterfaceDesenharTexto(TextFormat("HP %d/%d | dano: %s", jogo->jogador.hp, jogo->jogador.vida_maxima,
                         jogo->batalha.defesa.depurar_invencivel ? "ignorado" : "ativo"),
              70, 90, 14, DARKGRAY);
-    DrawText("WASD/setas: mover | SHIFT: dash | ESPACO: pular | R: reiniciar | G: Gas Sombrio", 20, 438, 11, DARKGRAY);
-    DrawText("F9/F10: padrao | PgUp/PgDn: inimigo | I: alternar dano | X: voltar", 35, 454, 11, DARKGRAY);
+    InterfaceDesenharTexto("WASD/setas: mover | SHIFT: dash | ESPACO: pular | R: reiniciar | G: Gas Sombrio", 20, 438, 11, DARKGRAY);
+    InterfaceDesenharTexto("F9/F10: padrao | PgUp/PgDn: inimigo | I: alternar dano | X: voltar", 35, 454, 11, DARKGRAY);
     if (sprite_obter(&jogo->sprites, enemy_id) != NULL) {
         SpriteDesenharCentralizado(&jogo->sprites, enemy_id, (Vector2){320, 190}, WHITE, jogo->tempo_decorrido,
                            jogo->sprites.depurar_limites);
@@ -431,28 +435,52 @@ static void DesenharIconeEquipamento(EspacoEquipamento espaco, Vector2 centro, C
     }
 }
 
-static void DesenharBonusItem(const DefinicaoItem *item, int x, int y)
+static void DesenharResumoBonusItem(const BonusAtributos *bonus, int x, int y, Color cor)
 {
-    const BonusAtributos *b = &item->bonus;
-    int linha = 0;
-#define BONUS(TEXTO, VALOR) do { if ((VALOR) != 0) { \
-    DrawText(TextFormat(TEXTO " %+d", (VALOR)), x, y + linha * 15, 12, DARKGRAY); linha++; } } while (0)
-    BONUS("Ataque", b->ataque); BONUS("Defesa", b->defesa); BONUS("Vida", b->vida);
-    BONUS("Velocidade", b->velocidade); BONUS("Mana maxima", b->mana_maxima);
-    BONUS("Mana/turno", b->mana_por_turno); BONUS("Critico %%", b->chance_critica);
-    BONUS("Dano critico %%", b->dano_critico); BONUS("Sangramento", b->sangramento);
-    BONUS("Resist. sangramento", b->resistencia_sangramento);
-#undef BONUS
-    if (item->passiva != PASSIVA_NENHUMA)
-        DrawText(TextFormat("%s: %d%%", ItemNomePassiva(item->passiva), item->valor_passiva),
-                 x, y + linha * 15, 12, MAROON);
+    InterfaceDesenharTexto(TextFormat("ATQ %+d   DEF %+d   VIDA %+d", bonus->ataque, bonus->defesa, bonus->vida),
+             x, y, 11, cor);
+    InterfaceDesenharTexto(TextFormat("MANA %+d   REC %+d/t   VEL %+d%%", bonus->mana_maxima,
+                        bonus->mana_por_turno, bonus->velocidade), x, y + 14, 11, cor);
+}
+
+static Vector2 PosicaoEquipamentoNoBoneco(EspacoEquipamento espaco)
+{
+    static const Vector2 posicoes[ESPACO_EQUIPADO_TOTAL] = {
+        {470, 173}, {444, 184}, {506, 181}, {461, 224}, {486, 249},
+        {457, 143}, {470, 139}, {483, 143}, {470, 190}
+    };
+    return espaco >= 0 && espaco < ESPACO_EQUIPADO_TOTAL ? posicoes[espaco] : (Vector2){470, 190};
+}
+
+static void DesenharComparacaoEquipamento(const EstadoJogo *jogo, const DefinicaoItem *item, int x, int y)
+{
+    if (item == NULL || item->categoria != CATEGORIA_EQUIPAMENTO) return;
+    EspacoEquipamento espaco = item->espaco;
+    if (espaco == ESPACO_AMULETO_1 && jogo->inventario_foco_equipamento)
+        espaco = (EspacoEquipamento)jogo->selecao_equipamento;
+    const IdItem equipado = espaco >= 0 && espaco < ESPACO_EQUIPADO_TOTAL ?
+        jogo->jogador.equipamentos[espaco] : ITEM_NENHUM;
+    const DefinicaoItem *atual = equipado != ITEM_NENHUM ? ItemObterDefinicao(equipado) : NULL;
+    InterfaceDesenharTexto("COMPARACAO", x, y, 10, DARKGRAY);
+    const char *nome_atual = atual != NULL ? atual->nome : "Espaco vazio";
+    InterfaceDesenharTextoAjustado(TextFormat("USANDO: %s", nome_atual), (Rectangle){x, y + 12, 249, 12}, 10, DARKGRAY);
+    const BonusAtributos vazio = {0};
+    const BonusAtributos *base = atual != NULL ? &atual->bonus : &vazio;
+    const BonusAtributos *novo = &item->bonus;
+    InterfaceDesenharTexto(TextFormat("DELTA  ATQ %+d  DEF %+d  VIDA %+d", novo->ataque - base->ataque,
+                        novo->defesa - base->defesa, novo->vida - base->vida), x, y + 27, 10,
+             (novo->ataque + novo->defesa + novo->vida) >= (base->ataque + base->defesa + base->vida) ?
+                 (Color){37, 126, 74, 255} : MAROON);
+    InterfaceDesenharTexto(TextFormat("MANA %+d  REC %+d/t  VEL %+d%%", novo->mana_maxima - base->mana_maxima,
+                        novo->mana_por_turno - base->mana_por_turno,
+                        novo->velocidade - base->velocidade), x, y + 42, 10, DARKBLUE);
 }
 
 static void DesenharInventario(const EstadoJogo *jogo)
 {
     InterfaceDesenharPainel((Rectangle){20, 28, 600, 424});
-    DrawText("INVENTARIO", 38, 48, 25, BLACK);
-    DrawText("24 ESPACOS", 190, 55, 13, DARKGRAY);
+    InterfaceDesenharTexto("INVENTARIO", 38, 48, 25, BLACK);
+    InterfaceDesenharTexto("24 ESPACOS", 190, 55, 13, DARKGRAY);
     for (int indice = 0; indice < MAXIMO_INVENTARIO_ITENS; indice++) {
         const Rectangle area = AreaInventario(indice);
         const ItemInventario *pilha = &jogo->jogador.inventario[indice];
@@ -469,19 +497,19 @@ static void DesenharInventario(const EstadoJogo *jogo)
             else if (ItemEhEquipamento(pilha->id))
                 DesenharIconeEquipamento(item->espaco, (Vector2){area.x + 19, area.y + 18},
                                          CorRaridade(item->raridade));
-            else DrawText("+", (int)area.x + 14, (int)area.y + 8, 20, BLACK);
-            DrawText(TextFormat("%d", pilha->quantidade), (int)area.x + 27, (int)area.y + 25, 10, BLACK);
+            else InterfaceDesenharTexto("+", (int)area.x + 14, (int)area.y + 8, 20, BLACK);
+            InterfaceDesenharTexto(TextFormat("%d", pilha->quantidade), (int)area.x + 27, (int)area.y + 25, 10, BLACK);
         }
     }
 
-    DrawText("EQUIPADO", 413, 48, 20, BLACK);
+    InterfaceDesenharTexto("EQUIPADO", 413, 48, 20, BLACK);
     DrawCircle(470, 137, 17, (Color){91, 93, 105, 255});
     DrawRectangle(453, 154, 34, 67, (Color){91, 93, 105, 255});
     DrawLineEx((Vector2){453, 165}, (Vector2){430, 200}, 8, (Color){91, 93, 105, 255});
     DrawLineEx((Vector2){487, 165}, (Vector2){510, 200}, 8, (Color){91, 93, 105, 255});
     DrawLineEx((Vector2){461, 218}, (Vector2){448, 255}, 9, (Color){91, 93, 105, 255});
     DrawLineEx((Vector2){479, 218}, (Vector2){492, 255}, 9, (Color){91, 93, 105, 255});
-    DrawText("TIPO", 553, 212, 9, DARKGRAY);
+    InterfaceDesenharTexto("SEU EQUIPAMENTO", 407, 76, 12, DARKGRAY);
     for (int espaco = 0; espaco < ESPACO_EQUIPADO_TOTAL; espaco++) {
         const Rectangle area = AreaEquipamento(espaco);
         const bool selecionado = jogo->inventario_foco_equipamento && jogo->selecao_equipamento == espaco;
@@ -497,7 +525,16 @@ static void DesenharInventario(const EstadoJogo *jogo)
                     jogo->sprites.depurar_limites);
             else DesenharIconeEquipamento((EspacoEquipamento)espaco,
                     (Vector2){area.x + 20, area.y + 19}, CorRaridade(item->raridade));
-        } else DrawText("+", (int)area.x + 14, (int)area.y + 7, 22, GRAY);
+            /* O mesmo item aparece no boneco: a silhueta agora comunica o que esta vestido. */
+            const Vector2 posicao_boneco = PosicaoEquipamentoNoBoneco((EspacoEquipamento)espaco);
+            if (sprite_obter(&jogo->sprites, SpriteIdItem(id)) != NULL)
+                SpriteDesenharCentralizadoEscalado(&jogo->sprites, SpriteIdItem(id), posicao_boneco,
+                    WHITE, 0.0f, 0.62f, jogo->sprites.depurar_limites);
+            else DesenharIconeEquipamento((EspacoEquipamento)espaco, posicao_boneco,
+                                          CorRaridade(item->raridade));
+        } else InterfaceDesenharTexto("+", (int)area.x + 14, (int)area.y + 7, 22, GRAY);
+        InterfaceDesenharTexto(ItemNomeEspaco((EspacoEquipamento)espaco), (int)area.x - 3,
+                 (int)area.y + (int)area.height + 1, 8, DARKGRAY);
     }
 
     const DefinicaoItem *selecionado = NULL;
@@ -508,36 +545,41 @@ static void DesenharInventario(const EstadoJogo *jogo)
         const ItemInventario *pilha = &jogo->jogador.inventario[jogo->selecao_inventario];
         if (pilha->quantidade > 0) selecionado = ItemObterDefinicao(pilha->id);
     }
-    DrawRectangle(38, 312, 564, 104, (Color){239, 238, 232, 255});
-    DrawRectangleLines(38, 312, 564, 104, DARKGRAY);
+    InterfaceDesenharPainel((Rectangle){38, 294, 564, 122});
     if (selecionado != NULL) {
         const Color cor = selecionado->categoria == CATEGORIA_EQUIPAMENTO ? CorRaridade(selecionado->raridade) : DARKGRAY;
-        DrawText(selecionado->nome, 52, 324, 17, cor);
-        DrawText(selecionado->descricao, 52, 348, 12, DARKGRAY);
+        InterfaceDesenharTextoAjustado(selecionado->nome, (Rectangle){52, 305, 532, 20}, 17, cor);
+        InterfaceDesenharTextoQuebrado(selecionado->descricao, (Rectangle){52, 327, 260, 24}, 10, 1, DARKGRAY);
         if (selecionado->categoria == CATEGORIA_EQUIPAMENTO) {
-            DrawText(TextFormat("%s | %s", ItemNomeRaridade(selecionado->raridade),
-                                ItemNomeEspaco(selecionado->espaco)), 52, 370, 12, cor);
-            DesenharBonusItem(selecionado, 310, 324);
+            InterfaceDesenharTexto(TextFormat("%s | %s", ItemNomeRaridade(selecionado->raridade),
+                                ItemNomeEspaco(selecionado->espaco)), 52, 354, 10, cor);
+            InterfaceDesenharTexto("ESTE ITEM", 52, 374, 10, DARKGRAY);
+            DesenharResumoBonusItem(&selecionado->bonus, 52, 386, cor);
+            if (selecionado->passiva != PASSIVA_NENHUMA)
+                InterfaceDesenharTexto(TextFormat("PASSIVA: %s", ItemNomePassiva(selecionado->passiva)), 52, 402, 10, MAROON);
+            DesenharComparacaoEquipamento(jogo, selecionado, 335, 354);
+        } else {
+            InterfaceDesenharTexto("Consumivel: use durante a batalha.", 52, 366, 11, DARKGRAY);
         }
     }
-    DrawText(TextFormat("ATQ %d  DEF %d  VEL %+d%%  MANA %d (+%d)",
+    InterfaceDesenharTexto(TextFormat("ATQ %d  DEF %d  VEL %+d%%  MANA %d (+%d)",
         jogo->jogador.bonus_equipamento.ataque, jogo->jogador.bonus_equipamento.defesa,
         jogo->jogador.bonus_equipamento.velocidade, jogo->jogador.mana_maxima,
-        jogo->jogador.mana_por_turno), 52, 425, 12, BLACK);
-    InterfaceDesenharAtalho("Q alternar | SETAS mover | ESPACO equipar | DEL descartar | TAB fechar", 62, 439);
+        jogo->jogador.mana_por_turno), 52, 421, 11, BLACK);
+    InterfaceDesenharAtalho("Q alternar | ESPACO equipar/remover | X remover | DEL descartar | TAB fechar", 48, 438);
 }
 
 static void DesenharPausa(const EstadoJogo *jogo)
 {
     const char *opcoes[] = {"CONTINUAR", "INVENTARIO", "OPCOES", "COMO JOGAR", "DESISTIR DA RUN", "TITULO"};
     InterfaceDesenharPainel((Rectangle){136, 92, 368, 292});
-    DrawText("PAUSADO", 248, 119, 27, BLACK);
+    InterfaceDesenharTexto("PAUSADO", (640 - InterfaceMedirTexto("PAUSADO", 27)) / 2, 119, 27, BLACK);
     if (jogo->pausa_confirmar_saida) {
         const Rectangle botao_desistir = {164, 218, 146, 38};
         const Rectangle botao_cancelar = {330, 218, 146, 38};
         const bool sobre_desistir = CheckCollisionPointRec(jogo->posicao_mouse, botao_desistir);
         const bool sobre_cancelar = CheckCollisionPointRec(jogo->posicao_mouse, botao_cancelar);
-        DrawText("Desistir desta run?", 210, 178, 18, MAROON);
+        InterfaceDesenharTexto("Desistir desta run?", 210, 178, 18, MAROON);
         InterfaceDesenharBotao(&jogo->sprites, botao_desistir, "DESISTIR", sobre_desistir, true,
                                (Color){197, 69, 78, 255});
         InterfaceDesenharBotao(&jogo->sprites, botao_cancelar, "CANCELAR", sobre_cancelar || !sobre_desistir, true,
@@ -552,7 +594,7 @@ static void DesenharPausa(const EstadoJogo *jogo)
 static void DesenharConfirmacaoExclusao(const EstadoJogo *jogo)
 {
     InterfaceDesenharPainel((Rectangle){93, 158, 454, 164});
-    DrawText("Apagar todo o save?", 191, 190, 23, BLACK);
+    InterfaceDesenharTexto("Apagar todo o save?", (640 - InterfaceMedirTexto("Apagar todo o save?", 23)) / 2, 190, 23, BLACK);
     DesenharEscolhaCompacta(245, "SIM", jogo->excluir_sim);
     DesenharEscolhaCompacta(275, "NAO", !jogo->excluir_sim);
 }
@@ -570,11 +612,24 @@ static void IniciarAndar(EstadoJogo *jogo)
     jogo->tela = BATALHA;
 }
 
-static void IniciarPartida(EstadoJogo *jogo)
+static Tipo TipoDoBroche(int indice)
+{
+    static const Tipo tipos[] = {TIPO_FOGO, TIPO_PLANTA, TIPO_AGUA};
+    if (indice < 0 || indice >= (int)(sizeof(tipos) / sizeof(tipos[0]))) return TIPO_PLANTA;
+    return tipos[indice];
+}
+
+static void AbrirEscolhaBroche(EstadoJogo *jogo)
+{
+    jogo->selecao_broche = 1;
+    jogo->tela = ESCOLHER_BROCHE;
+}
+
+static void IniciarPartida(EstadoJogo *jogo, Tipo tipo_broche)
 {
     jogo->contador_partidas++;
     jogo->partida_iniciada_em = (float)GetTime();
-    JogadorInicializar(&jogo->jogador);
+    JogadorInicializarComBroche(&jogo->jogador, tipo_broche);
     jogo->jogador.multiplicador_dificuldade = BalanceamentoMultiplicadorDanoRecebido(jogo->salvamento.dificuldade);
     JogadorRecalcularAtributos(&jogo->jogador);
     if (jogo->salvamento.tipo_reliquia == RELIQUIA_ITEM) JogadorAdicionarItem(&jogo->jogador, (IdItem)jogo->salvamento.id_reliquia, 1);
@@ -585,6 +640,52 @@ static void IniciarPartida(EstadoJogo *jogo)
     jogo->ultimo_resultado_batalha = (ResultadoBatalha){0};
     jogo->mensagem_tela[0] = '\0';
     IniciarAndar(jogo);
+}
+
+static void DesenharEscolhaBroche(const EstadoJogo *jogo)
+{
+    static const char *const nomes[] = {"BROCHE DE BRASA", "BROCHE DE FOLHA", "BROCHE DE GOTA"};
+    static const char *const descricoes[] = {
+        "CHAMA  |  espada simples de fogo",
+        "PLANTA |  espada simples de folha",
+        "AGUA   |  espada simples de agua"
+    };
+    static const IdSprite sprites_broche[] = {
+        SPRITE_BROCHE_INICIAL_CHAMA,
+        SPRITE_BROCHE_INICIAL_PLANTA,
+        SPRITE_BROCHE_INICIAL_AGUA
+    };
+    InterfaceDesenharPainel((Rectangle){44, 88, 552, 304});
+    InterfaceDesenharTexto("ESCOLHA SEU BROCHE", (640 - InterfaceMedirTexto("ESCOLHA SEU BROCHE", 26)) / 2, 112, 26, BLACK);
+    InterfaceDesenharTexto("Ele define sua defesa e sua primeira espada.", 138, 145, 14, DARKGRAY);
+    for (int indice = 0; indice < 3; indice++) {
+        const Rectangle cartao = {68.0f + indice * 174.0f, 184.0f, 156.0f, 128.0f};
+        const Tipo tipo = TipoDoBroche(indice);
+        const bool selecionado = jogo->selecao_broche == indice;
+        const Color cor = cor_tipo(tipo);
+        DrawRectangleRec(cartao, selecionado ? Fade(cor, 0.30f) : Fade(RAYWHITE, 0.75f));
+        DrawRectangleLinesEx(cartao, selecionado ? 4.0f : 2.0f, selecionado ? cor : DARKGRAY);
+        const SpriteJogo *sprite_broche = sprite_obter(&jogo->sprites, sprites_broche[indice]);
+        if (sprite_broche != NULL) {
+            const float largura_maxima = 58.0f;
+            const float altura_maxima = 58.0f;
+            const float escala = fminf(largura_maxima / (float)sprite_broche->textura.width,
+                                       altura_maxima / (float)sprite_broche->textura.height);
+            const float largura = sprite_broche->textura.width * escala;
+            const float altura = sprite_broche->textura.height * escala;
+            SpriteDesenharAjustado(&jogo->sprites, sprites_broche[indice],
+                                   (Rectangle){cartao.x + (cartao.width - largura) * 0.5f,
+                                               186.0f + (altura_maxima - altura) * 0.5f,
+                                               largura, altura}, WHITE);
+        } else {
+            DrawCircle((int)(cartao.x + cartao.width / 2.0f), 216, 20, cor);
+            DrawCircleLines((int)(cartao.x + cartao.width / 2.0f), 216, 20, BLACK);
+        }
+        InterfaceDesenharTextoAjustado(nomes[indice], (Rectangle){cartao.x + 11, 249, cartao.width - 22, 17}, 13, BLACK);
+        InterfaceDesenharTextoQuebrado(descricoes[indice], (Rectangle){cartao.x + 10, 274, cartao.width - 20, 30}, 12, 2, DARKGRAY);
+        if (selecionado) InterfaceDesenharTexto(">", (int)cartao.x - 15, 237, 22, cor);
+    }
+    InterfaceDesenharAtalho("A/D ou setas escolher  |  ESPACO confirmar  |  X voltar", 104, 346);
 }
 
 static void FinalizarPartida(EstadoJogo *jogo, bool vitoria)
@@ -668,18 +769,12 @@ static void AtualizarInventario(EstadoJogo *jogo)
         if (CheckCollisionPointRec(jogo->posicao_mouse, AreaInventario(indice))) {
             jogo->selecao_inventario = indice;
             jogo->inventario_foco_equipamento = false;
-            if (jogo->mouse_pressionado) {
-                const ItemInventario *pilha = &jogo->jogador.inventario[indice];
-                if (pilha->quantidade > 0 && ItemEhEquipamento(pilha->id))
-                    JogadorEquiparDoInventario(&jogo->jogador, indice, EspacoPreferidoParaItem(jogo, pilha->id));
-            }
         }
     }
     for (int espaco = 0; espaco < ESPACO_EQUIPADO_TOTAL; espaco++) {
         if (CheckCollisionPointRec(jogo->posicao_mouse, AreaEquipamento(espaco))) {
             jogo->selecao_equipamento = espaco;
             jogo->inventario_foco_equipamento = true;
-            if (jogo->mouse_pressionado) JogadorDesequipar(&jogo->jogador, (EspacoEquipamento)espaco);
         }
     }
     if (jogo->inventario_foco_equipamento) {
@@ -687,7 +782,7 @@ static void AtualizarInventario(EstadoJogo *jogo)
             jogo->selecao_equipamento = (jogo->selecao_equipamento + ESPACO_EQUIPADO_TOTAL - 1) % ESPACO_EQUIPADO_TOTAL;
         if (entrada_baixo_pressionada() || entrada_direita_pressionada())
             jogo->selecao_equipamento = (jogo->selecao_equipamento + 1) % ESPACO_EQUIPADO_TOTAL;
-        if (entrada_confirmar_pressionada())
+        if (entrada_confirmar_pressionada() || entrada_cancelar_pressionada())
             JogadorDesequipar(&jogo->jogador, (EspacoEquipamento)jogo->selecao_equipamento);
     } else {
         if (entrada_esquerda_pressionada()) jogo->selecao_inventario =
@@ -707,7 +802,79 @@ static void AtualizarInventario(EstadoJogo *jogo)
     }
     if (!jogo->inventario_foco_equipamento && IsKeyPressed(KEY_DELETE))
         JogadorDescartarItem(&jogo->jogador, jogo->selecao_inventario);
-    if (entrada_cancelar_pressionada() || IsKeyPressed(KEY_ESCAPE)) jogo->tela = jogo->tela_antes_inventario;
+    if ((!jogo->inventario_foco_equipamento && entrada_cancelar_pressionada()) || IsKeyPressed(KEY_ESCAPE))
+        jogo->tela = jogo->tela_antes_inventario;
+}
+
+
+static void ReiniciarPiloto(EstadoJogo *jogo)
+{
+    bool ignorar=jogo->batalha.defesa.depurar_invencivel;
+    JogadorInicializarComBroche(&jogo->jogador,jogo->piloto_tipo);
+    jogo->jogador.tipo_defesa=jogo->piloto_tipo;
+    jogo->jogador.vida_base=jogo->piloto_vida?80:40;
+    jogo->jogador.multiplicador_dificuldade=BalanceamentoMultiplicadorDanoRecebido((DificuldadeJogo)jogo->piloto_dificuldade);
+    JogadorRecalcularAtributos(&jogo->jogador);
+    jogo->jogador.hp=jogo->jogador.vida_maxima;
+    jogo->inimigo=InimigoCriar(PilotoInimigoId(jogo->piloto_inimigo));
+    jogo->id_depuracao_padrao=PilotoBase(jogo->piloto_inimigo)+jogo->piloto_ataque;
+    DefesaIniciar(&jogo->batalha.defesa,(IdPadraoProjetil)jogo->id_depuracao_padrao,
+        (Rectangle){42,228,556,94},50,0,1,1);
+    jogo->batalha.defesa.depurar_invencivel=ignorar;
+    jogo->piloto_pausado=false;
+}
+void JogoAbrirPiloto(EstadoJogo *jogo,int inimigo)
+{
+    jogo->piloto_ativo=true;jogo->piloto_inimigo=(inimigo%PilotoTotalInimigos()+PilotoTotalInimigos())%PilotoTotalInimigos();jogo->piloto_ataque=0;
+    jogo->piloto_tipo=TIPO_NEUTRO;jogo->piloto_dificuldade=DIFICULDADE_NORMAL;
+    jogo->tela=DEPURAR_EFEITOS;
+    ReiniciarPiloto(jogo);
+}
+static void AtualizarPiloto(EstadoJogo *jogo)
+{
+    bool reiniciar=false;
+    if(IsKeyPressed(KEY_ONE)){jogo->piloto_ataque=0;reiniciar=true;}
+    if(IsKeyPressed(KEY_TWO)){jogo->piloto_ataque=1;reiniciar=true;}
+    if(IsKeyPressed(KEY_THREE)){jogo->piloto_ataque=2;reiniciar=true;}
+    if(IsKeyPressed(KEY_TAB)){jogo->piloto_inimigo=(jogo->piloto_inimigo+(IsKeyDown(KEY_LEFT_SHIFT)?PilotoTotalInimigos()-1:1))%PilotoTotalInimigos();reiniciar=true;}
+    if(IsKeyPressed(KEY_C)){jogo->piloto_tipo=(Tipo)((jogo->piloto_tipo+1)%TIPO_TOTAL);reiniciar=true;}
+    if(IsKeyPressed(KEY_F7)){jogo->piloto_dificuldade=(jogo->piloto_dificuldade+1)%3;reiniciar=true;}
+    if(IsKeyPressed(KEY_V)){jogo->piloto_vida=!jogo->piloto_vida;reiniciar=true;}
+    if(IsKeyPressed(KEY_I))jogo->batalha.defesa.depurar_invencivel=!jogo->batalha.defesa.depurar_invencivel;
+    if(IsKeyPressed(KEY_B))jogo->sprites.depurar_limites=!jogo->sprites.depurar_limites;
+    if(IsKeyPressed(KEY_F6))SpritesRecarregar(&jogo->sprites);
+    if(IsKeyPressed(KEY_ESCAPE)||IsKeyPressed(KEY_P))jogo->piloto_pausado=!jogo->piloto_pausado;
+    if(IsKeyPressed(KEY_X))jogo->saida_solicitada=true;
+    if(reiniciar||IsKeyPressed(KEY_R))ReiniciarPiloto(jogo);
+    if(!jogo->piloto_pausado){
+        DefesaAtualizar(&jogo->batalha.defesa,&jogo->jogador,GetFrameTime());
+        if(jogo->batalha.defesa.fase==DEFESA_FINALIZADA)jogo->piloto_pausado=true;
+    }
+}
+static void DesenharPiloto(const EstadoJogo *jogo)
+{
+    const EstadoDefesa *d=&jogo->batalha.defesa;
+    ClearBackground((Color){30,33,43,255});
+    InterfaceDesenharPainel((Rectangle){20,16,600,89});
+    InterfaceDesenharTextoAjustado(jogo->inimigo.nome,(Rectangle){36,29,430,24},22,BLACK);
+    InterfaceDesenharTexto(TextFormat("TESTE  %d/%d   |   ataque %d/3   |   dificuldade %d",
+        jogo->piloto_inimigo+1,PilotoTotalInimigos(),jogo->piloto_ataque+1,jogo->piloto_dificuldade+1),36,62,14,DARKGRAY);
+    InterfaceDesenharTextoAjustado(TextFormat("Defesa: %s  |  imagens temporarias: manifesto de assets",
+        nome_tipo(jogo->jogador.tipo_defesa)),(Rectangle){36,82,480,16},12,DARKGRAY);
+    IdSprite inimigo=SpriteIdInimigo(jogo->inimigo.id,false);
+    const SpriteJogo *s=sprite_obter(&jogo->sprites,inimigo);
+    if(s)SpriteDesenharCentralizadoEscalado(&jogo->sprites,inimigo,(Vector2){566,60},WHITE,
+        jogo->tempo_decorrido,68.0f/fmaxf(s->textura.width,s->textura.height),false);
+    DefesaDesenhar(d,true,&jogo->sprites);
+    InterfaceDesenharPainel((Rectangle){20,343,600,122});
+    InterfaceDesenharTexto(TextFormat("HP %d/%d   |   dano da rodada %d/%d   |   i-frames %.2f s",
+        jogo->jogador.hp,jogo->jogador.vida_maxima,d->orcamento.recebido,d->orcamento.limite_rodada,
+        d->temporizador_invencibilidade),36,355,15,BLACK);
+    InterfaceDesenharTexto("1/2/3 ataque | TAB inimigo | R reiniciar | P/ESC pausar | F8 voltar",36,382,13,DARKGRAY);
+    InterfaceDesenharTexto("WASD/setas mover | SHIFT dash | I invencivel | B hitbox",36,402,13,DARKGRAY);
+    InterfaceDesenharTexto("C elemento | F7 dificuldade | V vida 40/80 | F6 recarregar imagens",36,422,13,DARKGRAY);
+    if(jogo->piloto_pausado)InterfaceDesenharTexto("PAUSADO / R para repetir",36,443,12,MAROON);
+    else if(d->depurar_invencivel)InterfaceDesenharTexto("INVENCIBILIDADE DE TESTE ATIVA",36,443,12,MAROON);
 }
 
 void JogoInicializar(EstadoJogo *jogo)
@@ -735,6 +902,22 @@ void JogoInicializar(EstadoJogo *jogo)
 
 void JogoAtualizar(EstadoJogo *jogo)
 {
+    static EstadoJogo estado_antes_piloto;
+    static bool retorno_piloto_disponivel = false;
+    if (IsKeyPressed(KEY_F8) || (jogo->piloto_ativo && IsKeyPressed(KEY_X))) {
+        if (jogo->piloto_ativo && retorno_piloto_disponivel) {
+            SistemaSprites sprites_atuais=jogo->sprites;
+            *jogo = estado_antes_piloto;
+            jogo->sprites=sprites_atuais;
+            retorno_piloto_disponivel = false;
+        } else if (!jogo->piloto_ativo) {
+            estado_antes_piloto = *jogo;
+            retorno_piloto_disponivel = true;
+            JogoAbrirPiloto(jogo, 8);
+            jogo->batalha.defesa.depurar_invencivel = false;
+        }
+        return;
+    }
     bool abriu_inventario = false;
     const Vector2 posicao_mouse_atual = jogo->posicao_mouse;
     const bool mouse_moveu = fabsf(posicao_mouse_atual.x - jogo->ultima_posicao_mouse.x) > 0.1f ||
@@ -744,6 +927,11 @@ void JogoAtualizar(EstadoJogo *jogo)
         jogo->posicao_mouse = (Vector2){-1000.0f, -1000.0f};
     if ((jogo->tela == BATALHA || jogo->tela == DEPURAR_EFEITOS) && !IsWindowFocused()) {
         AudioAtualizar(&jogo->audio, GetFrameTime());
+        return;
+    }
+    if (jogo->piloto_ativo) {
+        jogo->tempo_decorrido += GetFrameTime();
+        AtualizarPiloto(jogo);
         return;
     }
     if (jogo->tela == BATALHA && jogo->temporizador_transicao <= 0.0f &&
@@ -757,19 +945,7 @@ void JogoAtualizar(EstadoJogo *jogo)
     if (entrada_cima_pressionada() || entrada_baixo_pressionada() || entrada_esquerda_pressionada() || entrada_direita_pressionada()) {
         AudioTocar(&jogo->audio, AUDIO_CURSOR);
     }
-#ifndef NDEBUG
-    if (IsKeyPressed(KEY_F8) && jogo->tela != DEPURAR_EFEITOS) {
-        jogo->tela_antes_pausa = jogo->tela;
-        jogo->tela = DEPURAR_EFEITOS;
-        jogo->inimigo_depuracao_padrao = INIMIGO_CHEFE_SINEIRO;
-        jogo->id_depuracao_padrao = PADRAO_SINO_GAS_SOMBRA;
-        JogadorInicializar(&jogo->jogador);
-        DefesaInicializar(&jogo->batalha.defesa);
-        DefesaIniciar(&jogo->batalha.defesa, PADRAO_SINO_GAS_SOMBRA, (Rectangle){42, 228, 556, 94},
-                     0, 0, 1.0f, 1.0f);
-        jogo->batalha.defesa.depurar_invencivel = true;
-    }
-#endif
+
 
     if (IsKeyPressed(KEY_TAB) &&
         (jogo->tela == BATALHA || jogo->tela == RECOMPENSA || jogo->tela == DESCANSO ||
@@ -795,12 +971,28 @@ void JogoAtualizar(EstadoJogo *jogo)
             }
         }
         if (confirmado) {
-            if (jogo->selecao_titulo == 0) IniciarPartida(jogo);
+            if (jogo->selecao_titulo == 0) AbrirEscolhaBroche(jogo);
             else if (jogo->selecao_titulo == 1) jogo->tela = RELIQUIAS;
             else if (jogo->selecao_titulo == 2) jogo->tela = COMO_JOGAR;
             else if (jogo->selecao_titulo == 3) jogo->tela = OPCOES;
             else jogo->saida_solicitada = true;
         }
+    } else if (jogo->tela == ESCOLHER_BROCHE) {
+        bool confirmou_mouse = false;
+        for (int indice = 0; indice < 3; indice++) {
+            const Rectangle cartao = {68.0f + indice * 174.0f, 184.0f, 156.0f, 128.0f};
+            if (CheckCollisionPointRec(jogo->posicao_mouse, cartao)) {
+                jogo->selecao_broche = indice;
+                confirmou_mouse = jogo->mouse_pressionado;
+            }
+        }
+        if (entrada_esquerda_pressionada() || entrada_cima_pressionada())
+            jogo->selecao_broche = (jogo->selecao_broche + 2) % 3;
+        if (entrada_direita_pressionada() || entrada_baixo_pressionada())
+            jogo->selecao_broche = (jogo->selecao_broche + 1) % 3;
+        if (entrada_confirmar_pressionada() || confirmou_mouse)
+            IniciarPartida(jogo, TipoDoBroche(jogo->selecao_broche));
+        if (entrada_cancelar_pressionada()) jogo->tela = TITULO;
     } else if (jogo->tela == BATALHA) {
         ResultadoBatalha resultado = {0};
 
@@ -933,7 +1125,7 @@ void JogoAtualizar(EstadoJogo *jogo)
                                                                ObterAreaEscolha(292)));
         if (entrada_cima_pressionada() || entrada_baixo_pressionada()) jogo->selecao_final = 1 - jogo->selecao_final;
         if (entrada_confirmar_pressionada() || confirmou_mouse) {
-            if (jogo->selecao_final == 0 && jogo->tela == FIM_JOGO) IniciarPartida(jogo);
+            if (jogo->selecao_final == 0 && jogo->tela == FIM_JOGO) AbrirEscolhaBroche(jogo);
             else jogo->tela = TITULO;
         }
     } else if (jogo->tela == RELIQUIAS) {
@@ -1070,6 +1262,7 @@ void JogoAtualizar(EstadoJogo *jogo)
 
 void JogoDesenhar(const EstadoJogo *jogo)
 {
+    if (jogo->piloto_ativo) { DesenharPiloto(jogo); return; }
     RenderizacaoDesenharFundo(&jogo->renderizacao, jogo->tempo_decorrido);
     if (jogo->tela != TITULO) {
         const IdSprite fundo = SpriteIdFundoTipo(TorreTipoDoAndar(jogo->torre.andar));
@@ -1084,6 +1277,8 @@ void JogoDesenhar(const EstadoJogo *jogo)
     }
     if (jogo->tela == TITULO) {
         DesenharTitulo(jogo);
+    } else if (jogo->tela == ESCOLHER_BROCHE) {
+        DesenharEscolhaBroche(jogo);
     } else if (jogo->tela == BATALHA) {
         BatalhaDesenhar(&jogo->batalha, &jogo->jogador, &jogo->inimigo, &jogo->dialogo, &jogo->qte,
                    jogo->renderizacao.tremor_linha && !jogo->salvamento.efeitos_reduzidos, jogo->salvamento.efeitos_reduzidos,
@@ -1091,8 +1286,8 @@ void JogoDesenhar(const EstadoJogo *jogo)
         if (jogo->temporizador_tutorial > 0.0f) DesenharTutorial(jogo);
         if (jogo->temporizador_transicao > 0.0f) {
             InterfaceDesenharPainel((Rectangle){198, 193, 244, 82});
-            DrawText("SUBINDO...", 252, 215, 25, BLACK);
-            DrawText(TextFormat("ANDAR %d", jogo->torre.andar), 276, 246, 16, DARKGRAY);
+            InterfaceDesenharTexto("SUBINDO...", (640 - InterfaceMedirTexto("SUBINDO...", 25)) / 2, 215, 25, BLACK);
+            InterfaceDesenharTexto(TextFormat("ANDAR %d", jogo->torre.andar), 276, 246, 16, DARKGRAY);
         }
     } else if (jogo->tela == PAUSA) {
         DesenharPausa(jogo);
@@ -1106,16 +1301,16 @@ void JogoDesenhar(const EstadoJogo *jogo)
         DesenharLoja(jogo);
     } else if (jogo->tela == FIM_JOGO) {
         InterfaceDesenharPainel((Rectangle){62, 120, 516, 250});
-        DrawText("FIM DA RUN", 225, 152, 30, BLACK);
-        DrawText(TextFormat("Andar %d  |  Moedas %d", jogo->torre.andar, jogo->torre.moedas),
+        InterfaceDesenharTexto("FIM DA RUN", (640 - InterfaceMedirTexto("FIM DA RUN", 30)) / 2, 152, 30, BLACK);
+        InterfaceDesenharTexto(TextFormat("Andar %d  |  Moedas %d", jogo->torre.andar, jogo->torre.moedas),
                  190, 206, 18, DARKGRAY);
         DesenharEscolha(270, "TENTAR DE NOVO", jogo->selecao_final == 0);
         DesenharEscolha(310, "TITULO", jogo->selecao_final == 1);
     } else if (jogo->tela == VITORIA) {
         InterfaceDesenharPainel((Rectangle){62, 104, 516, 276});
-        DrawText("TORRE CONCLUIDA", 185, 136, 29, BLACK);
-        DrawText(TextFormat("%d andares | %d moedas", TOTAL_ANDARES_TORRE, jogo->torre.moedas), 205, 190, 18, DARKGRAY);
-        DrawText(TextFormat("Poupar: %d  |  Dano: %d", jogo->torre.vitorias_misericordia,
+        InterfaceDesenharTexto("TORRE CONCLUIDA", (640 - InterfaceMedirTexto("TORRE CONCLUIDA", 29)) / 2, 136, 29, BLACK);
+        InterfaceDesenharTexto(TextFormat("%d andares | %d moedas", TOTAL_ANDARES_TORRE, jogo->torre.moedas), 205, 190, 18, DARKGRAY);
+        InterfaceDesenharTexto(TextFormat("Poupar: %d  |  Dano: %d", jogo->torre.vitorias_misericordia,
                             jogo->torre.vitorias_dano), 205, 218, 18, DARKGRAY);
         DesenharEscolha(292, "TITULO", true);
     } else if (jogo->tela == RELIQUIAS) {
@@ -1134,7 +1329,7 @@ void JogoDesenhar(const EstadoJogo *jogo)
     if ((jogo->tela == BATALHA || jogo->tela == DEPURAR_EFEITOS) && !IsWindowFocused()) {
         DrawRectangle(0, 0, LOGICO_LARGURA, LOGICO_ALTURA, (Color){0, 0, 0, 135});
         InterfaceDesenharPainel((Rectangle){142, 190, 356, 92});
-        DrawText("TECLADO PAUSADO", 218, 208, 20, BLACK);
-        DrawText("Clique na janela para continuar", 207, 241, 14, DARKGRAY);
+        InterfaceDesenharTexto("TECLADO PAUSADO", (640 - InterfaceMedirTexto("TECLADO PAUSADO", 20)) / 2, 208, 20, BLACK);
+        InterfaceDesenharTexto("Clique na janela para continuar", 207, 241, 14, DARKGRAY);
     }
 }

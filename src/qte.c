@@ -1,3 +1,4 @@
+#include "ui.h"
 #include "qte.h"
 
 #include "input.h"
@@ -252,7 +253,7 @@ static void DesenharTeclaEspaco(int x, int y)
                      (Color){174, 171, 164, 255});
     DrawRectangleRec(tecla, RAYWHITE);
     DrawRectangleLinesEx(tecla, 1.5f, BLACK);
-    DrawText("ESPACO", x + 12, y + 4, 12, BLACK);
+    InterfaceDesenharTexto("ESPACO", x + 12, y + 4, 12, BLACK);
 }
 
 static void DesenharPassos(const Qte *qte, int x, int y)
@@ -273,8 +274,8 @@ static void DesenharGuarda(const Qte *qte)
     const float progresso = 1.0f - qte->temporizador_guarda / QTE_SEGUNDOS_GUARDA;
     const int contagem = 3 - (int)(progresso * 3.0f);
 
-    DrawText("PREPARE-SE", 70, 244, 14, DARKGRAY);
-    DrawText(TextFormat("%d", contagem < 1 ? 1 : contagem), 302, 255, 34,
+    InterfaceDesenharTexto("PREPARE-SE", 70, 244, 14, DARKGRAY);
+    InterfaceDesenharTexto(TextFormat("%d", contagem < 1 ? 1 : contagem), 302, 255, 34,
              (Color){225, 95, 122, 255});
     DrawRectangle(170, 299, 300, 7, LIGHTGRAY);
     DrawRectangle(170, 299, (int)(300.0f * progresso), 7, (Color){225, 95, 122, 255});
@@ -291,9 +292,9 @@ void qte_desenhar(const Qte *qte)
     }
     if (qte->resultado_pronto) {
         const char *nome = qte_nome_resultado(qte->resultado);
-        DrawText(nome, 320 - MeasureText(nome, 30) / 2, 252, 30, CorResultado(qte->resultado));
-        DrawText(qte->resultado == QTE_ERRO ? "O golpe ainda causa dano reduzido." : "Golpe confirmado!",
-                 320 - MeasureText(qte->resultado == QTE_ERRO ? "O golpe ainda causa dano reduzido." :
+        InterfaceDesenharTexto(nome, 320 - InterfaceMedirTexto(nome, 30) / 2, 252, 30, CorResultado(qte->resultado));
+        InterfaceDesenharTexto(qte->resultado == QTE_ERRO ? "O golpe ainda causa dano reduzido." : "Golpe confirmado!",
+                 320 - InterfaceMedirTexto(qte->resultado == QTE_ERRO ? "O golpe ainda causa dano reduzido." :
                                    "Golpe confirmado!", 12) / 2, 289, 12, DARKGRAY);
         return;
     }
@@ -302,8 +303,8 @@ void qte_desenhar(const Qte *qte)
         const float progresso = Limitar01(qte->decorrido / qte->duracao);
         const float raio = 25.0f - progresso * 19.0f;
 
-        DrawText("IMPACTO", 70, 240, 14, destaque);
-        DrawText("Aperte quando os circulos se encontrarem", 70, 258, 12, BLACK);
+        InterfaceDesenharTexto("IMPACTO", 70, 240, 14, destaque);
+        InterfaceDesenharTexto("Aperte quando os circulos se encontrarem", 70, 258, 12, BLACK);
         DesenharTeclaEspaco(472, 242);
         DrawCircleLines(320, 288, 9.0f, BLACK);
         DrawCircleLines(320, 288, raio, progresso > qte->tempo_alvo ? RED : destaque);
@@ -317,8 +318,8 @@ void qte_desenhar(const Qte *qte)
         const float janela = LimitarDificuldade(qte->dificuldade, 0.145f, 0.010f, 0.080f);
         const int largura_alvo = (int)(largura * janela * 2.0f);
 
-        DrawText("RITMO", 70, 240, 14, destaque);
-        DrawText("Acerte as 3 zonas usando apenas ESPACO", 70, 258, 12, BLACK);
+        InterfaceDesenharTexto("RITMO", 70, 240, 14, destaque);
+        InterfaceDesenharTexto("Acerte as 3 zonas usando apenas ESPACO", 70, 258, 12, BLACK);
         DesenharTeclaEspaco(472, 242);
         DesenharPassos(qte, 516, 298);
         DrawRectangle(trilho_x, trilho_y - 5, largura, 10, (Color){218, 216, 210, 255});
@@ -335,8 +336,8 @@ void qte_desenhar(const Qte *qte)
         const int zona_x = barra_x + (int)(largura * (0.68f - largura_zona * 0.5f));
         const int pixels_zona = (int)(largura * largura_zona);
 
-        DrawText("CARGA", 70, 240, 14, destaque);
-        DrawText(qte->segurar_pronto ? "Segure e solte dentro da zona verde" :
+        InterfaceDesenharTexto("CARGA", 70, 240, 14, destaque);
+        InterfaceDesenharTexto(qte->segurar_pronto ? "Segure e solte dentro da zona verde" :
                                       "Solte ESPACO para preparar", 70, 258, 12, BLACK);
         DesenharTeclaEspaco(472, 242);
         DrawRectangle(barra_x, barra_y, largura, 18, (Color){218, 216, 210, 255});
@@ -349,7 +350,7 @@ void qte_desenhar(const Qte *qte)
     }
 
     if (qte->temporizador_retorno > 0.0f) {
-        DrawText(qte->retorno_sucesso ? "ACERTO" : "ERRO", 492, 278, 12,
+        InterfaceDesenharTexto(qte->retorno_sucesso ? "ACERTO" : "ERRO", 492, 278, 12,
                  qte->retorno_sucesso ? GREEN : RED);
     }
 }

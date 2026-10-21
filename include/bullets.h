@@ -59,6 +59,42 @@ typedef enum {
     PADRAO_MERCENARIO_RICOCHETE, PADRAO_CARCEREIRO_GRADE,
     PADRAO_CULTISTA_LABIRINTO, PADRAO_AFOGADO_MARE_CORAL,
     PADRAO_MAGO_ESPIRAL_CINZAS, PADRAO_GOBLIN_EXERCITO, PADRAO_INQUISIDOR_VEREDITO,
+    PADRAO_PILOTO_POEIRA_ASA,
+    PADRAO_PILOTO_PO_CONTRATEMPO,
+    PADRAO_PILOTO_REVOADA_CEGA,
+    PADRAO_PILOTO_ADAGA_RETORNO,
+    PADRAO_PILOTO_REFLEXO_ROUBADO,
+    PADRAO_PILOTO_ROUBO_PASSAGEM,
+    PADRAO_PILOTO_ANCORA_CORAL,
+    PADRAO_PILOTO_RESSACA_CALCIFICADA,
+    PADRAO_PILOTO_RECIFE_RUPTURA,
+    PADRAO_PLANTA_ESTILHACO_LANCA,
+    PADRAO_PLANTA_ESCUDO_ENRAIZADO,
+    PADRAO_PLANTA_TAMPAS_DOBRADICA,
+    PADRAO_PLANTA_FRASCO_AGITADO,
+    PADRAO_PLANTA_RECEITA_REVERSA,
+    PADRAO_PLANTA_ALMOFARIZ,
+    PADRAO_PLANTA_GOTAS_GEMEAS,
+    PADRAO_PLANTA_ARRASTO_MENTA,
+    PADRAO_PLANTA_DIVISAO_CELULAR,
+    PADRAO_PLANTA_SACUDIDA,
+    PADRAO_PLANTA_TOCAS_CADEIA,
+    PADRAO_PLANTA_DISPARADA,
+    PADRAO_PLANTA_CEIFA,
+    PADRAO_PLANTA_RAIZES_PROCURA,
+    PADRAO_PLANTA_RITUAL,
+    PADRAO_AGUA_TSUNAMI,
+    PADRAO_AGUA_JATO_QUADRANTE,
+    PADRAO_AGUA_CONVES,
+    PADRAO_AGUA_PEGADAS,
+    PADRAO_AGUA_VISCOSIDADE,
+    PADRAO_AGUA_BOLHA,
+    PADRAO_AGUA_AVALANCHE,
+    PADRAO_AGUA_ESTACAS,
+    PADRAO_AGUA_PRISAO,
+    PADRAO_AGUA_REFRACAO,
+    PADRAO_AGUA_REFLEXO,
+    PADRAO_AGUA_MEMBRANA,
     PADRAO_TOTAL
 } IdPadraoProjetil;
 
@@ -106,6 +142,17 @@ typedef struct {
 } PadraoProjetil;
 
 typedef struct {
+    Vector2 velocidade;
+    float gelo;
+    Vector2 origem_rastro;
+    Vector2 posicoes[12];
+    float tempos[12];
+    unsigned long ids[12],sequencia;
+    int total,proximo;
+    float proxima;
+} EstadoMovimentoAgua;
+
+typedef struct {
     Projetil projeteis[MAXIMO_PROJETEIS];
     PadraoProjetil padrao;
     IdPadraoProjetil id_padrao;
@@ -114,6 +161,7 @@ typedef struct {
     Rectangle caixa_alvo;
     Vector2 posicao_alma;
     Vector2 rastro_alma[6];
+    EstadoMovimentoAgua agua;
     float raio_alma;
     float temporizador_invencibilidade;
     int ultimo_dano;
@@ -144,6 +192,17 @@ typedef struct {
     float temporizador_recarga_dash;
     bool no_chao;
     int batida_movimento;
+    OrcamentoDano orcamento;
+    bool orcamento_iniciado;
+    Vector2 inicio_movimento;
+    Vector2 inicio_dash;
+    Vector2 fim_dash;
+    bool dash_neste_passo;
+    Vector2 direcao_dash;
+    float dash_restante;
+    float fator_movimento_ataque;
+    unsigned long eventos_acertados[16];
+    int total_eventos_acertados;
     FaseDefesa fase;
 } EstadoDefesa;
 
@@ -167,6 +226,7 @@ ResultadoDefesa DefesaAtualizar(EstadoDefesa *defesa, AtributosJogador *jogador,
 ResultadoDefesa DefesaAtualizarComEntrada(EstadoDefesa *defesa, AtributosJogador *jogador,
                                     float tempo_delta, EntradaDefesa entrada);
 void DefesaDesenhar(const EstadoDefesa *defesa, bool desenhar_efeitos, const SistemaSprites *sprites);
+int DefesaAplicarDano(EstadoDefesa *defesa, AtributosJogador *jogador, int base, Tipo tipo);
 int DificuldadePadraoProjetil(IdPadraoProjetil id_padrao);
 
 #endif

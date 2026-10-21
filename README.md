@@ -73,7 +73,8 @@ olhar que exige ficar parado, duelos de espada, ecos e prensas.
 - QTE de carga: segure Espaco, Enter ou Z e solte na faixa verde
 - Esc: pausar
 - Durante a run, Tab abre a grade de 24 espacos e os oito equipamentos
-- No inventario, Q alterna entre mochila/equipamentos, Espaco equipa ou retira, Delete descarta uma unidade e Tab fecha
+- Ao iniciar uma nova run, escolha um broche de Chama, Planta ou Agua. Ele define a defesa inicial e a espada de treino do mesmo elemento.
+- No inventario, Q alterna entre mochila/equipamentos, Espaco equipa ou retira, X tambem remove a peca selecionada, Delete descarta uma unidade e Tab fecha. A ficha compara o item escolhido com a peca atualmente equipada no mesmo espaco.
 
 AGIR, ITEM e POUPAR gastam o turno: depois da mensagem, o inimigo atacara. POUPAR da mais
 moedas e XP, mas so encerra a batalha quando a misericordia chegar a 100% ou o inimigo estiver

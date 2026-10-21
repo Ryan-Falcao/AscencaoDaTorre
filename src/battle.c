@@ -1,3 +1,6 @@
+#include "balance.h"
+#include "pilot_patterns.h"
+#include "ui.h"
 #include "battle.h"
 #include "input.h"
 #include "patterns.h"
@@ -59,23 +62,7 @@ static int TotalConsumiveis(const AtributosJogador *jogador)
     return total;
 }
 
-static bool PadraoCausaSangramento(IdPadraoProjetil padrao)
-{
-    switch (padrao) {
-        case PADRAO_LEBRE_BARREIRAS:
-        case PADRAO_LEBRE_PARKOUR:
-        case PADRAO_LEBRE_PULOS:
-        case PADRAO_GATO_IMPACTO:
-        case PADRAO_GATO_PERSEGUICAO:
-        case PADRAO_GATO_EMBOSCADA:
-        case PADRAO_CAVALEIRO_LANCAS:
-        case PADRAO_CAVALEIRO_DESAFIO:
-        case PADRAO_CAVALEIRO_DUELO:
-            return true;
-        default:
-            return false;
-    }
-}
+
 
 static void MostrarMensagem(Batalha *batalha, TextoDigitado *dialogo, const char *mensagem,
                         FaseBatalha proxima_fase);
@@ -218,8 +205,22 @@ static void IniciarTurnoInimigo(Batalha *batalha, AtributosJogador *jogador,
     if (status_ativo == STATUS_CEGAR) multiplicador_dano *= 0.75f;
 
     if (inimigo->total_padroes > 0) {
-        id_padrao = inimigo->ids_padroes[inimigo->indice_proximo_padrao % inimigo->total_padroes];
-        inimigo->indice_proximo_padrao++;
+        int rodada = inimigo->indice_proximo_padrao++;
+        int escolha = rodada % inimigo->total_padroes;
+        if (PilotoEh(inimigo->ids_padroes[0])) {
+            if (rodada == 0) escolha = 0;
+            else if (inimigo->hp * 100 > inimigo->vida_maxima * 65) escolha = rodada % 2;
+            else {
+                static const int ordem[] = {1,0,2,1,2,0};
+                escolha = ordem[(rodada-1)%6];
+                if (inimigo->chefe && escolha==2 &&
+                    (inimigo->hp*100>inimigo->vida_maxima*35 || rodada-inimigo->ultimo_especial_em<3)) escolha=1;
+            }
+            if (inimigo->ids_padroes[escolha]==inimigo->ultimo_padrao_defesa) escolha=escolha==1?0:1;
+            if (inimigo->chefe && escolha==2) inimigo->ultimo_especial_em=rodada;
+        }
+        id_padrao = inimigo->ids_padroes[escolha];
+        inimigo->ultimo_padrao_defesa=id_padrao;
     }
 
     batalha->fase = BATALHA_INIMIGO_TURNO;
@@ -568,9 +569,9 @@ ResultadoBatalha BatalhaAtualizar(Batalha *batalha, AtributosJogador *jogador, I
         } else if (resultado == DEFESA_CONCLUIDA) {
             InimigoAvancarTurno(inimigo);
             JogadorAvancarRecargasAtaques(jogador);
-            if (batalha->dano_recebido_turno > 0 && PadraoCausaSangramento(batalha->defesa.id_padrao))
-                JogadorAplicarSangramento(jogador, 2 + batalha->andar / 5);
-            const int dano_sangramento = JogadorProcessarSangramento(jogador);
+            if (batalha->dano_recebido_turno > 0)
+                JogadorAplicarSangramento(jogador, BalanceamentoSangramento(batalha->defesa.id_padrao));
+            const int dano_sangramento = DanoAplicarResidual(&batalha->defesa.orcamento, jogador, jogador->sangramento);
             if (jogador->hp <= 0) {
                 MostrarMensagem(batalha, dialogo, "O sangramento venceu sua resistencia.", BATALHA_DERROTA);
             } else {
@@ -828,17 +829,17 @@ static void DesenharListaAcoes(const Batalha *batalha, const AtributosJogador *j
                 DesenharIconeAtaque((Vector2){area.x + 15.0f, area.y + 11.0f},
                                     disponivel ? cor_tipo(ataque->tipo) : GRAY);
             }
-            DrawText(ataque->nome, (int)area.x + 29, y + 1, 12, disponivel ? BLACK : GRAY);
+            InterfaceDesenharTextoAjustado(ataque->nome, (Rectangle){area.x + 29, y + 1, 126, 14}, 12, disponivel ? BLACK : GRAY);
             if (disponivel) {
-                DrawText(TextFormat("D%d", ataque->dano_base), (int)area.x + 162, y + 2, 11, BLACK);
-                DrawText(TextFormat("MP%d", ataque->custo_mana), (int)area.x + 194, y + 2, 11, DARKBLUE);
+                InterfaceDesenharTexto(TextFormat("D%d", ataque->dano_base), (int)area.x + 162, y + 2, 11, BLACK);
+                InterfaceDesenharTexto(TextFormat("MP%d", ataque->custo_mana), (int)area.x + 194, y + 2, 11, DARKBLUE);
                 DesenharIconeTipo(ataque->tipo, (Vector2){area.x + 242.0f, area.y + 11.0f}, true);
             }
             if (!disponivel) {
-                const int largura = MeasureText(motivo, 9) + 8;
+                const int largura = InterfaceMedirTexto(motivo, 9) + 8;
                 const int x_estado = (int)(area.x + area.width) - largura - 5;
                 DrawRectangle(x_estado, y + 1, largura, 15, (Color){211, 207, 203, 255});
-                DrawText(motivo, x_estado + 4, y + 3, 9, DARKGRAY);
+                InterfaceDesenharTexto(motivo, x_estado + 4, y + 3, 9, DARKGRAY);
             }
         } else if (batalha->menu_acao == ACAO_ACOES) {
             char motivo[48] = "";
@@ -848,18 +849,18 @@ static void DesenharListaAcoes(const Batalha *batalha, const AtributosJogador *j
 
             InterfaceDesenharLinhaOpcao(area, selecionado, disponivel, (Color){225, 95, 122, 255});
             DesenharIconeAcao(acao, (Vector2){area.x + 19.0f, area.y + 10.0f}, disponivel);
-            DrawText(acao->nome, (int)area.x + 36, y, 14, cor);
+            InterfaceDesenharTextoAjustado(acao->nome, (Rectangle){area.x + 36, y, 130, 16}, 14, cor);
             if (acao->efeito == INIMIGO_ACAO_ANALISAR) {
-                DrawText("revela o tipo e libera as acoes", (int)area.x + 174, y + 2, 11, cor);
+                InterfaceDesenharTexto("revela o tipo e libera as acoes", (int)area.x + 174, y + 2, 11, cor);
             } else {
                 const Color cor_misericordia = disponivel ? (Color){175, 128, 16, 255} : GRAY;
                 const Color cor_estresse = disponivel ? (Color){181, 55, 55, 255} : GRAY;
-                DrawText(TextFormat("MERCI %+d", acao->variacao_misericordia),
+                InterfaceDesenharTexto(TextFormat("MERCI %+d", acao->variacao_misericordia),
                          (int)area.x + 174, y + 1, 12, cor_misericordia);
-                DrawText(TextFormat("EST %+d", acao->variacao_agressividade),
+                InterfaceDesenharTexto(TextFormat("EST %+d", acao->variacao_agressividade),
                          (int)area.x + 278, y + 1, 12, cor_estresse);
             }
-            if (!disponivel) DrawText(motivo, (int)area.x + 407, y + 2, 11, GRAY);
+            if (!disponivel) InterfaceDesenharTexto(motivo, (int)area.x + 407, y + 2, 11, GRAY);
         } else if (batalha->menu_acao == ACAO_ITENS) {
             const int indice_inventario = IndiceInventarioConsumivel(jogador, linha);
             const ItemInventario *item = &jogador->inventario[indice_inventario];
@@ -876,8 +877,8 @@ static void DesenharListaAcoes(const Batalha *batalha, const AtributosJogador *j
                 DesenharIconeMenuPrincipal(2, (Vector2){area.x + 18.0f, area.y + 10.0f},
                                            disponivel ? BLACK : GRAY, sprites);
             }
-            DrawText(definicao->nome, (int)area.x + 34, y, 13, disponivel ? BLACK : GRAY);
-            DrawText(disponivel ? TextFormat("x%d", item->quantidade) : "VAZIO",
+            InterfaceDesenharTextoAjustado(definicao->nome, (Rectangle){area.x + 34, y, 173, 15}, 13, disponivel ? BLACK : GRAY);
+            InterfaceDesenharTexto(disponivel ? TextFormat("x%d", item->quantidade) : "VAZIO",
                      (int)area.x + 215, y + 1, 12, disponivel ? DARKGRAY : GRAY);
         }
     }
@@ -898,50 +899,50 @@ void BatalhaDesenhar(const Batalha *batalha, const AtributosJogador *jogador, co
             if (particle->ativo) DrawCircleV(particle->posicao, 3.0f, particle->cor);
         }
     }
-    DrawText(TextFormat("ANDAR %d/%d", batalha->andar, TOTAL_ANDARES_TORRE), 470, 28, 16, DARKGRAY);
+    InterfaceDesenharTexto(TextFormat("ANDAR %d/%d", batalha->andar, TOTAL_ANDARES_TORRE), 470, 28, 16, DARKGRAY);
     if (batalha->temporizador_dano_flutuante > 0.0f) {
         const int y = (int)(102.0f - (0.85f - batalha->temporizador_dano_flutuante) * 34.0f);
         const int tamanho = batalha->ultima_efetividade >= 2.0f ? 28 : 20;
         const Color cor = batalha->ultima_efetividade >= 2.0f ? RED :
                             (batalha->ultima_efetividade <= 0.5f ? DARKBLUE : BLACK);
-        DrawText(TextFormat("-%d", batalha->dano_flutuante), 344, y, tamanho, cor);
+        InterfaceDesenharTexto(TextFormat("-%d", batalha->dano_flutuante), 344, y, tamanho, cor);
     }
-    DrawText(inimigo->nome, 54, 32, 21, BLACK);
+    InterfaceDesenharTextoAjustado(inimigo->nome, (Rectangle){54, 30, 250, 26}, 21, BLACK);
     if (inimigo->analisado && inimigo->todos_tipos) {
-        DrawText(TextFormat("TODOS | ATUAL: %s", nome_tipo(inimigo->tipo)),
+        InterfaceDesenharTexto(TextFormat("TODOS | ATUAL: %s", nome_tipo(inimigo->tipo)),
                  54, 58, 14, cor_tipo(inimigo->tipo));
     } else if (inimigo->analisado && inimigo->possui_tipo2) {
-        DrawText(TextFormat("%s / %s", nome_tipo(inimigo->tipo), nome_tipo(inimigo->tipo2)),
+        InterfaceDesenharTexto(TextFormat("%s / %s", nome_tipo(inimigo->tipo), nome_tipo(inimigo->tipo2)),
                  54, 58, 14, cor_tipo(inimigo->tipo));
     } else {
-        DrawText(inimigo->analisado ? nome_tipo(inimigo->tipo) : "TIPO ???", 54, 58, 14,
+        InterfaceDesenharTexto(inimigo->analisado ? nome_tipo(inimigo->tipo) : "TIPO ???", 54, 58, 14,
                  inimigo->analisado ? cor_tipo(inimigo->tipo) : DARKGRAY);
     }
-    DrawText("VIDA", 54, 80, 12, BLACK);
+    InterfaceDesenharTexto("VIDA", 54, 80, 12, BLACK);
     DesenharBarraVida((Rectangle){105.0f, 80.0f, 120.0f, 12.0f}, batalha->vida_inimigo_exibida,
                   batalha->rastro_vida_inimigo, inimigo->vida_maxima, cor_tipo(inimigo->tipo));
-    DrawText(TextFormat("%d/%d", inimigo->hp, inimigo->vida_maxima), 231, 79, 12, BLACK);
-    DrawText("MERCI", 54, 99, 12, BLACK);
+    InterfaceDesenharTexto(TextFormat("%d/%d", inimigo->hp, inimigo->vida_maxima), 231, 79, 12, BLACK);
+    InterfaceDesenharTexto("MERCI", 54, 99, 12, BLACK);
     InterfaceDesenharMedidor((Rectangle){105.0f, 100.0f, 120.0f, 11.0f}, batalha->misericordia_exibida, 100.0f,
                 (Color){241, 198, 65, 255});
-    DrawText("ESTRESSE", 54, 116, 11, BLACK);
+    InterfaceDesenharTexto("ESTRESSE", 54, 116, 11, BLACK);
     InterfaceDesenharMedidor((Rectangle){105.0f, 117.0f, 120.0f, 11.0f}, batalha->agressividade_exibida, 100.0f,
                 (Color){220, 78, 76, 255});
     if (inimigo->turnos_status > 0) {
-        DrawText(TextFormat("%s %d", JogadorNomeStatus(inimigo->status), inimigo->turnos_status),
+        InterfaceDesenharTexto(TextFormat("%s %d", JogadorNomeStatus(inimigo->status), inimigo->turnos_status),
                  54, 133, 12, cor_tipo(inimigo->tipo));
     }
     if (inimigo->sangramento > 0) {
-        DrawText(TextFormat("SANGRAMENTO %d", inimigo->sangramento), 54, 150, 12, MAROON);
+        InterfaceDesenharTexto(TextFormat("SANGRAMENTO %d", inimigo->sangramento), 54, 150, 12, MAROON);
     }
     if (batalha->temporizador_mudanca_status > 0.0f) {
         const int deslocamento = (int)((0.8f - batalha->temporizador_mudanca_status) * 18.0f);
         if (batalha->popup_mudanca_misericordia != 0) {
-            DrawText(TextFormat("%+d", batalha->popup_mudanca_misericordia), 231, 97 - deslocamento, 14,
+            InterfaceDesenharTexto(TextFormat("%+d", batalha->popup_mudanca_misericordia), 231, 97 - deslocamento, 14,
                      (Color){198, 152, 23, 255});
         }
         if (batalha->popup_mudanca_agressividade != 0) {
-            DrawText(TextFormat("%+d", batalha->popup_mudanca_agressividade), 231, 128 - deslocamento, 14,
+            InterfaceDesenharTexto(TextFormat("%+d", batalha->popup_mudanca_agressividade), 231, 128 - deslocamento, 14,
                      (Color){185, 45, 44, 255});
         }
     }
@@ -951,6 +952,9 @@ void BatalhaDesenhar(const Batalha *batalha, const AtributosJogador *jogador, co
         qte_desenhar(qte);
     } else if (batalha->fase == BATALHA_INIMIGO_TURNO) {
         DefesaDesenhar(&batalha->defesa, !efeitos_reduzidos, sprites);
+    } else if (batalha->fase == BATALHA_JOGADOR_ACAO &&
+               batalha->menu_acao != ACAO_MENSAGEM && batalha->menu_acao != ACAO_NENHUM) {
+        InterfaceDesenharPainel(text_box);
     } else {
         InterfaceDesenharCaixaTexto(dialogo, text_box);
     }
@@ -961,36 +965,36 @@ void BatalhaDesenhar(const Batalha *batalha, const AtributosJogador *jogador, co
             const int indice_inventario = IndiceInventarioConsumivel(jogador, batalha->selecao_acao);
             const ItemInventario *selecionado = &jogador->inventario[indice_inventario];
             const DefinicaoItem *definicao = ItemObterDefinicao(selecionado->id);
-            DrawText(definicao->descricao, 54, 323, 11, DARKGRAY);
+            InterfaceDesenharTextoAjustado(definicao->descricao, (Rectangle){54, 320, 532, 12}, 11, DARKGRAY);
         }
     }
 
-    /* Duas linhas fixas evitam que nome, HP, defesa e buffs disputem o mesmo espaco. */
-    DrawRectangle(38, 336, 560, 55, Fade(RAYWHITE, 0.82f));
-    DrawLine(38, 336, 598, 336, (Color){69, 70, 77, 190});
-    const char *nome_exibido = MeasureText(jogador->nome, 20) > 112 ?
-        TextSubtext(jogador->nome, 0, 10) : jogador->nome;
-    DrawText(nome_exibido, 48, 343, 20, BLACK);
-    DrawText(TextFormat("LV %d", jogador->nivel), 170, 345, 14, DARKGRAY);
-    DrawText("HP", 220, 343, 16, BLACK);
-    DesenharBarraVida((Rectangle){248.0f, 346.0f, 120.0f, 14.0f}, batalha->vida_jogador_exibida,
+    /* Barras separadas deixam vida e mana legiveis mesmo na arena menor. */
+    InterfaceDesenharPainel((Rectangle){38, 334, 560, 61});
+    InterfaceDesenharTextoAjustado(jogador->nome, (Rectangle){48, 341, 102, 22}, 19, BLACK);
+    InterfaceDesenharTexto(TextFormat("LV %d", jogador->nivel), 158, 345, 14, DARKGRAY);
+    InterfaceDesenharTexto("VIDA", 211, 343, 12, BLACK);
+    DesenharBarraVida((Rectangle){249.0f, 344.0f, 154.0f, 15.0f}, batalha->vida_jogador_exibida,
                   batalha->rastro_vida_jogador, jogador->vida_maxima,
                   (Color){104, 183, 114, 255});
-    DrawText(TextFormat("%d/%d", jogador->hp, jogador->vida_maxima), 376, 343, 16, BLACK);
+    InterfaceDesenharTexto(TextFormat("%d/%d", jogador->hp, jogador->vida_maxima), 411, 343, 14, BLACK);
 
-    DrawText(TextFormat("MANA %d/%d  +%d/t", jogador->mana, jogador->mana_maxima,
-                        jogador->mana_por_turno), 48, 370, 12, DARKBLUE);
-    DrawText("DEF", 224, 370, 12, BLACK);
-    DesenharIconeTipo(jogador->tipo_defesa, (Vector2){259, 376}, true);
-    DrawText(nome_tipo(jogador->tipo_defesa), 274, 370, 12, BLACK);
+    InterfaceDesenharTexto("MANA", 48, 370, 13, DARKBLUE);
+    DesenharBarraVida((Rectangle){92.0f, 370.0f, 154.0f, 14.0f}, (float)jogador->mana,
+                      (float)jogador->mana, jogador->mana_maxima, (Color){73, 142, 221, 255});
+    InterfaceDesenharTexto(TextFormat("%d/%d", jogador->mana, jogador->mana_maxima), 253, 369, 13, DARKBLUE);
+    InterfaceDesenharTexto(TextFormat("+%d/T", jogador->mana_por_turno), 302, 369, 12, (Color){46, 102, 178, 255});
+    InterfaceDesenharTexto("DEF", 377, 370, 12, BLACK);
+    DesenharIconeTipo(jogador->tipo_defesa, (Vector2){413, 377}, true);
+    InterfaceDesenharTexto(nome_tipo(jogador->tipo_defesa), 428, 370, 12, BLACK);
     if (jogador->sangramento > 0 && jogador->turnos_buff_dano > 0) {
-        DrawText(TextFormat("SANG %d | DMG +%d%% (%d)", jogador->sangramento,
-                            jogador->percentual_buff_dano, jogador->turnos_buff_dano), 390, 370, 11, MAROON);
+        InterfaceDesenharTextoAjustado(TextFormat("SANG %d | DMG +%d%% (%d)", jogador->sangramento,
+                            jogador->percentual_buff_dano, jogador->turnos_buff_dano), (Rectangle){493, 365, 94, 22}, 10, MAROON);
     } else if (jogador->sangramento > 0) {
-        DrawText(TextFormat("SANG %d", jogador->sangramento), 390, 370, 12, MAROON);
+        InterfaceDesenharTexto(TextFormat("SANG %d", jogador->sangramento), 521, 370, 10, MAROON);
     } else if (jogador->turnos_buff_dano > 0) {
-        DrawText(TextFormat("DMG +%d%% (%d)", jogador->percentual_buff_dano,
-                            jogador->turnos_buff_dano), 390, 370, 12, (Color){133, 91, 15, 255});
+        InterfaceDesenharTexto(TextFormat("DMG +%d%% (%d)", jogador->percentual_buff_dano,
+                            jogador->turnos_buff_dano), 493, 370, 10, (Color){133, 91, 15, 255});
     }
 
     if (batalha->fase == BATALHA_INIMIGO_TURNO) {

@@ -1,3 +1,4 @@
+#include "pilot_patterns.h"
 #include "patterns.h"
 #include "enemy.h"
 #include "raymath.h"
@@ -58,10 +59,14 @@ static Vector2 Passo(Vector2 origem, Vector2 destino, float tempo_delta)
 static bool CaminhoSeguro(const EstadoDefesa *d, Vector2 alvo, float tempo_delta)
 {
     ConjuntoPerigos conjunto = d->perigos;
+    conjunto.orcamento = NULL;
+    conjunto.independente = (OrcamentoDano){0};
     AtributosJogador jogador;
     JogadorInicializar(&jogador);
     Vector2 p = d->posicao_alma;
     for (float tempo = 0; tempo < d->ciclo_ataque - .02f; tempo += tempo_delta) {
+        conjunto.origem_percurso = p;
+        conjunto.tem_percurso = true;
         if (tempo >= .18f) p = Passo(p, alvo, tempo_delta);
         PerigosAtualizar(&conjunto, &jogador, p, d->raio_alma, tempo_delta, 1, false);
         if (jogador.hp != jogador.vida_maxima) return false;
@@ -96,6 +101,8 @@ int main(int argc, char **argv)
             for (int anterior = 0; anterior < padrao; anterior++)
                 assert(inimigo.ids_padroes[anterior] != inimigo.ids_padroes[padrao]);
         }
+        /* Pilot routes use continuous controls and their own replay validator. */
+        if (PilotoEh(inimigo.ids_padroes[0])) continue;
         /* Mantem a cobertura de regressao do ataque original com aviso. */
         int indice_original = id == INIMIGO_BRASA_PASSARO ? 2 : inimigo.total_padroes - 1;
         inimigo.ids_padroes[0] = inimigo.ids_padroes[indice_original];
@@ -135,7 +142,9 @@ int main(int argc, char **argv)
                         return 1;
                     }
                 }
-                assert(ciclo >= (enraged ? 6 : 5));
+                /* Intro and last incomplete cycle may consume one period. */
+                int ciclos_completos = (int)(d.padrao.duracao / d.ciclo_ataque) - 1;
+                if(ciclo < ciclos_completos || ciclo < 4) { fprintf(stderr,"Ciclos: enemy=%d ciclo=%d esperado=%d duracao=%.2f periodo=%.2f\n",id,ciclo,ciclos_completos,d.padrao.duracao,d.ciclo_ataque); return 1; }
                 scenarios++;
             }
         }

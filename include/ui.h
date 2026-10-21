@@ -5,7 +5,7 @@
 
 typedef struct SistemaSprites SistemaSprites;
 
-#define DIALOGO_CAPACIDADE 192
+#define DIALOGO_CAPACIDADE 512
 
 typedef struct {
     char texto[DIALOGO_CAPACIDADE];
@@ -13,6 +13,12 @@ typedef struct {
     float temporizador_caractere;
     bool completo;
 } TextoDigitado;
+
+void InterfaceCarregarFontes(void);
+void InterfaceDescarregarFontes(void);
+int InterfaceMedirTexto(const char *texto, int tamanho);
+void InterfaceDesenharTexto(const char *texto, int x, int y, int tamanho, Color cor);
+void InterfaceDesenharTextoAjustado(const char *texto, Rectangle area, int tamanho, Color cor);
 
 void InterfaceDefinirTexto(TextoDigitado *texto, const char *mensagem);
 void InterfaceAtualizarTexto(TextoDigitado *texto, float tempo_delta);

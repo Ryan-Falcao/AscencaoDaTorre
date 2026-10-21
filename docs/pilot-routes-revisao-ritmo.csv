@@ -1,0 +1,181 @@
+ataque;fps;inicio_x;inicio_y;fase;rota;dano
+Adaga de Retorno;30;320;237;0;1;0
+Adaga de Retorno;30;176;164;0;1;0
+Adaga de Retorno;30;464;164;0;1;0
+Adaga de Retorno;30;176;310;0;1;0
+Adaga de Retorno;30;464;310;0;1;0
+Adaga de Retorno;60;320;237;0;1;0
+Adaga de Retorno;60;176;164;0;1;0
+Adaga de Retorno;60;464;164;0;1;0
+Adaga de Retorno;60;176;310;0;1;0
+Adaga de Retorno;60;464;310;0;1;0
+Adaga de Retorno;120;320;237;0;1;0
+Adaga de Retorno;120;176;164;0;1;0
+Adaga de Retorno;120;464;164;0;1;0
+Adaga de Retorno;120;176;310;0;1;0
+Adaga de Retorno;120;464;310;0;1;0
+Adaga de Retorno;144;320;237;0;1;0
+Adaga de Retorno;144;176;164;0;1;0
+Adaga de Retorno;144;464;164;0;1;0
+Adaga de Retorno;144;176;310;0;1;0
+Adaga de Retorno;144;464;310;0;1;0
+Reflexo Roubado;30;320;237;0;1;0
+Reflexo Roubado;30;176;164;0;1;0
+Reflexo Roubado;30;464;164;0;1;0
+Reflexo Roubado;30;176;310;0;1;0
+Reflexo Roubado;30;464;310;0;1;0
+Reflexo Roubado;60;320;237;0;1;0
+Reflexo Roubado;60;176;164;0;1;0
+Reflexo Roubado;60;464;164;0;1;0
+Reflexo Roubado;60;176;310;0;1;0
+Reflexo Roubado;60;464;310;0;1;0
+Reflexo Roubado;120;320;237;0;1;0
+Reflexo Roubado;120;176;164;0;1;0
+Reflexo Roubado;120;464;164;0;1;0
+Reflexo Roubado;120;176;310;0;1;0
+Reflexo Roubado;120;464;310;0;1;0
+Reflexo Roubado;144;320;237;0;1;0
+Reflexo Roubado;144;176;164;0;1;0
+Reflexo Roubado;144;464;164;0;1;0
+Reflexo Roubado;144;176;310;0;1;0
+Reflexo Roubado;144;464;310;0;1;0
+Roubo de Passagem;30;320;237;0;1;0
+Roubo de Passagem;30;176;164;0;1;0
+Roubo de Passagem;30;464;164;0;1;0
+Roubo de Passagem;30;176;310;0;1;0
+Roubo de Passagem;30;464;310;0;1;0
+Roubo de Passagem;60;320;237;0;1;0
+Roubo de Passagem;60;176;164;0;1;0
+Roubo de Passagem;60;464;164;0;1;0
+Roubo de Passagem;60;176;310;0;1;0
+Roubo de Passagem;60;464;310;0;1;0
+Roubo de Passagem;120;320;237;0;1;0
+Roubo de Passagem;120;176;164;0;1;0
+Roubo de Passagem;120;464;164;0;1;0
+Roubo de Passagem;120;176;310;0;1;0
+Roubo de Passagem;120;464;310;0;1;0
+Roubo de Passagem;144;320;237;0;1;0
+Roubo de Passagem;144;176;164;0;1;0
+Roubo de Passagem;144;464;164;0;1;0
+Roubo de Passagem;144;176;310;0;1;0
+Roubo de Passagem;144;464;310;0;1;0
+Ancora de Coral;30;320;237;0;1;0
+Ancora de Coral;30;176;164;0;1;0
+Ancora de Coral;30;464;164;0;1;0
+Ancora de Coral;30;176;310;0;1;0
+Ancora de Coral;30;464;310;0;1;0
+Ancora de Coral;60;320;237;0;1;0
+Ancora de Coral;60;176;164;0;1;0
+Ancora de Coral;60;464;164;0;1;0
+Ancora de Coral;60;176;310;0;1;0
+Ancora de Coral;60;464;310;0;1;0
+Ancora de Coral;120;320;237;0;1;0
+Ancora de Coral;120;176;164;0;1;0
+Ancora de Coral;120;464;164;0;1;0
+Ancora de Coral;120;176;310;0;1;0
+Ancora de Coral;120;464;310;0;1;0
+Ancora de Coral;144;320;237;0;1;0
+Ancora de Coral;144;176;164;0;1;0
+Ancora de Coral;144;464;164;0;1;0
+Ancora de Coral;144;176;310;0;1;0
+Ancora de Coral;144;464;310;0;1;0
+Ancora de Coral;30;320;237;1;1;0
+Ancora de Coral;30;191;164;1;1;0
+Ancora de Coral;30;449;164;1;1;0
+Ancora de Coral;30;191;310;1;1;0
+Ancora de Coral;30;449;310;1;1;0
+Ancora de Coral;60;320;237;1;1;0
+Ancora de Coral;60;191;164;1;1;0
+Ancora de Coral;60;449;164;1;1;0
+Ancora de Coral;60;191;310;1;1;0
+Ancora de Coral;60;449;310;1;1;0
+Ancora de Coral;120;320;237;1;1;0
+Ancora de Coral;120;191;164;1;1;0
+Ancora de Coral;120;449;164;1;1;0
+Ancora de Coral;120;191;310;1;1;0
+Ancora de Coral;120;449;310;1;1;0
+Ancora de Coral;144;320;237;1;1;0
+Ancora de Coral;144;191;164;1;1;0
+Ancora de Coral;144;449;164;1;1;0
+Ancora de Coral;144;191;310;1;1;0
+Ancora de Coral;144;449;310;1;1;0
+Ressaca Calcificada;30;320;237;0;1;0
+Ressaca Calcificada;30;176;164;0;1;0
+Ressaca Calcificada;30;464;164;0;1;0
+Ressaca Calcificada;30;176;310;0;1;0
+Ressaca Calcificada;30;464;310;0;1;0
+Ressaca Calcificada;60;320;237;0;1;0
+Ressaca Calcificada;60;176;164;0;1;0
+Ressaca Calcificada;60;464;164;0;1;0
+Ressaca Calcificada;60;176;310;0;1;0
+Ressaca Calcificada;60;464;310;0;1;0
+Ressaca Calcificada;120;320;237;0;1;0
+Ressaca Calcificada;120;176;164;0;1;0
+Ressaca Calcificada;120;464;164;0;1;0
+Ressaca Calcificada;120;176;310;0;1;0
+Ressaca Calcificada;120;464;310;0;1;0
+Ressaca Calcificada;144;320;237;0;1;0
+Ressaca Calcificada;144;176;164;0;1;0
+Ressaca Calcificada;144;464;164;0;1;0
+Ressaca Calcificada;144;176;310;0;1;0
+Ressaca Calcificada;144;464;310;0;1;0
+Ressaca Calcificada;30;320;237;1;1;0
+Ressaca Calcificada;30;191;164;1;1;0
+Ressaca Calcificada;30;449;164;1;1;0
+Ressaca Calcificada;30;191;310;1;1;0
+Ressaca Calcificada;30;449;310;1;1;0
+Ressaca Calcificada;60;320;237;1;1;0
+Ressaca Calcificada;60;191;164;1;1;0
+Ressaca Calcificada;60;449;164;1;1;0
+Ressaca Calcificada;60;191;310;1;1;0
+Ressaca Calcificada;60;449;310;1;1;0
+Ressaca Calcificada;120;320;237;1;1;0
+Ressaca Calcificada;120;191;164;1;1;0
+Ressaca Calcificada;120;449;164;1;1;0
+Ressaca Calcificada;120;191;310;1;1;0
+Ressaca Calcificada;120;449;310;1;1;0
+Ressaca Calcificada;144;320;237;1;1;0
+Ressaca Calcificada;144;191;164;1;1;0
+Ressaca Calcificada;144;449;164;1;1;0
+Ressaca Calcificada;144;191;310;1;1;0
+Ressaca Calcificada;144;449;310;1;1;0
+Recife em Ruptura;30;320;237;0;1;0
+Recife em Ruptura;30;176;164;0;1;0
+Recife em Ruptura;30;464;164;0;1;0
+Recife em Ruptura;30;176;310;0;1;0
+Recife em Ruptura;30;464;310;0;1;0
+Recife em Ruptura;60;320;237;0;1;0
+Recife em Ruptura;60;176;164;0;1;0
+Recife em Ruptura;60;464;164;0;1;0
+Recife em Ruptura;60;176;310;0;1;0
+Recife em Ruptura;60;464;310;0;1;0
+Recife em Ruptura;120;320;237;0;1;0
+Recife em Ruptura;120;176;164;0;1;0
+Recife em Ruptura;120;464;164;0;1;0
+Recife em Ruptura;120;176;310;0;1;0
+Recife em Ruptura;120;464;310;0;1;0
+Recife em Ruptura;144;320;237;0;1;0
+Recife em Ruptura;144;176;164;0;1;0
+Recife em Ruptura;144;464;164;0;1;0
+Recife em Ruptura;144;176;310;0;1;0
+Recife em Ruptura;144;464;310;0;1;0
+Recife em Ruptura;30;320;237;1;1;0
+Recife em Ruptura;30;191;164;1;1;0
+Recife em Ruptura;30;449;164;1;1;0
+Recife em Ruptura;30;191;310;1;1;0
+Recife em Ruptura;30;449;310;1;1;0
+Recife em Ruptura;60;320;237;1;1;0
+Recife em Ruptura;60;191;164;1;1;0
+Recife em Ruptura;60;449;164;1;1;0
+Recife em Ruptura;60;191;310;1;1;0
+Recife em Ruptura;60;449;310;1;1;0
+Recife em Ruptura;120;320;237;1;1;0
+Recife em Ruptura;120;191;164;1;1;0
+Recife em Ruptura;120;449;164;1;1;0
+Recife em Ruptura;120;191;310;1;1;0
+Recife em Ruptura;120;449;310;1;1;0
+Recife em Ruptura;144;320;237;1;1;0
+Recife em Ruptura;144;191;164;1;1;0
+Recife em Ruptura;144;449;164;1;1;0
+Recife em Ruptura;144;191;310;1;1;0
+Recife em Ruptura;144;449;310;1;1;0

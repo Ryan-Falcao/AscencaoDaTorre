@@ -15,11 +15,19 @@ int main(void)
     assert(SpriteIdInimigo(INIMIGO_POEIRA_MARIPOSA, false) == SPRITE_INIMIGO_POEIRA_MARIPOSA);
     assert(SpriteIdInimigo(INIMIGO_CHEFE_SINEIRO, true) == SPRITE_CHEFE_SINEIRO_P2);
     assert(SpriteIdTipo(TIPO_SOMBRA) == SPRITE_TIPO_SOMBRA);
+    assert(SPRITE_BROCHE_INICIAL_CHAMA < SPRITE_TOTAL);
+    assert(SPRITE_BROCHE_INICIAL_PLANTA < SPRITE_TOTAL);
+    assert(SPRITE_BROCHE_INICIAL_AGUA < SPRITE_TOTAL);
     assert(SpriteIdProjetil(TIPO_AGUA) == SPRITE_PROJETIL_AGUA);
     assert(SpriteIdItem(ITEM_CHA) == SPRITE_ITEM_CHA);
     assert(SpriteIdItem(ITEM_AMULETO_AMPULHETA) == SPRITE_ITEM_AMULETO_AMPULHETA);
-    for (int item = ITEM_CHA; item < ITEM_TOTAL; item++)
+    for (int item = ITEM_CHA; item <= ITEM_AMULETO_AMPULHETA; item++)
         assert(SpriteIdItem((IdItem)item) == (IdSprite)(SPRITE_ITEM_CHA + item));
+    assert(SpriteIdItem(ITEM_BROCHE_INICIAL_CHAMA) == SPRITE_BROCHE_INICIAL_CHAMA);
+    assert(SpriteIdItem(ITEM_BROCHE_INICIAL_PLANTA) == SPRITE_BROCHE_INICIAL_PLANTA);
+    assert(SpriteIdItem(ITEM_BROCHE_INICIAL_AGUA) == SPRITE_BROCHE_INICIAL_AGUA);
+    for (int item = ITEM_ESPADA_INICIAL_CHAMA; item < ITEM_TOTAL; item++)
+        assert(SpriteIdItem((IdItem)item) == SPRITE_TOTAL);
     assert(SpriteIdAtaque(ATAQUE_BRASA) == SPRITE_ATAQUE_BRASA);
     assert(SpriteIdEfeitoAtaque(ATAQUE_SINO_VAZIO) == SPRITE_EFEITO_ATAQUE_SINO_VAZIO);
     assert(SpriteIdEfeitoTipo(TIPO_LUZ) == SPRITE_EFEITO_TIPO_LUZ);

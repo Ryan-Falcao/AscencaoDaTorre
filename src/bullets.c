@@ -1,3 +1,5 @@
+#include "pilot_patterns.h"
+#include "ui.h"
 #include "bullets.h"
 
 #include "input.h"
@@ -39,137 +41,7 @@ static Rectangle CaixaDefesaAjustada(float largura_desejada, float altura_deseja
     };
 }
 
-static const PadraoProjetil PADROES[PADRAO_TOTAL] = {
-#define CARACTERISTICO(id, element, power) [id] = { .duracao = 10.8f, .largura_caixa = 320, \
-    .altura_caixa = 200, .intervalo_criacao = 99, .projeteis_por_criacao = 1, .raio = 5, \
-    .tipo = element, .dano = power, .dificuldade = 2 }
-    CARACTERISTICO(PADRAO_MARIPOSA_ASAS, TIPO_SOMBRA, 3),
-    CARACTERISTICO(PADRAO_SAPO_SALTOS, TIPO_AGUA, 4),
-    CARACTERISTICO(PADRAO_PASSARO_MERGULHO, TIPO_FOGO, 4),
-    CARACTERISTICO(PADRAO_LIMO_CRESCIMENTO, TIPO_PLANTA, 3),
-    CARACTERISTICO(PADRAO_FAGULHA_LUZ, TIPO_LUZ, 4),
-    CARACTERISTICO(PADRAO_LEBRE_PULOS, TIPO_PLANTA, 4),
-    CARACTERISTICO(PADRAO_GATO_EMBOSCADA, TIPO_SOMBRA, 4),
-    CARACTERISTICO(PADRAO_CAVALEIRO_DUELO, TIPO_LUZ, 4),
-    CARACTERISTICO(PADRAO_SINO_ECO, TIPO_LUZ, 5),
-    CARACTERISTICO(PADRAO_TORRE_ESMAGAMENTO, TIPO_NEUTRO, 5),
-    CARACTERISTICO(PADRAO_MARIPOSA_TRAMA, TIPO_SOMBRA, 3),
-    CARACTERISTICO(PADRAO_MARIPOSA_CORRENTE, TIPO_SOMBRA, 3),
-    CARACTERISTICO(PADRAO_SAPO_BARREIRAS, TIPO_AGUA, 4),
-    CARACTERISTICO(PADRAO_SAPO_VITORIAS_REGIAS, TIPO_AGUA, 4),
-    CARACTERISTICO(PADRAO_PASSARO_FOGO_CRUZADO, TIPO_FOGO, 4),
-    CARACTERISTICO(PADRAO_PASSARO_TUNEL, TIPO_FOGO, 4),
-    CARACTERISTICO(PADRAO_LIMO_MARE, TIPO_PLANTA, 3),
-    CARACTERISTICO(PADRAO_LIMO_BALSAS, TIPO_PLANTA, 3),
-    CARACTERISTICO(PADRAO_FAGULHA_CANHOES, TIPO_LUZ, 4),
-    CARACTERISTICO(PADRAO_FAGULHA_ORBITA, TIPO_LUZ, 4),
-    CARACTERISTICO(PADRAO_LEBRE_BARREIRAS, TIPO_PLANTA, 4),
-    CARACTERISTICO(PADRAO_LEBRE_PARKOUR, TIPO_PLANTA, 4),
-    CARACTERISTICO(PADRAO_GATO_IMPACTO, TIPO_SOMBRA, 4),
-    CARACTERISTICO(PADRAO_GATO_PERSEGUICAO, TIPO_SOMBRA, 4),
-    CARACTERISTICO(PADRAO_CAVALEIRO_LANCAS, TIPO_LUZ, 4),
-    CARACTERISTICO(PADRAO_CAVALEIRO_DESAFIO, TIPO_LUZ, 4),
-    CARACTERISTICO(PADRAO_SINO_CANHOES, TIPO_LUZ, 5),
-    CARACTERISTICO(PADRAO_SINO_IMPACTO, TIPO_SOMBRA, 5),
-    CARACTERISTICO(PADRAO_SINO_DESAFIO, TIPO_LUZ, 5),
-    CARACTERISTICO(PADRAO_TORRE_PARKOUR, TIPO_NEUTRO, 5),
-    CARACTERISTICO(PADRAO_TORRE_CANHOES, TIPO_NEUTRO, 5),
-    CARACTERISTICO(PADRAO_TORRE_DESAFIO, TIPO_NEUTRO, 5),
-    CARACTERISTICO(PADRAO_SINO_GAS_SOMBRA, TIPO_SOMBRA, 5),
-    CARACTERISTICO(PADRAO_CHUVA_FOGO, TIPO_FOGO, 4),
-    CARACTERISTICO(PADRAO_SARCAS_PORTOES, TIPO_PLANTA, 4),
-    CARACTERISTICO(PADRAO_HERBALISTA_FRASCOS, TIPO_PLANTA, 4),
-    CARACTERISTICO(PADRAO_LEGIONARIO_ESCUDOS, TIPO_AGUA, 4),
-    CARACTERISTICO(PADRAO_BRUXA_CALDEIRAO, TIPO_AGUA, 4),
-    CARACTERISTICO(PADRAO_REVENANTE_PRISAO, TIPO_AGUA, 5),
-    CARACTERISTICO(PADRAO_ESQUELETO_ESTOUPIDO, TIPO_FOGO, 5),
-    CARACTERISTICO(PADRAO_ACENDEDOR_MARTELO, TIPO_FOGO, 5),
-    CARACTERISTICO(PADRAO_PENITENTE_INCENSARIO, TIPO_SOMBRA, 5),
-    CARACTERISTICO(PADRAO_LADRAO_REFLEXO, TIPO_SOMBRA, 5),
-    CARACTERISTICO(PADRAO_ACOLITO_VITRAL, TIPO_LUZ, 5),
-    CARACTERISTICO(PADRAO_GOBLIN_ESTOCADAS, TIPO_NEUTRO, 5),
-    CARACTERISTICO(PADRAO_AUTOMATO_ENGRENAGENS, TIPO_NEUTRO, 5),
-    CARACTERISTICO(PADRAO_MERCENARIO_RICOCHETE, TIPO_NEUTRO, 5),
-    CARACTERISTICO(PADRAO_CARCEREIRO_GRADE, TIPO_NEUTRO, 5),
-    CARACTERISTICO(PADRAO_CULTISTA_LABIRINTO, TIPO_PLANTA, 6),
-    CARACTERISTICO(PADRAO_AFOGADO_MARE_CORAL, TIPO_AGUA, 6),
-    CARACTERISTICO(PADRAO_MAGO_ESPIRAL_CINZAS, TIPO_FOGO, 6),
-    CARACTERISTICO(PADRAO_GOBLIN_EXERCITO, TIPO_SOMBRA, 6),
-    CARACTERISTICO(PADRAO_INQUISIDOR_VEREDITO, TIPO_LUZ, 6),
-#undef CARACTERISTICO
-    [PADRAO_CHUVA] = {
-        6.0f, 300.0f, 154.0f, 0.34f, 2, 106.0f, 6.0f, 0.0f,
-        TIPO_AGUA, 3, 1, CRIACAO_CHUVA
-    },
-    [PADRAO_LATERAL_ONDA] = {
-        7.0f, 320.0f, 168.0f, 0.88f, 7, 126.0f, 7.0f, 0.0f,
-        TIPO_SOMBRA, 4, 2, CRIACAO_LATERAL_ONDA
-    },
-    [PADRAO_ESPIRAL] = {
-        7.0f, 310.0f, 190.0f, 0.62f, 4, 82.0f, 5.0f, 1.57f,
-        TIPO_FOGO, 3, 3, CRIACAO_ESPIRAL
-    },
-    [PADRAO_RAPIDA_CHUVA] = {
-        6.0f, 300.0f, 154.0f, 0.24f, 3, 135.0f, 5.0f, 0.0f,
-        TIPO_LUZ, 4, 3, CRIACAO_CHUVA
-    },
-    [PADRAO_LARGA_ONDA] = {
-        7.0f, 330.0f, 180.0f, 0.62f, 9, 145.0f, 6.0f, 0.0f,
-        TIPO_PLANTA, 4, 2, CRIACAO_LATERAL_ONDA
-    },
-    [PADRAO_FECHADA_ESPIRAL] = {
-        7.0f, 270.0f, 160.0f, 0.30f, 5, 120.0f, 5.0f, 1.25f,
-        TIPO_SOMBRA, 5, 3, CRIACAO_ESPIRAL
-    },
-    [PADRAO_PETALA_ORBITA] = {
-        6.5f, 300.0f, 175.0f, 0.36f, 6, 82.0f, 5.0f, 1.05f,
-        TIPO_PLANTA, 4, 2, CRIACAO_ESPIRAL
-    },
-    [PADRAO_REBOTE_ORBES] = {
-        6.5f, 310.0f, 170.0f, 0.55f, 4, 116.0f, 7.0f, 0.75f,
-        TIPO_AGUA, 4, 2, CRIACAO_ESPIRAL
-    },
-    [PADRAO_MOVEL_PAREDE] = {
-        7.0f, 335.0f, 180.0f, 0.72f, 10, 130.0f, 6.0f, 0.0f,
-        TIPO_NEUTRO, 5, 3, CRIACAO_LATERAL_ONDA
-    },
-    [PADRAO_DIVISAO_DISPAROS] = {
-        6.5f, 320.0f, 190.0f, 0.65f, 2, 112.0f, 5.0f, 0.48f,
-        TIPO_FOGO, 5, 3, CRIACAO_CHUVA
-    },
-    [PADRAO_CRUZADOS_LASERS] = {
-        6.0f, 320.0f, 170.0f, 0.90f, 8, 158.0f, 5.0f, 0.0f,
-        TIPO_LUZ, 6, 3, CRIACAO_LATERAL_ONDA
-    },
-    [PADRAO_PAUSA_DARDOS] = {
-        6.5f, 290.0f, 165.0f, 0.46f, 5, 72.0f, 6.0f, 1.26f,
-        TIPO_SOMBRA, 5, 2, CRIACAO_ESPIRAL
-    },
-    [PADRAO_ANEL_EXPLOSAO] = {
-        6.0f, 300.0f, 170.0f, 0.58f, 8, 110.0f, 5.0f, 0.78f,
-        TIPO_LUZ, 5, 2, CRIACAO_ESPIRAL
-    },
-    [PADRAO_DIAGONAL_CHUVA] = {
-        6.5f, 320.0f, 190.0f, 0.48f, 3, 120.0f, 5.0f, 0.0f,
-        TIPO_FOGO, 4, 2, CRIACAO_CHUVA
-    },
-    [PADRAO_PERSEGUICAO_ONDA] = {
-        7.0f, 320.0f, 176.0f, 0.66f, 8, 152.0f, 6.0f, 0.0f,
-        TIPO_AGUA, 5, 3, CRIACAO_LATERAL_ONDA
-    },
-    [PADRAO_CATA_VENTO] = {
-        7.0f, 285.0f, 165.0f, 0.34f, 6, 126.0f, 5.0f, 1.05f,
-        TIPO_PLANTA, 5, 3, CRIACAO_ESPIRAL
-    },
-    [PADRAO_GRAVIDADE_INVERSAO] = {
-        8.0f, 300.0f, 175.0f, 99.0f, 1, 0.0f, 1.0f, 0.0f,
-        TIPO_PLANTA, BALANCEAMENTO_GRAVIDADE_DANO, 3, CRIACAO_ESPIRAL
-    },
-    [PADRAO_SOMBRA_FLORACAO] = {
-        7.0f, 300.0f, 175.0f, 99.0f, 1, 0.0f, 1.0f, 0.0f,
-        TIPO_SOMBRA, BALANCEAMENTO_SOMBRA_FLORACAO_DANO, 3, CRIACAO_ESPIRAL
-    }
-};
+#define PADROES BALANCEAMENTO_PADROES
 
 static Rectangle InterpolarRetangulo(Rectangle origem, Rectangle destino, float quantidade)
 {
@@ -315,6 +187,11 @@ void DefesaIniciar(EstadoDefesa *defesa, IdPadraoProjetil id_padrao, Rectangle c
     LimparProjeteis(defesa);
     PerigosLimpar(&defesa->perigos);
     defesa->padrao = PADROES[id_padrao];
+    defesa->orcamento_iniciado = false;
+    defesa->fator_movimento_ataque = fminf(1.0f,multiplicador_velocidade);
+    defesa->dash_restante = 0;
+    defesa->agua = (EstadoMovimentoAgua){0};
+    defesa->total_eventos_acertados = 0;
     defesa->id_padrao = id_padrao;
     if (id_padrao == PADRAO_SINO_DESAFIO || id_padrao == PADRAO_TORRE_DESAFIO)
         defesa->padrao.duracao = 12.6f;
@@ -342,12 +219,17 @@ void DefesaIniciar(EstadoDefesa *defesa, IdPadraoProjetil id_padrao, Rectangle c
     if (id_padrao == PADRAO_CRUZADOS_LASERS || id_padrao == PADRAO_MOVEL_PAREDE) {
         defesa->padrao.escala_visual = 1.35f;
     }
-    defesa->padrao.dano += bonus_dano;
+    if (PilotoEh(id_padrao)) {
+        const ConfiguracaoPiloto *config = &BALANCEAMENTO_PILOTO[id_padrao-PADRAO_PILOTO_POEIRA_ASA];
+        defesa->padrao.dano = config->dano;
+        defesa->padrao.duracao = config->duracao;
+        defesa->aviso_ataque = config->aviso;
+    } else defesa->padrao.dano += bonus_dano;
     defesa->padrao.dano = (int)ceilf((float)defesa->padrao.dano * multiplicador_dano);
     defesa->padrao.velocidade *= multiplicador_velocidade;
     if (agressividade >= AGRESSIVIDADE_ALTA_MIN) {
         defesa->padrao.velocidade *= ALTA_AGRESSIVIDADE_VELOCIDADE_MULTIPLICADOR;
-        defesa->padrao.dano = (int)ceilf((float)defesa->padrao.dano *
+        if (!PilotoEh(id_padrao)) defesa->padrao.dano = (int)ceilf((float)defesa->padrao.dano *
                                              ALTA_AGRESSIVIDADE_DANO_MULTIPLICADOR);
     } else if (agressividade <= AGRESSIVIDADE_BAIXA_MAXIMO) {
         defesa->padrao.velocidade *= 0.90f;
@@ -428,13 +310,16 @@ static void AtualizarPadraoEspecial(EstadoDefesa *defesa, AtributosJogador *joga
         }
     }
     const int vida_antes = jogador->hp;
+    defesa->perigos.orcamento = &defesa->orcamento;
+    defesa->perigos.tem_percurso = true;
+    defesa->perigos.origem_percurso = defesa->inicio_movimento;
     PerigosAtualizar(&defesa->perigos, jogador, defesa->posicao_alma, defesa->raio_alma, tempo_delta,
                   1.0f, defesa->depurar_invencivel || defesa->temporizador_invencibilidade > 0.0f);
     if (jogador->hp < vida_antes) {
         defesa->ultimo_dano = vida_antes - jogador->hp;
         defesa->multiplicador_ultimo_dano = JogadorEfetividadeDanoRecebido(jogador, defesa->padrao.tipo);
         defesa->temporizador_popup_dano = 0.75f;
-        defesa->temporizador_invencibilidade = 1.0f;
+        defesa->temporizador_invencibilidade = defesa->orcamento.invulnerabilidade;
     }
 }
 
@@ -509,19 +394,9 @@ static void AtualizarProjeteis(EstadoDefesa *defesa, AtributosJogador *jogador, 
             defesa->temporizador_popup_raspar = 0.22f;
         }
         if (!defesa->depurar_invencivel && defesa->temporizador_invencibilidade <= 0.0f &&
-            CheckCollisionCircles(defesa->posicao_alma, defesa->raio_alma,
+            PercursoAtingeCirculo(defesa->inicio_movimento, defesa->posicao_alma, defesa->raio_alma,
                                   projetil->posicao, projetil->raio)) {
-            const float multiplicador = JogadorEfetividadeDanoRecebido(jogador, projetil->tipo);
-            int dano = (int)ceilf((float)projetil->dano * multiplicador *
-                                    jogador->multiplicador_dano_recebido);
-
-            if (dano < 1) dano = 1;
-            jogador->hp -= dano;
-            if (jogador->hp < 0) jogador->hp = 0;
-            defesa->temporizador_invencibilidade = 1.0f;
-            defesa->ultimo_dano = dano;
-            defesa->multiplicador_ultimo_dano = multiplicador;
-            defesa->temporizador_popup_dano = 0.75f;
+            DefesaAplicarDano(defesa, jogador, projetil->dano, projetil->tipo);
         }
     }
 }
@@ -529,8 +404,16 @@ static void AtualizarProjeteis(EstadoDefesa *defesa, AtributosJogador *jogador, 
 static ResultadoDefesa PassoDefesa(EstadoDefesa *defesa, AtributosJogador *jogador, float tempo_delta,
                                  EntradaDefesa entrada)
 {
+    if (!defesa->orcamento_iniciado) {
+        DanoIniciarRodada(&defesa->orcamento, jogador->vida_maxima,
+            BalanceamentoTetoImpacto(defesa->id_padrao),
+            BalanceamentoFinal(defesa->id_padrao) ? BALANCEAMENTO_TETO_FINAL_PERCENTUAL : BALANCEAMENTO_TETO_COMUM_PERCENTUAL);
+        defesa->orcamento_iniciado = true;
+    }
+    defesa->inicio_movimento = defesa->posicao_alma;
     defesa->temporizador_fase += tempo_delta;
-    if (defesa->temporizador_invencibilidade > 0.0f) defesa->temporizador_invencibilidade -= tempo_delta;
+    if (defesa->temporizador_invencibilidade > 0.0f) defesa->temporizador_invencibilidade = fmaxf(0, defesa->temporizador_invencibilidade - tempo_delta);
+    defesa->orcamento.invulnerabilidade = fmaxf(0, defesa->temporizador_invencibilidade);
     if (defesa->temporizador_popup_dano > 0.0f) defesa->temporizador_popup_dano -= tempo_delta;
     if (defesa->temporizador_popup_raspar > 0.0f) defesa->temporizador_popup_raspar -= tempo_delta;
     if (defesa->temporizador_recarga_dash > 0.0f)
@@ -550,18 +433,22 @@ static ResultadoDefesa PassoDefesa(EstadoDefesa *defesa, AtributosJogador *jogad
         defesa->temporizador_criacao += tempo_delta;
         if (entrada.dash_pressionado && defesa->temporizador_recarga_dash <= 0.0f &&
             Vector2Length(entrada.movimento) > 0.01f) {
-            Vector2 direcao_dash = Vector2Normalize(entrada.movimento);
-            defesa->posicao_alma = Vector2Add(
-                defesa->posicao_alma,
-                Vector2Scale(direcao_dash, DISTANCIA_DASH_DEFESA));
+            defesa->direcao_dash = Vector2Normalize(entrada.movimento);
+            defesa->dash_restante = DISTANCIA_DASH_DEFESA;
             defesa->temporizador_recarga_dash = JogadorRecargaDash(jogador);
         }
-        if (PadraoMovimentoEh(defesa->id_padrao)) PadraoMovimentoAtualizar(defesa, jogador, entrada, tempo_delta);
+        if (defesa->dash_restante > 0) {
+            float passo_dash = fminf(defesa->dash_restante, 400.0f * tempo_delta);
+            defesa->posicao_alma = Vector2Add(defesa->posicao_alma, Vector2Scale(defesa->direcao_dash, passo_dash));
+            defesa->dash_restante -= passo_dash;
+        }
+        if (PilotoEh(defesa->id_padrao)) PilotoAtualizar(defesa, jogador, entrada, tempo_delta);
+        else if (PadraoMovimentoEh(defesa->id_padrao)) PadraoMovimentoAtualizar(defesa, jogador, entrada, tempo_delta);
         else {
             AtualizarAlma(defesa, jogador, entrada, tempo_delta);
-            if (PadraoEhCaracteristico(defesa->id_padrao)) PadraoAtualizar(defesa, tempo_delta);
+            if (!PilotoEh(defesa->id_padrao) && PadraoEhCaracteristico(defesa->id_padrao)) PadraoAtualizar(defesa, tempo_delta);
         }
-        if (PadraoEhCaracteristico(defesa->id_padrao) || defesa->id_padrao == PADRAO_GRAVIDADE_INVERSAO || defesa->id_padrao == PADRAO_SOMBRA_FLORACAO) {
+        if (!PilotoEh(defesa->id_padrao) && (PadraoEhCaracteristico(defesa->id_padrao) || defesa->id_padrao == PADRAO_GRAVIDADE_INVERSAO || defesa->id_padrao == PADRAO_SOMBRA_FLORACAO)) {
             AtualizarPadraoEspecial(defesa, jogador, tempo_delta);
         }
         while (!PadraoEhCaracteristico(defesa->id_padrao) && defesa->id_padrao != PADRAO_GRAVIDADE_INVERSAO && defesa->id_padrao != PADRAO_SOMBRA_FLORACAO &&
@@ -597,11 +484,16 @@ static ResultadoDefesa PassoDefesa(EstadoDefesa *defesa, AtributosJogador *jogad
 
 ResultadoDefesa DefesaAtualizarComEntrada(EstadoDefesa *d, AtributosJogador *p, float tempo_delta, EntradaDefesa entrada)
 {
-    if (!PadraoMovimentoEh(d->id_padrao)) return PassoDefesa(d, p, tempo_delta, entrada);
+
+    /* Preserve legacy cycle timing when no dash is travelling. All dash segments
+       and pilot physics use short steps; collision still sweeps the full path. */
+    if (!PilotoEh(d->id_padrao) && !PadraoMovimentoEh(d->id_padrao) &&
+        !entrada.dash_pressionado && d->dash_restante <= 0)
+        return PassoDefesa(d,p,tempo_delta,entrada);
     /* Passos fisicos curtos mantem saltos e portoes finos consistentes em 30/60/144 FPS. */
     ResultadoDefesa resultado = DEFESA_EM_ANDAMENTO;
     while (tempo_delta > .000001f) {
-        float passo = fminf(tempo_delta, 1.0f / 120);
+        float passo = fminf(tempo_delta, BALANCEAMENTO_PASSO_FISICA);
         resultado = PassoDefesa(d, p, passo, entrada);
         entrada.salto_pressionado = false;
         entrada.dash_pressionado = false;
@@ -638,13 +530,14 @@ void DefesaDesenhar(const EstadoDefesa *defesa, bool desenhar_efeitos, const Sis
     }
 
     if (defesa->fase == DEFESA_ATIVA) {
-        if (PadraoEhCaracteristico(defesa->id_padrao)) PadraoDesenhar(defesa, sprites);
+        if (PilotoEh(defesa->id_padrao)) PilotoDesenhar(defesa, sprites);
+        else if (PadraoEhCaracteristico(defesa->id_padrao)) PadraoDesenhar(defesa, sprites);
         else PerigosDesenhar(&defesa->perigos, !desenhar_efeitos, sprites, sprites->depurar_limites);
         if (defesa->temporizador_padrao < 0.40f && defesa->padrao.raio >= 6.0f) {
             const Vector2 aviso = {defesa->caixa.x + defesa->caixa.width * 0.5f,
                                      defesa->caixa.y + defesa->caixa.height * 0.5f};
             DrawCircleLines((int)aviso.x, (int)aviso.y, 18, (Color){245, 90, 82, 255});
-            DrawText("!", (int)aviso.x - 3, (int)aviso.y - 10, 18, (Color){245, 90, 82, 255});
+            InterfaceDesenharTexto("!", (int)aviso.x - 3, (int)aviso.y - 10, 18, (Color){245, 90, 82, 255});
             if (sprite_obter(sprites, SPRITE_AVISO_PERIGO) != NULL) {
                 SpriteDesenharCentralizado(sprites, SPRITE_AVISO_PERIGO, aviso, WHITE,
                                    defesa->temporizador_padrao, sprites->depurar_limites);
@@ -677,11 +570,11 @@ void DefesaDesenhar(const EstadoDefesa *defesa, bool desenhar_efeitos, const Sis
         if (defesa->temporizador_popup_dano > 0.0f) {
             const int font_size = defesa->multiplicador_ultimo_dano >= 2.0f ? 25 : 19;
             const Color cor = defesa->multiplicador_ultimo_dano >= 2.0f ? RED : MAROON;
-            DrawText(TextFormat("-%d", defesa->ultimo_dano), (int)defesa->posicao_alma.x + 9,
+            InterfaceDesenharTexto(TextFormat("-%d", defesa->ultimo_dano), (int)defesa->posicao_alma.x + 9,
                      (int)defesa->posicao_alma.y - 18, font_size, cor);
         }
         if (desenhar_efeitos && defesa->temporizador_popup_raspar > 0.0f) {
-            DrawText("RASPOU", (int)defesa->posicao_alma.x + 10,
+            InterfaceDesenharTexto("RASPOU", (int)defesa->posicao_alma.x + 10,
                      (int)defesa->posicao_alma.y + 9, 10, (Color){125, 220, 205, 255});
         }
 
@@ -714,4 +607,16 @@ void DefesaDesenhar(const EstadoDefesa *defesa, bool desenhar_efeitos, const Sis
             }
         }
     }
+}
+
+
+int DefesaAplicarDano(EstadoDefesa *d, AtributosJogador *j, int base, Tipo tipo)
+{
+    int dano = d->depurar_invencivel ? 0 : DanoAplicar(&d->orcamento, j, base, tipo);
+    if (dano > 0) {
+        d->ultimo_dano = dano; d->multiplicador_ultimo_dano = JogadorEfetividadeDanoRecebido(j,tipo);
+        d->temporizador_popup_dano = .75f;
+        d->temporizador_invencibilidade = d->orcamento.invulnerabilidade;
+    }
+    return dano;
 }

@@ -30,7 +30,15 @@ typedef struct {
     bool apenas_em_movimento;
 } Perigo;
 
-typedef struct { Perigo perigos[MAXIMO_PERIGOS]; Vector2 alma_anterior; bool alma_rastreada; } ConjuntoPerigos;
+typedef struct {
+    Perigo perigos[MAXIMO_PERIGOS];
+    Vector2 alma_anterior;
+    bool alma_rastreada;
+    OrcamentoDano *orcamento;
+    OrcamentoDano independente;
+    Vector2 origem_percurso;
+    bool tem_percurso;
+} ConjuntoPerigos;
 
 void PerigosInicializar(ConjuntoPerigos *conjunto);
 void PerigosLimpar(ConjuntoPerigos *conjunto);
@@ -44,6 +52,9 @@ void PerigosAtualizar(ConjuntoPerigos *conjunto, AtributosJogador *jogador, Vect
                    float tempo_delta, float multiplicador_dano, bool invencivel);
 void PerigosDesenhar(const ConjuntoPerigos *conjunto, bool efeitos_reduzidos, const SistemaSprites *sprites,
                  bool depurar_colisoes);
+bool PercursoAtingeCirculo(Vector2 inicio, Vector2 fim, float raio_alma, Vector2 centro, float raio);
+bool PercursoAtingeRetangulo(Vector2 inicio, Vector2 fim, float raio, Rectangle area);
+float DistanciaPontoSegmento(Vector2 ponto, Vector2 inicio, Vector2 fim);
 bool CirculoPerigoAtingeRetangulo(Vector2 centro, float raio, Rectangle retangulo);
 bool CirculoPerigoAtingeCirculo(Vector2 primeiro, float raio_primeiro, Vector2 segundo, float raio_segundo);
 

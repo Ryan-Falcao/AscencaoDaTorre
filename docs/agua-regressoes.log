@@ -1,0 +1,14 @@
+battle: exit=0
+types: exit=0
+qte: exit=0
+ui: exit=0
+save: exit=0
+sprites: exit=0
+phase6: exit=0
+phase10: exit=0
+tower: exit=0
+balance: exit=0
+bullets: exit=0
+patterns: exit=0
+hazards: exit=0
+equipment: exit=0

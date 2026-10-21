@@ -1,0 +1,16 @@
+inimigo;ataque;entrada_anterior;dano_base_antes;dano_base_depois;teto_impacto;teto_rodada_percentual;duracao_s;motivo
+Soldado das Sarcas;Estilhaco de Lanca;Portões;4;4;6;35;5.50;Ponta física seguida de farpas, sem multiplicador de andar
+Soldado das Sarcas;Escudo Enraizado;Barreiras da Lebre;4;5;7;35;6.00;Escudo e raiz alteram o caminho entre dois disparos
+Soldado das Sarcas;Tampas em Dobradica;Duelo do Cavaleiro;4;5;7;35;6.50;Duas dobradiças têm arcos físicos e ritmos defasados
+Herbalista da Peste;Frasco Agitado;Frascos;4;4;6;35;5.50;Frasco quica antes de quebrar em gotas
+Herbalista da Peste;Receita Reversa;Maré do Limo;3;4;6;35;6.00;Antídoto azul neutraliza os reagentes roxos no encontro
+Herbalista da Peste;Almofariz Transbordante;Crescimento do Limo;3;5;7;35;6.50;Expulsão muda para aspiração e exige inverter o desvio
+Limo de Menta;Gotas Gemeas;Maré;3;3;5;35;5.00;Gotas convergem e se fragmentam com menor dano de entrada
+Limo de Menta;Arrasto de Menta;Balsas;3;4;6;35;5.50;Núcleos rotativos, filamento tensionado e arrasto leve
+Limo de Menta;Divisao Celular;Crescimento;3;5;6;35;6.00;Massa se divide e abre o pescoço
+Lebre de Espinhos;Sacudida Espinhosa;Barreiras;4;4;6;35;5.50;Espinhos sobem, fixam no alto e caem
+Lebre de Espinhos;Tocas em Cadeia;Parkour;4;4;6;35;6.00;Cabeça da trilha seguida de farpas na emergência
+Lebre de Espinhos;Disparada da Roseira;Pulos;4;5;7;35;6.50;"Corpo salta; o pouso lança espinhos mirando a posição anterior"
+Cultista das Raízes;Ceifa Germinante;Labirinto;6;6;7;35;7.00;Foice física e sementes tangentes: padrão de boss difícil
+Cultista das Raízes;Raizes de Procura;Barreiras da Lebre;4;6;7;35;8.00;Raízes crescem até posições antigas e se bifurcam
+Cultista das Raízes;Ritual da Colheita;Maré do Limo;3;7;8;45;9.00;Contra-rotação de raízes e sementes com colheita: final difícil

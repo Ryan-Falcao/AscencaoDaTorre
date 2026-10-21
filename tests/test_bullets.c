@@ -77,17 +77,19 @@ int main(void)
         };
         float x_antes = dash.posicao_alma.x;
         DefesaAtualizarComEntrada(&dash, &jogador_dash, 1.0f / 60.0f, entrada_dash);
-        assert(dash.posicao_alma.x - x_antes >= DISTANCIA_DASH_DEFESA);
+        assert(dash.posicao_alma.x - x_antes > 5.0f);
+        assert(dash.posicao_alma.x - x_antes < DISTANCIA_DASH_DEFESA);
         assert(dash.temporizador_recarga_dash > 0.0f);
 
         x_antes = dash.posicao_alma.x;
         DefesaAtualizarComEntrada(&dash, &jogador_dash, 1.0f / 60.0f, entrada_dash);
-        assert(dash.posicao_alma.x - x_antes < 5.0f);
+        assert(dash.posicao_alma.x - x_antes > 5.0f); /* dash is still travelling, not teleporting */
 
         DefesaAtualizarComEntrada(&dash, &jogador_dash, RECARGA_DASH_DEFESA, (EntradaDefesa){0});
         x_antes = dash.posicao_alma.x;
         DefesaAtualizarComEntrada(&dash, &jogador_dash, 1.0f / 60.0f, entrada_dash);
-        assert(dash.posicao_alma.x - x_antes >= DISTANCIA_DASH_DEFESA);
+        assert(dash.posicao_alma.x - x_antes > 5.0f);
+        assert(dash.posicao_alma.x - x_antes < DISTANCIA_DASH_DEFESA);
     }
     return 0;
 }

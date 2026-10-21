@@ -52,7 +52,19 @@ static const DefinicaoItem DEFINICOES_ITENS[ITEM_TOTAL] = {
     EQUIPAMENTO(ITEM_CALCA_AFOGADO, "Calca do Afogado", "+9 DEF, +10 VIDA, +5 RES. SANG.", ESPACO_CALCA,
         RARIDADE_EPICA, B(0,9,10,0,0,0,0,0,0,5), PASSIVA_NENHUMA, 0, FAMILIA_DROP_AGUA),
     EQUIPAMENTO(ITEM_AMULETO_AMPULHETA, "Ampulheta Cinzenta", "Reduz em 25% a recarga do dash.", ESPACO_AMULETO_1,
-        RARIDADE_COMUM, B(0,0,0,0,0,0,0,0,0,0), PASSIVA_DASH_RAPIDO, 25, FAMILIA_DROP_NEUTRO)
+        RARIDADE_COMUM, B(0,0,0,0,0,0,0,0,0,0), PASSIVA_DASH_RAPIDO, 25, FAMILIA_DROP_NEUTRO),
+    AMULETO_TIPO(ITEM_BROCHE_INICIAL_CHAMA, "Broche de Brasa", "Seu primeiro vinculo com Chama.",
+        RARIDADE_COMUM, B(0,0,0,0,0,0,0,0,0,0), TIPO_FOGO, 0u),
+    AMULETO_TIPO(ITEM_BROCHE_INICIAL_PLANTA, "Broche de Folha", "Seu primeiro vinculo com Planta.",
+        RARIDADE_COMUM, B(0,0,0,0,0,0,0,0,0,0), TIPO_PLANTA, 0u),
+    AMULETO_TIPO(ITEM_BROCHE_INICIAL_AGUA, "Broche de Gota", "Seu primeiro vinculo com Agua.",
+        RARIDADE_COMUM, B(0,0,0,0,0,0,0,0,0,0), TIPO_AGUA, 0u),
+    EQUIPAMENTO(ITEM_ESPADA_INICIAL_CHAMA, "Espada de Treino: Brasa", "+1 ATQ. Tecnicas basicas de Chama.", ESPACO_ARMAMENTO,
+        RARIDADE_COMUM, B(1,0,0,0,0,0,0,0,0,0), PASSIVA_NENHUMA, 0, 0u),
+    EQUIPAMENTO(ITEM_ESPADA_INICIAL_PLANTA, "Espada de Treino: Folha", "+1 ATQ. Tecnicas basicas de Planta.", ESPACO_ARMAMENTO,
+        RARIDADE_COMUM, B(1,0,0,0,0,0,0,0,0,0), PASSIVA_NENHUMA, 0, 0u),
+    EQUIPAMENTO(ITEM_ESPADA_INICIAL_AGUA, "Espada de Treino: Gota", "+1 ATQ. Tecnicas basicas de Agua.", ESPACO_ARMAMENTO,
+        RARIDADE_COMUM, B(1,0,0,0,0,0,0,0,0,0), PASSIVA_NENHUMA, 0, 0u)
 };
 
 const DefinicaoItem *ItemObterDefinicao(IdItem id) {

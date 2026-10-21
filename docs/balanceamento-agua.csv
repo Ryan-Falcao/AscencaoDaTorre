@@ -1,0 +1,13 @@
+ataque;inimigo;dano_antes;dano_depois;teto_impacto;teto_rodada_percentual;duracao_s;sangramento
+Tsunami da Falange;Legionario Afogado;4;5;6;35;6;0
+Jato de Quadrante;Legionario Afogado;4;5;6;35;6;0
+Conves a Deriva;Legionario Afogado;4;6;7;35;7;0
+Pegadas do Brejo;Bruxa do Lodo;4;4;6;35;6;0
+Bancos de Viscosidade;Bruxa do Lodo;3;5;6;35;6.5;0
+Bolha Inversa;Bruxa do Lodo;3;5;6;35;7;0
+Avalanche Obliqua;Revenante de Gelo;5;5;6;35;6.5;0
+Estacas de Geada;Revenante de Gelo;4;6;7;35;7;0
+Prisao Deslizante;Revenante de Gelo;5;6;7;35;9;0
+Jato Refratado;Sapo de Vidro;4;4;6;35;6;0
+Reflexo do Lago;Sapo de Vidro;4;5;6;35;6.5;0
+Membrana de Impulso;Sapo de Vidro;4;6;7;35;7;0

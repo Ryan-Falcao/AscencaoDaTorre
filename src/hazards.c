@@ -1,3 +1,4 @@
+#include "balance.h"
 #include "hazards.h"
 
 #include "sprites.h"
@@ -63,19 +64,59 @@ bool CirculoPerigoAtingeCirculo(Vector2 primeiro, float raio_primeiro, Vector2 s
     return dx * dx + dy * dy <= range * range;
 }
 
-static void AplicarDanoPerigo(Perigo *perigo, AtributosJogador *jogador, float multiplicador_dano)
+
+float DistanciaPontoSegmento(Vector2 p, Vector2 a, Vector2 b)
 {
-    int dano = (int)ceilf((float)perigo->dano * JogadorEfetividadeDanoRecebido(jogador, perigo->tipo) *
-                            jogador->multiplicador_dano_recebido * multiplicador_dano);
-    if (dano < 1) dano = 1;
-    jogador->hp -= dano;
-    if (jogador->hp < 0) jogador->hp = 0;
-    perigo->ja_acertou = true;
+    float dx = b.x-a.x, dy = b.y-a.y, div = dx*dx+dy*dy;
+    float t = div > .000001f ? ((p.x-a.x)*dx+(p.y-a.y)*dy)/div : 0;
+    t = fmaxf(0, fminf(1,t));
+    dx = p.x-a.x-t*dx; dy = p.y-a.y-t*dy;
+    return sqrtf(dx*dx+dy*dy);
+}
+
+bool PercursoAtingeCirculo(Vector2 a, Vector2 b, float raio, Vector2 centro, float r)
+{
+    return DistanciaPontoSegmento(centro,a,b) <= raio+r;
+}
+
+bool PercursoAtingeRetangulo(Vector2 a, Vector2 b, float raio, Rectangle r)
+{
+    /* Slab test against expanded box. Check rounded corners separately to avoid false positives. */
+    if (CirculoPerigoAtingeRetangulo(a,raio,r) || CirculoPerigoAtingeRetangulo(b,raio,r)) return true;
+    Rectangle horizontal={r.x-raio,r.y,r.width+2*raio,r.height};
+    Rectangle vertical={r.x,r.y-raio,r.width,r.height+2*raio};
+    Rectangle parts[2]={horizontal,vertical};
+    for(int i=0;i<2;i++) {
+        Rectangle q=parts[i]; float lo=0,hi=1;
+        float origins[2]={a.x,a.y}, ds[2]={b.x-a.x,b.y-a.y};
+        float mins[2]={q.x,q.y}, maxs[2]={q.x+q.width,q.y+q.height};
+        bool hit=true;
+        for(int axis=0;axis<2;axis++) {
+            if(fabsf(ds[axis])<.000001f) { if(origins[axis]<mins[axis]||origins[axis]>maxs[axis])hit=false; }
+            else {
+                float t1=(mins[axis]-origins[axis])/ds[axis],t2=(maxs[axis]-origins[axis])/ds[axis];
+                if(t1>t2){float swap=t1;t1=t2;t2=swap;}
+                lo=fmaxf(lo,t1);hi=fminf(hi,t2);
+            }
+        }
+        if(hit&&lo<=hi)return true;
+    }
+    Vector2 corners[4]={{r.x,r.y},{r.x+r.width,r.y},{r.x,r.y+r.height},{r.x+r.width,r.y+r.height}};
+    for(int i=0;i<4;i++)if(PercursoAtingeCirculo(a,b,raio,corners[i],0))return true;
+    return false;
 }
 
 void PerigosAtualizar(ConjuntoPerigos *conjunto, AtributosJogador *jogador, Vector2 alma, float raio_alma,
                    float tempo_delta, float multiplicador_dano, bool invencivel)
 {
+    OrcamentoDano *orcamento = conjunto->orcamento;
+    if (orcamento == NULL) {
+        if (conjunto->independente.teto_impacto == 0)
+            DanoIniciarRodada(&conjunto->independente, jogador->vida_maxima, BALANCEAMENTO_TETO_IMPACTO_LEGADO, BALANCEAMENTO_TETO_COMUM_PERCENTUAL);
+        orcamento = &conjunto->independente;
+        orcamento->invulnerabilidade = fmaxf(0, orcamento->invulnerabilidade - tempo_delta);
+    }
+    Vector2 inicio = conjunto->tem_percurso ? conjunto->origem_percurso : alma;
     const bool movendo = conjunto->alma_rastreada &&
         (fabsf(alma.x - conjunto->alma_anterior.x) + fabsf(alma.y - conjunto->alma_anterior.y) > 0.01f);
     conjunto->alma_anterior = alma;
@@ -98,11 +139,15 @@ void PerigosAtualizar(ConjuntoPerigos *conjunto, AtributosJogador *jogador, Vect
             (perigo->apenas_em_movimento && !movendo)) continue;
         const float dx = alma.x - perigo->centro.x, dy = alma.y - perigo->centro.y;
         const bool hit = perigo->forma == PERIGO_ANEL ?
-            fabsf(sqrtf(dx * dx + dy * dy) - perigo->raio) <= raio_alma + 5.0f :
+            (DistanciaPontoSegmento(perigo->centro, inicio, alma) <= perigo->raio + raio_alma + 5.0f &&
+             fmaxf(hypotf(inicio.x-perigo->centro.x,inicio.y-perigo->centro.y),sqrtf(dx*dx+dy*dy)) >= perigo->raio-raio_alma-5.0f) :
             perigo->forma == PERIGO_RETANGULO ?
-            CirculoPerigoAtingeRetangulo(alma, raio_alma, perigo->retangulo) :
-            CirculoPerigoAtingeCirculo(alma, raio_alma, perigo->centro, perigo->raio);
-        if (hit) { AplicarDanoPerigo(perigo, jogador, multiplicador_dano); invencivel = true; }
+            PercursoAtingeRetangulo(inicio, alma, raio_alma, perigo->retangulo) :
+            PercursoAtingeCirculo(inicio, alma, raio_alma, perigo->centro, perigo->raio);
+        if (hit) {
+            int dano = DanoAplicar(orcamento, jogador, (int)ceilf(perigo->dano * multiplicador_dano), perigo->tipo);
+            if (dano > 0) { perigo->ja_acertou = true; invencivel = true; }
+        }
     }
     (void)multiplicador_dano;
 }

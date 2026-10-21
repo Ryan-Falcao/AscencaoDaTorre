@@ -37,6 +37,10 @@ typedef struct {
 } Ataque;
 
 typedef struct { IdItem id; int quantidade; } ItemInventario;
+typedef struct {
+    int limite_rodada, recebido, teto_impacto;
+    float invulnerabilidade;
+} OrcamentoDano;
 
 typedef struct {
     char nome[24];
@@ -54,7 +58,12 @@ typedef struct {
     int recargas_ataques[JOGADOR_ATAQUE_TOTAL];
 } AtributosJogador;
 
+void DanoIniciarRodada(OrcamentoDano *orcamento, int vida_maxima, int teto_impacto, int percentual);
+int DanoAplicar(OrcamentoDano *orcamento, AtributosJogador *jogador, int base, Tipo tipo);
+int DanoAplicarResidual(OrcamentoDano *orcamento, AtributosJogador *jogador, int dano);
 void JogadorInicializar(AtributosJogador *jogador);
+/* Prepara uma run limpa: broche e espada simples do elemento escolhido. */
+void JogadorInicializarComBroche(AtributosJogador *jogador, Tipo tipo_broche);
 void JogadorRecalcularAtributos(AtributosJogador *jogador);
 void JogadorIniciarBatalha(AtributosJogador *jogador);
 void JogadorIniciarTurno(AtributosJogador *jogador);

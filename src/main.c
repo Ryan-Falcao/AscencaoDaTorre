@@ -37,16 +37,23 @@ int main(int argc, char **argv)
     InitWindow(960, 720, "Ascensao da Torre");
     SetWindowMinSize(LOGICO_LARGURA, LOGICO_ALTURA);
     SetTargetFPS(60);
+    SetExitKey(KEY_NULL);
 
+    InterfaceCarregarFontes();
     RenderTexture2D tela_virtual = LoadRenderTexture(LOGICO_LARGURA, LOGICO_ALTURA);
     JogoInicializar(&jogo);
     for (int indice = 1; indice < argc; indice++) {
+        if (strcmp(argv[indice], "--pilot") == 0) {
+            const char *nome=indice+1<argc?argv[++indice]:"mariposa";
+            JogoAbrirPiloto(&jogo,strcmp(nome,"ladrao")==0?1:strcmp(nome,"coral")==0?2:strcmp(nome,"planta")==0?3:strcmp(nome,"soldado")==0?3:strcmp(nome,"herbalista")==0?4:strcmp(nome,"limo")==0?5:strcmp(nome,"lebre")==0?6:strcmp(nome,"cultista")==0?7:strcmp(nome,"agua")==0?8:strcmp(nome,"legionario")==0?8:strcmp(nome,"bruxa")==0?9:strcmp(nome,"revenante")==0?10:strcmp(nome,"sapo")==0?11:0);
+        }
         if (strcmp(argv[indice], "--telemetry") == 0) jogo.telemetria_ativada = true;
         if (strcmp(argv[indice], "--export-placeholders") == 0) {
             SpritesExportarModelos();
             SpritesDescarregar(&jogo.sprites);
             AudioDescarregar(&jogo.audio);
             UnloadRenderTexture(tela_virtual);
+            InterfaceDescarregarFontes();
             CloseWindow();
             return 0;
         }
@@ -72,10 +79,11 @@ int main(int argc, char **argv)
         EndDrawing();
     }
 
-    SalvamentoGravar(&jogo.salvamento);
+    if (!jogo.piloto_ativo) SalvamentoGravar(&jogo.salvamento);
     SpritesDescarregar(&jogo.sprites);
     AudioDescarregar(&jogo.audio);
     UnloadRenderTexture(tela_virtual);
+    InterfaceDescarregarFontes();
     CloseWindow();
     return 0;
 }

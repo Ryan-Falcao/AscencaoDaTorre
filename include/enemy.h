@@ -76,6 +76,8 @@ typedef struct {
     IdPadraoProjetil ids_padroes[MAXIMO_PADROES_INIMIGO];
     int total_padroes;
     int indice_proximo_padrao;
+    IdPadraoProjetil ultimo_padrao_defesa;
+    int ultimo_especial_em;
     char descricao[128];
     AcaoInimigo acoes[MAXIMO_ACOES_INIMIGO];
     int usos_acoes[MAXIMO_ACOES_INIMIGO];

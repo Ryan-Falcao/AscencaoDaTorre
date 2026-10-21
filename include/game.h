@@ -16,6 +16,7 @@
 
 typedef enum {
     TITULO,
+    ESCOLHER_BROCHE,
     BATALHA,
     RECOMPENSA,
     DESCANSO,
@@ -35,6 +36,7 @@ typedef struct {
     TelaJogo tela_antes_pausa;
     TelaJogo tela_antes_inventario;
     int selecao_titulo;
+    int selecao_broche;
     float tempo_decorrido;
     bool saida_solicitada;
     AtributosJogador jogador;
@@ -74,8 +76,12 @@ typedef struct {
     SistemaSprites sprites;
     int inimigo_depuracao_padrao;
     int id_depuracao_padrao;
+    bool piloto_ativo, piloto_pausado;
+    int piloto_inimigo, piloto_ataque, piloto_dificuldade, piloto_vida;
+    Tipo piloto_tipo;
 } EstadoJogo;
 
+void JogoAbrirPiloto(EstadoJogo *jogo, int inimigo);
 void JogoInicializar(EstadoJogo *jogo);
 void JogoAtualizar(EstadoJogo *jogo);
 void JogoDesenhar(const EstadoJogo *jogo);

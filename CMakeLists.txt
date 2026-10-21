@@ -35,6 +35,10 @@ add_executable(ascensao_torre
 target_include_directories(ascensao_torre PRIVATE include)
 target_compile_options(ascensao_torre PRIVATE -Wall -Wextra)
 target_link_libraries(ascensao_torre PRIVATE raylib)
+add_custom_command(TARGET ascensao_torre POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${CMAKE_CURRENT_SOURCE_DIR}/assets/fonts"
+        "$<TARGET_FILE_DIR:ascensao_torre>/assets/fonts")
 
 option(BUILD_TYPE_TESTS "Build the type matrix test" ON)
 if(BUILD_TYPE_TESTS)
@@ -45,11 +49,16 @@ if(BUILD_TYPE_TESTS)
     target_compile_options(test_battle PRIVATE -Wall -Wextra)
     target_link_libraries(test_battle PRIVATE raylib)
 
+    add_executable(test_ui tests/test_ui.c src/sprites.c src/types.c)
+    target_include_directories(test_ui PRIVATE include)
+    target_compile_options(test_ui PRIVATE -Wall -Wextra)
+    target_link_libraries(test_ui PRIVATE raylib)
+
     add_executable(test_types tests/test_types.c src/types.c)
     target_include_directories(test_types PRIVATE include)
     target_compile_options(test_types PRIVATE -Wall -Wextra)
 
-    add_executable(test_qte tests/test_qte.c src/qte.c src/input.c)
+    add_executable(test_qte tests/test_qte.c src/qte.c src/input.c src/ui.c src/sprites.c src/types.c)
     target_include_directories(test_qte PRIVATE include)
     target_compile_options(test_qte PRIVATE -Wall -Wextra)
     target_link_libraries(test_qte PRIVATE raylib)
@@ -113,4 +122,34 @@ set(CMAKE_C_FLAGS_RELEASE "-O2 -DNDEBUG" CACHE STRING "Release flags" FORCE)
 
 if(UNIX AND NOT APPLE)
     target_link_libraries(ascensao_torre PRIVATE m)
+endif()
+
+foreach(defense_target ascensao_torre test_battle test_bullets test_patterns test_motion)
+    if(TARGET ${defense_target})
+        target_sources(${defense_target} PRIVATE src/pilot_patterns.c src/plant_patterns.c src/plant_visual.c src/water_patterns.c src/water_visual.c src/attack_warning.c)
+    endif()
+endforeach()
+
+if(BUILD_TYPE_TESTS)
+    add_executable(test_pilot tests/test_pilot.c ${PATTERN_TEST_SOURCES} src/pilot_patterns.c src/plant_patterns.c src/plant_visual.c src/water_patterns.c src/water_visual.c src/attack_warning.c src/route_validator.c src/tower.c)
+    target_include_directories(test_pilot PRIVATE include)
+    target_compile_options(test_pilot PRIVATE -Wall -Wextra -O2 -UNDEBUG)
+    target_link_libraries(test_pilot PRIVATE raylib)
+endif()
+
+if(BUILD_TYPE_TESTS)
+    get_target_property(PILOT_PREVIEW_SOURCES ascensao_torre SOURCES)
+    list(REMOVE_ITEM PILOT_PREVIEW_SOURCES src/main.c src/game.c)
+    add_executable(pilot_preview EXCLUDE_FROM_ALL tests/preview_pilot.c ${PILOT_PREVIEW_SOURCES})
+    target_include_directories(pilot_preview PRIVATE include)
+    target_link_libraries(pilot_preview PRIVATE raylib)
+endif()
+
+if(BUILD_TYPE_TESTS)
+    get_target_property(WATER_TEST_SOURCES test_pilot SOURCES)
+    list(REMOVE_ITEM WATER_TEST_SOURCES tests/test_pilot.c)
+    add_executable(test_water tests/test_water.c ${WATER_TEST_SOURCES})
+    target_include_directories(test_water PRIVATE include)
+    target_compile_options(test_water PRIVATE -Wall -Wextra -O2 -UNDEBUG)
+    target_link_libraries(test_water PRIVATE raylib)
 endif()

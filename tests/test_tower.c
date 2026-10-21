@@ -13,7 +13,7 @@ int main(void)
     assert(TorreInimigoDoAndar(&torre, 5) == INIMIGO_CHEFE_CULTISTA_RAIZES);
     assert(TorreInimigoDoAndar(&torre, 10) == INIMIGO_CHEFE_AFOGADO_CORAL);
     assert(TorreInimigoDoAndar(&torre, 15) == INIMIGO_CHEFE_MAGO_CINZAS);
-    assert(TorreInimigoDoAndar(&torre, 20) == INIMIGO_CHEFE_GOBLIN_CRIPTA);
+    assert(TorreInimigoDoAndar(&torre, 20) == INIMIGO_CHEFE_SINEIRO);
     assert(TorreInimigoDoAndar(&torre, 25) == INIMIGO_CHEFE_INQUISIDOR_SOL);
     assert(TorreInimigoDoAndar(&torre, 30) == INIMIGO_CHEFE_ULTIMA_TORRE);
     assert(InimigoCriar(INIMIGO_CHEFE_ULTIMA_TORRE).todos_tipos);

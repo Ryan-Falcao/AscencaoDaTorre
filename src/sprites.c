@@ -44,6 +44,10 @@ static const EspecificacaoSprite ESPECIFICACOES[] = {
     {SPRITE_BOTAO_TITULO, "assets/sprites/ui_button_title.png", 1, {0, 0}},
     {SPRITE_BOTAO_TITULO_SELECIONADO, "assets/sprites/ui_button_title_selected.png", 1, {0, 0}},
     {SPRITE_LOGO_ASCENSAO_TORRE, "assets/sprites/logo_ascensao_torre.png", 1, {0, 0}},
+    /* As artes dos broches sao 1024px; esta escala as traz ao tamanho de icone da interface. */
+    {SPRITE_BROCHE_INICIAL_CHAMA, "assets/sprites/broche_chama_inicial.png", 0.025f, {0, 0}},
+    {SPRITE_BROCHE_INICIAL_PLANTA, "assets/sprites/broche_planta_inicial.png", 0.025f, {0, 0}},
+    {SPRITE_BROCHE_INICIAL_AGUA, "assets/sprites/broche_agua_inicial.png", 0.025f, {0, 0}},
     {SPRITE_ACAO_ATACAR, "assets/sprites/ui_action_attack.png", 1, {0, 0}},
     {SPRITE_ACAO_AGIR, "assets/sprites/ui_action_act.png", 1, {0, 0}},
     {SPRITE_ACAO_ITEM, "assets/sprites/ui_action_item.png", 1, {0, 0}},
@@ -210,6 +214,43 @@ static const EspecificacaoSprite ESPECIFICACOES[] = {
     ,{SPRITE_SOMBRA_ORBE, "assets/sprites/shadow_orb.png", 1, {0, 0}}
     ,{SPRITE_SOMBRA_FLORACAO_AVISO, "assets/sprites/shadow_bloom_warn.png", 1, {0, 0}}
     ,{SPRITE_SOMBRA_EXPLOSAO, "assets/sprites/shadow_burst.png", 1, {0, 0}}
+    ,{SPRITE_PILOTO_ADAGA, "assets/sprites/defense_ladrao_reflexo.png", 1, {0, 0}}
+    ,{SPRITE_PILOTO_ESPELHO, "assets/sprites/shadow_orb.png", 1, {0, 0}}
+    ,{SPRITE_PILOTO_FIO, "assets/sprites/bullet_sombra.png", 1, {0, 0}}
+    ,{SPRITE_PILOTO_ANCORA, "assets/sprites/defense_afogado_mare_coral.png", 1, {0, 0}}
+    ,{SPRITE_PILOTO_CABO, "assets/sprites/defense_carcereiro_grade.png", 1, {0, 0}}
+    ,{SPRITE_PILOTO_CORAL, "assets/sprites/defense_afogado_mare_coral.png", 1, {0, 0}}
+    ,{SPRITE_PILOTO_ASA, "assets/sprites/defense_mariposa_asas.png", 1, {0, 0}}
+    ,{SPRITE_PILOTO_POEIRA, "assets/sprites/defense_mariposa_corrente.png", 1, {0, 0}}
+    ,{SPRITE_PILOTO_ESTILHACO, "assets/sprites/bullet_agua.png", 1, {0, 0}}
+    ,{SPRITE_PILOTO_MAO, "assets/sprites/enemy_ladrao_mortalha.png", 1, {0, 0}}
+    ,{SPRITE_PLANTA_GOTA, "assets/sprites/bullet_planta.png", 1, {0, 0}}
+    ,{SPRITE_PLANTA_VENENO, "assets/sprites/bullet_planta.png", 1, {0, 0}}
+    ,{SPRITE_PLANTA_ANTIDOTO, "assets/sprites/bullet_planta.png", 1, {0, 0}}
+    ,{SPRITE_PLANTA_FRASCO, "assets/sprites/bullet_planta.png", 1, {0, 0}}
+    ,{SPRITE_PLANTA_FARPA, "assets/sprites/bullet_planta.png", 1, {0, 0}}
+    ,{SPRITE_PLANTA_LANCA, "assets/sprites/bullet_planta.png", 1, {0, 0}}
+    ,{SPRITE_PLANTA_ESCUDO, "assets/sprites/bullet_planta.png", 1, {0, 0}}
+    ,{SPRITE_PLANTA_TABUA, "assets/sprites/bullet_planta.png", 1, {0, 0}}
+    ,{SPRITE_PLANTA_RAIZ, "assets/sprites/bullet_planta.png", 1, {0, 0}}
+    ,{SPRITE_PLANTA_FOICE, "assets/sprites/bullet_planta.png", 1, {0, 0}}
+    ,{SPRITE_PLANTA_SEMENTE, "assets/sprites/bullet_planta.png", 1, {0, 0}}
+    ,{SPRITE_PLANTA_LEBRE, "assets/sprites/enemy_lebre_espinho.png", 1, {0, 0}}
+    ,{SPRITE_PLANTA_TOCA, "assets/sprites/bullet_planta.png", 1, {0, 0}}
+    ,{SPRITE_PLANTA_ALMOFARIZ, "assets/sprites/bullet_planta.png", 1, {0, 0}}
+    ,{SPRITE_PLANTA_ALTAR, "assets/sprites/bullet_planta.png", 1, {0, 0}}
+    ,{SPRITE_PLANTA_FILAMENTO, "assets/sprites/bullet_planta.png", 1, {0, 0}}
+    ,{SPRITE_AGUA_ONDA, "assets/sprites/bullet_agua.png", 1, {0, 0}}
+    ,{SPRITE_AGUA_ESCUDO, "assets/sprites/bullet_agua.png", 1, {0, 0}}
+    ,{SPRITE_AGUA_JATO, "assets/sprites/bullet_agua.png", 1, {0, 0}}
+    ,{SPRITE_AGUA_DIQUE, "assets/sprites/bullet_agua.png", 1, {0, 0}}
+    ,{SPRITE_AGUA_LAMA, "assets/sprites/bullet_agua.png", 1, {0, 0}}
+    ,{SPRITE_AGUA_BOLHA, "assets/sprites/bullet_agua.png", 1, {0, 0}}
+    ,{SPRITE_AGUA_NEVE, "assets/sprites/bullet_agua.png", 1, {0, 0}}
+    ,{SPRITE_AGUA_ESTACA, "assets/sprites/bullet_agua.png", 1, {0, 0}}
+    ,{SPRITE_AGUA_FISSURA, "assets/sprites/bullet_agua.png", 1, {0, 0}}
+    ,{SPRITE_AGUA_PRISMA, "assets/sprites/bullet_agua.png", 1, {0, 0}}
+    ,{SPRITE_AGUA_MEMBRANA, "assets/sprites/bullet_agua.png", 1, {0, 0}}
 };
 
 bool SpriteInterpretarMetadadosTexto(const char *texto, MetadadosSprite *metadados)
@@ -222,19 +263,41 @@ bool SpriteInterpretarMetadadosTexto(const char *texto, MetadadosSprite *metadad
     return true;
 }
 
+/* Localiza assets sem alterar a pasta de trabalho nem o caminho do save. */
+static bool ResolverCaminhoAsset(const char *relativo,char *saida,size_t capacidade)
+{
+    const char *app=GetApplicationDirectory();
+    for(int base=0;base<3;base++){
+        int n=base==0?snprintf(saida,capacidade,"%s",relativo):
+            base==1?snprintf(saida,capacidade,"%s%s",app,relativo):
+                    snprintf(saida,capacidade,"%s../%s",app,relativo);
+        if(n<0||(size_t)n>=capacidade)continue;
+        if(FileExists(saida))return true;
+        char folha[1024];snprintf(folha,sizeof(folha),"%s",saida);
+        char *ponto=strrchr(folha,'.');
+        if(ponto&&strcmp(ponto,".png")==0&&(size_t)(ponto-folha)+11<sizeof(folha)){
+            strcpy(ponto,"_sheet.png");
+            if(FileExists(folha))return true;
+        }
+    }
+    return false;
+}
 static void CarregarUm(SistemaSprites *sprites, const EspecificacaoSprite *especificacao)
 {
     SpriteJogo *sprite = &sprites->sprites[especificacao->id];
-    char caminho_metadados[128];
-    char caminho_folha[128];
-    const char *caminho_textura = especificacao->caminho;
+    char caminho_base[1024];
+    char caminho_metadados[1024];
+    char caminho_folha[1024];
+    const char *caminho_textura = caminho_base;
     FILE *arquivo;
 
     *sprite = (SpriteJogo){0};
+    sprite->peca_temporaria = especificacao->id>=SPRITE_PLANTA_GOTA && especificacao->id<=SPRITE_AGUA_MEMBRANA && especificacao->id!=SPRITE_PLANTA_LEBRE;
     sprite->escala = especificacao->escala;
     sprite->deslocamento = especificacao->deslocamento;
     sprite->metadados = (MetadadosSprite){1, 1, 0, 0};
-    snprintf(caminho_folha, sizeof(caminho_folha), "%s", especificacao->caminho);
+    if(!ResolverCaminhoAsset(especificacao->caminho,caminho_base,sizeof(caminho_base)))return;
+    snprintf(caminho_folha, sizeof(caminho_folha), "%s", caminho_base);
     char *ponto = strrchr(caminho_folha, '.');
     if (ponto != NULL) strcpy(ponto, "_sheet.png");
     if (FileExists(caminho_folha)) caminho_textura = caminho_folha;
@@ -248,7 +311,13 @@ static void CarregarUm(SistemaSprites *sprites, const EspecificacaoSprite *espec
     sprite->carregado = sprite->textura.id != 0;
     if (!sprite->carregado) return;
     SetTextureFilter(sprite->textura, TEXTURE_FILTER_POINT);
-    snprintf(caminho_metadados, sizeof(caminho_metadados), "%s", especificacao->caminho);
+    /* Pecas pequenas giram e encolhem: mipmaps evitam pixels soltos e cintilacao. */
+    if(especificacao->id>=SPRITE_PILOTO_ADAGA && especificacao->id<=SPRITE_AGUA_MEMBRANA) {
+        GenTextureMipmaps(&sprite->textura);
+        SetTextureFilter(sprite->textura,TEXTURE_FILTER_TRILINEAR);
+    }
+    if(especificacao->id>=SPRITE_AGUA_ONDA&&especificacao->id<=SPRITE_AGUA_MEMBRANA)SetTextureWrap(sprite->textura,TEXTURE_WRAP_REPEAT);
+    snprintf(caminho_metadados, sizeof(caminho_metadados), "%s", caminho_base);
     ponto = strrchr(caminho_metadados, '.');
     if (ponto != NULL) strcpy(ponto, ".txt");
     arquivo = fopen(caminho_metadados, "r");
@@ -259,10 +328,34 @@ static void CarregarUm(SistemaSprites *sprites, const EspecificacaoSprite *espec
     }
 }
 
+static void CarregarPecasPiloto(SistemaSprites *sprites)
+{
+    char caminho_manifesto[1024];
+    if(!ResolverCaminhoAsset("assets/pilot-assets.txt",caminho_manifesto,sizeof(caminho_manifesto)))return;
+    FILE *manifesto = fopen(caminho_manifesto, "r");
+    if (manifesto == NULL) return;
+    const char *chaves[] = {"adaga","espelho","fio","ancora","cabo","coral","asa","poeira","estilhaco","mao","planta_gota","planta_veneno","planta_antidoto","planta_frasco","planta_farpa","planta_lanca","planta_escudo","planta_tabua","planta_raiz","planta_foice","planta_semente","planta_lebre","planta_toca","planta_almofariz","planta_altar","planta_filamento","agua_onda","agua_escudo","agua_jato","agua_dique","agua_lama","agua_bolha","agua_neve","agua_estaca","agua_fissura","agua_prisma","agua_membrana"};
+    char linha[512], chave[40], caminho[400];
+    while (fgets(linha, sizeof(linha), manifesto)) {
+        if (linha[0] == '#' || sscanf(linha, "%39[^=]=%399[^\r\n]", chave, caminho) != 2) continue;
+        for (int i=0; i<(int)(sizeof(chaves)/sizeof(chaves[0])); i++) {
+            char caminho_validado[1024];
+            if (strcmp(chave,chaves[i]) || !ResolverCaminhoAsset(caminho,caminho_validado,sizeof(caminho_validado))) continue;
+            IdSprite id=(IdSprite)(SPRITE_PILOTO_ADAGA+i);
+            if(sprites->sprites[id].carregado) UnloadTexture(sprites->sprites[id].textura);
+            EspecificacaoSprite spec={id,caminho,1,{0,0}};
+            CarregarUm(sprites,&spec);
+              if((id>=SPRITE_PLANTA_GOTA && id<=SPRITE_PLANTA_FILAMENTO && strcmp(caminho,"assets/sprites/bullet_planta.png")!=0)||(id>=SPRITE_AGUA_ONDA && strcmp(caminho,"assets/sprites/bullet_agua.png")!=0)) sprites->sprites[id].peca_temporaria=false;
+        }
+    }
+    fclose(manifesto);
+}
+
 void SpritesInicializar(SistemaSprites *sprites)
 {
     memset(sprites, 0, sizeof(*sprites));
     for (size_t indice = 0; indice < sizeof(ESPECIFICACOES) / sizeof(ESPECIFICACOES[0]); indice++) CarregarUm(sprites, &ESPECIFICACOES[indice]);
+    CarregarPecasPiloto(sprites);
 }
 
 void SpritesDescarregar(SistemaSprites *sprites)
@@ -301,10 +394,23 @@ IdSprite SpriteIdFundoTipo(Tipo tipo)
 }
 IdSprite SpriteIdItem(IdItem item)
 {
-    return item >= ITEM_CHA && item < ITEM_TOTAL ? (IdSprite)(SPRITE_ITEM_CHA + item) : SPRITE_ITEM_CHA;
+    if (item == ITEM_BROCHE_INICIAL_CHAMA) return SPRITE_BROCHE_INICIAL_CHAMA;
+    if (item == ITEM_BROCHE_INICIAL_PLANTA) return SPRITE_BROCHE_INICIAL_PLANTA;
+    if (item == ITEM_BROCHE_INICIAL_AGUA) return SPRITE_BROCHE_INICIAL_AGUA;
+    /* Itens sem arte propria caem no icone desenhado por codigo. */
+    return item >= ITEM_CHA && item <= ITEM_AMULETO_AMPULHETA ?
+        (IdSprite)(SPRITE_ITEM_CHA + item) : SPRITE_TOTAL;
 }
 IdSprite SpriteIdPadraoProjetil(IdPadraoProjetil padrao)
 {
+    if(padrao>=PADRAO_AGUA_TSUNAMI&&padrao<=PADRAO_AGUA_MEMBRANA)return SPRITE_AGUA_ONDA;
+    if(padrao>=PADRAO_PLANTA_ESTILHACO_LANCA && padrao<=PADRAO_PLANTA_RITUAL)return SPRITE_PLANTA_SEMENTE;
+    if (padrao >= PADRAO_PILOTO_POEIRA_ASA && padrao <= PADRAO_PILOTO_RECIFE_RUPTURA) {
+        static const IdSprite mapa[] = {SPRITE_PILOTO_POEIRA,SPRITE_PILOTO_POEIRA,SPRITE_PILOTO_ASA,
+            SPRITE_PILOTO_ADAGA,SPRITE_PILOTO_ESPELHO,SPRITE_PILOTO_ADAGA,
+            SPRITE_PILOTO_ANCORA,SPRITE_PILOTO_CORAL,SPRITE_PILOTO_CORAL};
+        return mapa[padrao-PADRAO_PILOTO_POEIRA_ASA];
+    }
     if (padrao >= PADRAO_CHUVA && padrao <= PADRAO_SOMBRA_FLORACAO)
         return (IdSprite)(SPRITE_PROJETIL_PADRAO_CHUVA + padrao);
     if (padrao >= PADRAO_MARIPOSA_ASAS && padrao < PADRAO_TOTAL)

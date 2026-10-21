@@ -1,3 +1,4 @@
+#include "balance.h"
 #include "player.h"
 #include <math.h>
 #include <stdio.h>
@@ -62,10 +63,10 @@ static void AdicionarAtaquesDoTipo(AtributosJogador *j, Tipo tipo) {
 static void DefinirAtaquesEquipados(AtributosJogador *j) {
     const IdItem arma = j->equipamentos[ESPACO_ARMAMENTO];
     Tipo tipo_arma = TIPO_NEUTRO;
-    if (arma == ITEM_ESPADA_NATUREZA) tipo_arma = TIPO_PLANTA;
+    if (arma == ITEM_ESPADA_NATUREZA || arma == ITEM_ESPADA_INICIAL_PLANTA) tipo_arma = TIPO_PLANTA;
     else if (arma == ITEM_ESPADA_LUZ) tipo_arma = TIPO_LUZ;
-    else if (arma == ITEM_ESPADA_FOGO) tipo_arma = TIPO_FOGO;
-    else if (arma == ITEM_CAJADO_GELO) tipo_arma = TIPO_AGUA;
+    else if (arma == ITEM_ESPADA_FOGO || arma == ITEM_ESPADA_INICIAL_CHAMA) tipo_arma = TIPO_FOGO;
+    else if (arma == ITEM_CAJADO_GELO || arma == ITEM_ESPADA_INICIAL_AGUA) tipo_arma = TIPO_AGUA;
 
     j->total_ataques = 0;
     AdicionarAtaquesDoTipo(j, tipo_arma);
@@ -95,18 +96,33 @@ void JogadorRecalcularAtributos(AtributosJogador *j) {
     DefinirAtaquesEquipados(j);
 }
 
-void JogadorInicializar(AtributosJogador *j) {
+static IdItem BrocheInicialDoTipo(Tipo tipo) {
+    if (tipo == TIPO_FOGO) return ITEM_BROCHE_INICIAL_CHAMA;
+    if (tipo == TIPO_AGUA) return ITEM_BROCHE_INICIAL_AGUA;
+    return ITEM_BROCHE_INICIAL_PLANTA;
+}
+
+static IdItem EspadaInicialDoTipo(Tipo tipo) {
+    if (tipo == TIPO_FOGO) return ITEM_ESPADA_INICIAL_CHAMA;
+    if (tipo == TIPO_AGUA) return ITEM_ESPADA_INICIAL_AGUA;
+    return ITEM_ESPADA_INICIAL_PLANTA;
+}
+
+void JogadorInicializarComBroche(AtributosJogador *j, Tipo tipo_broche) {
     memset(j,0,sizeof(*j)); snprintf(j->nome,sizeof(j->nome),"Ari");
-    j->vida_base=40; j->nivel=1; j->tipo_defesa=TIPO_NEUTRO; j->multiplicador_dificuldade=1.0f;
+    if (tipo_broche != TIPO_FOGO && tipo_broche != TIPO_PLANTA && tipo_broche != TIPO_AGUA)
+        tipo_broche = TIPO_PLANTA;
+    j->vida_base=40; j->nivel=1; j->tipo_defesa=tipo_broche; j->multiplicador_dificuldade=1.0f;
     for(int i=0;i<ESPACO_EQUIPADO_TOTAL;i++) j->equipamentos[i]=ITEM_NENHUM;
-    j->equipamentos[ESPACO_ARMAMENTO]=ITEM_ESPADA_NATUREZA;
-    j->equipamentos[ESPACO_ARMADURA]=ITEM_ARMADURA_CASCA;
-    j->equipamentos[ESPACO_CALCA]=ITEM_CALCA_FERRUGEM;
-    JogadorRecalcularAtributos(j); j->hp=j->vida_maxima;
-    JogadorAdicionarItem(j,ITEM_CHA,2); JogadorAdicionarItem(j,ITEM_VERMELHA_FITA,1);
-    JogadorAdicionarItem(j,ITEM_MOLHADO_MANTO,1); JogadorAdicionarItem(j,ITEM_SOLAR_BROCHE,1);
-    JogadorAdicionarItem(j,ITEM_ESCUDO_MARE,1); JogadorAdicionarItem(j,ITEM_BOTAS_CINZA,1);
-    JogadorAdicionarItem(j,ITEM_AMULETO_ESPELHO,1); JogadorAdicionarItem(j,ITEM_CAJADO_GELO,1);
+    j->equipamentos[ESPACO_ARMAMENTO] = EspadaInicialDoTipo(tipo_broche);
+    j->equipamentos[ESPACO_AMULETO_TIPO] = BrocheInicialDoTipo(tipo_broche);
+    JogadorRecalcularAtributos(j); j->hp=j->vida_maxima; j->mana=j->mana_maxima;
+    JogadorAdicionarItem(j,ITEM_CHA,2);
+    JogadorAdicionarItem(j,ITEM_VERMELHA_FITA,1);
+}
+
+void JogadorInicializar(AtributosJogador *j) {
+    JogadorInicializarComBroche(j, TIPO_PLANTA);
 }
 
 void JogadorIniciarBatalha(AtributosJogador *j) {
@@ -202,3 +218,39 @@ float JogadorEfetividadeDanoRecebido(const AtributosJogador *j,Tipo tipo_ataque)
 }
 
 #undef ATAQUE
+
+
+void DanoIniciarRodada(OrcamentoDano *o, int vida_maxima, int teto, int percentual)
+{
+    *o = (OrcamentoDano){vida_maxima * percentual / 100, 0, teto, 0};
+}
+
+static int DebitarDano(OrcamentoDano *o, AtributosJogador *j, int dano)
+{
+    int restante = o->limite_rodada - o->recebido;
+    if (dano > restante) dano = restante;
+    if (dano > j->hp) dano = j->hp;
+    if (dano <= 0) return 0;
+    j->hp -= dano; o->recebido += dano;
+    return dano;
+}
+
+int DanoAplicar(OrcamentoDano *o, AtributosJogador *j, int base, Tipo tipo)
+{
+    if (o->invulnerabilidade > 0 || base <= 0) return 0;
+    int dano = (int)ceilf(base * JogadorEfetividadeDanoRecebido(j, tipo) * j->multiplicador_dano_recebido);
+    if (dano < 1) dano = 1;
+    if (dano > o->teto_impacto) dano = o->teto_impacto;
+    dano = DebitarDano(o, j, dano);
+    if (dano > 0) o->invulnerabilidade = BALANCEAMENTO_IFRAMES;
+    return dano;
+}
+
+int DanoAplicarResidual(OrcamentoDano *o, AtributosJogador *j, int dano)
+{
+    if (o->invulnerabilidade > 0) return 0;
+    if (dano > o->teto_impacto) dano = o->teto_impacto;
+    dano = DebitarDano(o, j, dano);
+    if (dano > 0) o->invulnerabilidade = BALANCEAMENTO_IFRAMES;
+    return dano;
+}

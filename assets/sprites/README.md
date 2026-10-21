@@ -15,6 +15,7 @@ Use PNG com transparencia, sem antialiasing e pixel art em escala inteira (1x, 2
 | Fundo do titulo | `bg_title.png` | 640x480 (ou qualquer proporcao 4:3) |
 | Botoes do titulo | `ui_button_title.png`, `ui_button_title_selected.png` | Molduras PNG opcionais, com fundo transparente |
 | Icones de combate | `ui_action_attack.png`, `ui_action_act.png`, `ui_action_item.png`, `ui_action_spare.png` | 24x24 transparentes; os quatro botoes usam desenho por codigo como fallback |
+| Broches iniciais | `broche_chama_inicial.png`, `broche_planta_inicial.png`, `broche_agua_inicial.png` | PNG transparente; aparecem na escolha da primeira arma/defesa |
 | Logo do titulo | `logo_ascensao_torre.png` | PNG transparente; se ausente, o texto padrao aparece |
 | Fundo | `bg_pastel.png`, `bg_boss.png` | 640x480 |
 

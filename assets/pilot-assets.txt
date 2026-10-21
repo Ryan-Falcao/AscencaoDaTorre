@@ -1,0 +1,42 @@
+# Todos os caminhos abaixo existem. Troque apenas o valor apos = ao fornecer as pecas finais.
+adaga=assets/sprites/defense_ladrao_reflexo.png
+espelho=assets/sprites/shadow_orb.png
+fio=assets/sprites/bullet_sombra.png
+ancora=assets/sprites/pilot/ancora.png
+cabo=assets/sprites/pilot/cabo.png
+coral=assets/sprites/pilot/coral.png
+asa=assets/sprites/defense_mariposa_asas.png
+poeira=assets/sprites/defense_mariposa_corrente.png
+estilhaco=assets/sprites/pilot/estilhaco.png
+mao=assets/sprites/enemy_ladrao_mortalha.png
+
+# Planta: silhuetas temporarias; trocar o caminho ativa a arte isolada.
+planta_gota=assets/sprites/bullet_planta.png
+planta_veneno=assets/sprites/bullet_planta.png
+planta_antidoto=assets/sprites/bullet_planta.png
+planta_frasco=assets/sprites/bullet_planta.png
+planta_farpa=assets/sprites/bullet_planta.png
+planta_lanca=assets/sprites/bullet_planta.png
+planta_escudo=assets/sprites/bullet_planta.png
+planta_tabua=assets/sprites/bullet_planta.png
+planta_raiz=assets/sprites/bullet_planta.png
+planta_foice=assets/sprites/bullet_planta.png
+planta_semente=assets/sprites/bullet_planta.png
+planta_lebre=assets/sprites/enemy_lebre_espinho.png
+planta_toca=assets/sprites/bullet_planta.png
+planta_almofariz=assets/sprites/bullet_planta.png
+planta_altar=assets/sprites/bullet_planta.png
+planta_filamento=assets/sprites/bullet_planta.png
+
+# Agua: arquivos existentes com superficies temporarias geradas pelo jogo.
+agua_onda=assets/sprites/bullet_agua.png
+agua_escudo=assets/sprites/bullet_agua.png
+agua_jato=assets/sprites/bullet_agua.png
+agua_dique=assets/sprites/bullet_agua.png
+agua_lama=assets/sprites/bullet_agua.png
+agua_bolha=assets/sprites/bullet_agua.png
+agua_neve=assets/sprites/bullet_agua.png
+agua_estaca=assets/sprites/bullet_agua.png
+agua_fissura=assets/sprites/bullet_agua.png
+agua_prisma=assets/sprites/bullet_agua.png
+agua_membrana=assets/sprites/bullet_agua.png

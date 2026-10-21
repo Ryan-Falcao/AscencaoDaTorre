@@ -1,3 +1,6 @@
+#include "balance.h"
+#include "pilot_patterns.h"
+#include "ui.h"
 #include "patterns.h"
 #include "motion_patterns.h"
 #include "sprites.h"
@@ -11,6 +14,7 @@ bool PadraoEhCaracteristico(IdPadraoProjetil id)
 
 const char *InstrucaoPadrao(IdPadraoProjetil id)
 {
+    if (PilotoEh(id)) return PilotoInstrucao(id);
     if (PadraoMovimentoEh(id)) return InstrucaoPadraoMovimento(id);
     switch (id) {
         case PADRAO_MARIPOSA_ASAS: return "ASAS: atravesse a abertura; saia da poeira marcada";
@@ -168,12 +172,13 @@ static void IniciarCiclo(EstadoDefesa *d)
 void PadraoDefinirSegundaFase(EstadoDefesa *d)
 {
     d->ataque_segunda_fase = true;
+    if (PilotoEh(d->id_padrao)) return;
     if (PadraoMovimentoEh(d->id_padrao)) {
         d->padrao.duracao = 12.6f;
         return;
     }
     /* Mudancas reais de fase: ecos pareados ou prensas alternadas com alvenaria caindo. */
-    d->aviso_ataque = fmaxf(.62f, d->aviso_ataque - .10f);
+    d->aviso_ataque = fmaxf(BALANCEAMENTO_AVISO_CHEFE, d->aviso_ataque - .10f);
     d->ciclo_ataque = d->aviso_ataque + (d->id_padrao == PADRAO_SINO_ECO ? 1.22f : .70f);
     d->padrao.duracao = 12.5f;
 }
@@ -309,10 +314,10 @@ void PadraoDesenhar(const EstadoDefesa *d, const SistemaSprites *sprites)
     const float w = d->aviso_ataque;
     const Vector2 p = d->alvo_ataque;
     Color cor = cor_tipo(d->padrao.tipo);
-    DrawText(InstrucaoPadrao(d->id_padrao), (int)d->caixa.x, (int)d->caixa.y - 22, 10, WHITE);
+    InterfaceDesenharTexto(InstrucaoPadrao(d->id_padrao), (int)d->caixa.x, (int)d->caixa.y - 22, 10, WHITE);
     if (d->ataque_segunda_fase) {
         DrawRectangleLinesEx(d->caixa, 3, MAROON);
-        DrawText("FASE 2", (int)(d->caixa.x + d->caixa.width) - 57, (int)d->caixa.y + 8, 12, RED);
+        InterfaceDesenharTexto("FASE 2", (int)(d->caixa.x + d->caixa.width) - 57, (int)d->caixa.y + 8, 12, RED);
     }
     if (t > w + 1.1f) return;
     if (d->id_padrao == PADRAO_SAPO_SALTOS || d->id_padrao == PADRAO_LEBRE_PULOS) {
@@ -347,27 +352,27 @@ void PadraoDesenhar(const EstadoDefesa *d, const SistemaSprites *sprites)
                      (Vector2){bird.x - 15, bird.y - 7}, ORANGE);
     } else if (d->id_padrao == PADRAO_FAGULHA_LUZ) {
         DrawRectangleLinesEx((Rectangle){p.x - 22, p.y - 22, 44, 44}, 3, GOLD);
-        DrawText("LUZ", (int)p.x - 10, (int)p.y - 5, 10, GOLD);
+        InterfaceDesenharTexto("LUZ", (int)p.x - 10, (int)p.y - 5, 10, GOLD);
     } else if (d->id_padrao == PADRAO_GATO_EMBOSCADA) {
-        DrawText(d->total_criacoes % 2 ? "PARE" : "GARRAS: MOVA", (int)d->caixa.x + 8,
+        InterfaceDesenharTexto(d->total_criacoes % 2 ? "PARE" : "GARRAS: MOVA", (int)d->caixa.x + 8,
                  (int)d->caixa.y + 8, 18, d->total_criacoes % 2 ? SKYBLUE : WHITE);
         if (d->total_criacoes % 2) {
             DrawEllipse((int)d->caixa.x + 32, (int)d->caixa.y + 42, 10, 5, SKYBLUE);
             DrawEllipse((int)d->caixa.x + 60, (int)d->caixa.y + 42, 10, 5, SKYBLUE);
         }
     } else if (d->id_padrao == PADRAO_SINO_ECO) {
-        DrawText(t < w ? (d->ataque_segunda_fase ? "ECO DUPLO..." : "DING...") : "DONG!",
+        InterfaceDesenharTexto(t < w ? (d->ataque_segunda_fase ? "ECO DUPLO..." : "DING...") : "DONG!",
                  (int)p.x - 20, (int)p.y - 12, 14, GOLD);
     } else if (d->id_padrao == PADRAO_CAVALEIRO_DUELO) {
-        DrawText(t < w + .4f ? "1: VERTICAL" : "2: HORIZONTAL", (int)d->caixa.x + 8,
+        InterfaceDesenharTexto(t < w + .4f ? "1: VERTICAL" : "2: HORIZONTAL", (int)d->caixa.x + 8,
                  (int)d->caixa.y + 8, 12, WHITE);
     } else if (d->id_padrao == PADRAO_TORRE_ESMAGAMENTO) {
-        DrawText(d->ataque_segunda_fase && (d->total_criacoes - 1) % 3 == 2 ? "DESABAMENTO" : "ABERTURA",
+        InterfaceDesenharTexto(d->ataque_segunda_fase && (d->total_criacoes - 1) % 3 == 2 ? "DESABAMENTO" : "ABERTURA",
                  (int)p.x - 24, (int)p.y - 6, 10, LIME);
     } else if (d->id_padrao == PADRAO_MARIPOSA_ASAS) {
         DrawEllipse((int)d->caixa.x + 15, (int)p.y, 13, 24, cor);
         DrawEllipse((int)(d->caixa.x + d->caixa.width) - 15, (int)p.y, 13, 24, cor);
     } else if (d->id_padrao == PADRAO_LIMO_CRESCIMENTO) {
-        DrawText("CRESCENDO", (int)p.x - 28, (int)p.y - 8, 10, GREEN);
+        InterfaceDesenharTexto("CRESCENDO", (int)p.x - 28, (int)p.y - 8, 10, GREEN);
     }
 }

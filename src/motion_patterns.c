@@ -1,3 +1,4 @@
+#include "ui.h"
 #include "motion_patterns.h"
 #include "raymath.h"
 #include "sprites.h"
@@ -18,7 +19,7 @@ typedef enum {
     BRECHA_CIMA
 } LadoBrecha;
 
-bool PadraoMovimentoEh(IdPadraoProjetil id) { return id >= PADRAO_MARIPOSA_TRAMA && id < PADRAO_TOTAL; }
+bool PadraoMovimentoEh(IdPadraoProjetil id) { return id >= PADRAO_MARIPOSA_TRAMA && id < PADRAO_PILOTO_POEIRA_ASA; }
 
 ModoMovimento ModoDoPadraoMovimento(IdPadraoProjetil id)
 {
@@ -73,10 +74,8 @@ ModoMovimento ModoDoPadraoMovimento(IdPadraoProjetil id)
 static ModoFisica Fisica(IdPadraoProjetil id)
 {
     switch (id) {
-        case PADRAO_SAPO_BARREIRAS: case PADRAO_LIMO_MARE:
-        case PADRAO_LEBRE_BARREIRAS: case PADRAO_CAVALEIRO_DESAFIO: return FISICA_SALTO;
-        case PADRAO_SAPO_VITORIAS_REGIAS: case PADRAO_LIMO_BALSAS:
-        case PADRAO_LEBRE_PARKOUR: case PADRAO_TORRE_PARKOUR: return FISICA_PLATAFORMA;
+        /* Defesa e um espaco de esquiva livre. Plataformas exigiam saltos sem
+           decisao interessante; os ataques abaixo viraram rotas dinamicas. */
         case PADRAO_GATO_IMPACTO: case PADRAO_SINO_IMPACTO: return FISICA_EMPURRAO;
         default: return FISICA_LIVRE;
     }
@@ -95,25 +94,25 @@ const char *InstrucaoPadraoMovimento(IdPadraoProjetil id)
     switch (id) {
         case PADRAO_MARIPOSA_TRAMA: return "MARIPOSA - ASAS: serpenteie pelas venezianas";
         case PADRAO_MARIPOSA_CORRENTE: return "MARIPOSA - POEIRA: azul PARE; laranja MOVA";
-        case PADRAO_SAPO_BARREIRAS: return "SAPO - MAROLAS: pule cada onda; A/D controla";
-        case PADRAO_SAPO_VITORIAS_REGIAS: return "SAPO - VITORIAS-REGIAS: salte antes que afundem";
+        case PADRAO_SAPO_BARREIRAS: return "SAPO - MAROLAS: siga a crista entre as ondas";
+        case PADRAO_SAPO_VITORIAS_REGIAS: return "SAPO - VITORIAS-REGIAS: acompanhe a abertura que desliza";
         case PADRAO_PASSARO_FOGO_CRUZADO: return "PASSARO - REVOADA: troque de faixa nas lacunas";
         case PADRAO_PASSARO_TUNEL: return "PASSARO - MERGULHO: saia da mira; evite a brasa";
         case PADRAO_CHUVA_FOGO: return "PASSARO - CHUVA DE FOGO: desvie das chamas que caem";
         case PADRAO_LIMO_MARE: return "LIMO - MARE PEGAJOSA: saltos curtos e longos";
-        case PADRAO_LIMO_BALSAS: return "LIMO - DIVISAO: as ilhas se separam sob seus pes";
+        case PADRAO_LIMO_BALSAS: return "LIMO - DIVISAO: atravesse as duas fendas na ordem certa";
         case PADRAO_FAGULHA_CANHOES: return "FAGULHA - FAROL: rode entre os feixes cardeais";
         case PADRAO_FAGULHA_ORBITA: return "FAGULHA - ORBITA: atravesse o anel pela estrela ausente";
-        case PADRAO_LEBRE_BARREIRAS: return "LEBRE - CORRIDA: encadeie saltos pelas cercas";
-        case PADRAO_LEBRE_PARKOUR: return "LEBRE - TOCAS: alcance a proxima saida elevada";
+        case PADRAO_LEBRE_BARREIRAS: return "LEBRE - ROSAS: corte caminho entre as roseiras";
+        case PADRAO_LEBRE_PARKOUR: return "LEBRE - TOCAS: leia o labirinto de espinhos";
         case PADRAO_GATO_IMPACTO: return "GATO - BOTE: reaja contra a parede marcada";
         case PADRAO_GATO_PERSEGUICAO: return "GATO - GARRAS: leia a ordem dos tres cortes";
         case PADRAO_CAVALEIRO_LANCAS: return "CAVALEIRO - LANCAS: ocupe a unica faixa vazia";
-        case PADRAO_CAVALEIRO_DESAFIO: return "CAVALEIRO - JUSTA: salte a lamina, pouse sob a alta";
+        case PADRAO_CAVALEIRO_DESAFIO: return "CAVALEIRO - JUSTA: saia da linha da espada e corte por tras";
         case PADRAO_SINO_CANHOES: return "SINEIRO - CARRILHAO: atravesse os badalos alternados";
         case PADRAO_SINO_IMPACTO: return "SINEIRO - PESO: resista a gravidade do badalo";
         case PADRAO_SINO_DESAFIO: return "SINEIRO - REQUIEM: mude de casa no compasso";
-        case PADRAO_TORRE_PARKOUR: return "TORRE - ESCADARIA: suba enquanto os degraus caem";
+        case PADRAO_TORRE_PARKOUR: return "TORRE - ESCADARIA: siga o corredor entre os degraus em queda";
         case PADRAO_TORRE_CANHOES: return "TORRE - BASTIAO: leia o lado e atravesse a seteira";
         case PADRAO_TORRE_DESAFIO: return "TORRE - COLAPSO: fuja da coluna marcada e dos escombros";
         case PADRAO_SINO_GAS_SOMBRA: return "SINEIRO - GAS DAS SOMBRAS: corra para a brecha; SHIFT da dash";
@@ -226,54 +225,6 @@ void PadraoMovimentoIniciar(EstadoDefesa *d)
     }
 }
 
-static void Chao(QuadroMovimento *f, Rectangle b)
-{
-    f->plataformas[f->total_plataformas++] = (Rectangle){b.x, b.y + b.height - 2, b.width, 4};
-}
-
-static void ObstaculosMoveis(const EstadoDefesa *d, QuadroMovimento *f, float t, float velocidade,
-                            float espacamento, int estilo)
-{
-    Rectangle b = d->caixa;
-    float andar = b.y + b.height - 2;
-    for (int onda = 0; onda < 22; onda++) {
-        float x = b.x + b.width + 20 - (t - onda * espacamento) * velocidade;
-        if (x < b.x - 45 || x > b.x + b.width + 24) continue;
-        float height = estilo == 0 ? (onda % 3 == 1 ? 34 : 23) :
-                       estilo == 1 ? (onda % 4 == 2 ? 36 : 20) :
-                                    (onda % 3 == 0 ? 38 : 29);
-        float width = estilo == 0 ? 15 : estilo == 1 ? (onda % 2 ? 27 : 18) : 20;
-        AdicionarAreaPerigosa(f, (Rectangle){x, andar - height, width, height});
-        /* Ondas de limo variam em largura e altura; ao contrario das cercas,
-           nao escondem uma segunda colisao no ponto de pouso. */
-    }
-    Chao(f, b); f->velocidade_rolagem = velocidade;
-}
-
-static void PercursoPlataformas(const EstadoDefesa *d, QuadroMovimento *f, float t, float velocidade, int estilo)
-{
-    Rectangle b = d->caixa;
-    float base = b.y + b.height - 30;
-    f->velocidade_rolagem = velocidade;
-    for (int bloco = -2; bloco < 36; bloco++) {
-        float passo = estilo == 0 ? 64 : estilo == 1 ? 78 : estilo == 2 ? 72 : 64;
-        float width = estilo == 0 ? 54 : estilo == 1 ? 62 : estilo == 2 ? 56 : 42;
-        float x = b.x + 48 + bloco * passo - t * velocidade;
-        if (x < b.x - width || x > b.x + b.width) continue;
-        float elevacao = estilo == 0 ? (bloco % 4 == 1 ? 25 : bloco % 4 == 2 ? 8 : 0) :
-                     estilo == 1 ? (bloco % 3 == 1 ? 14 : 0) :
-                     estilo == 2 ? (bloco % 3 == 0 ? 42 : bloco % 3 == 1 ? 18 : 4) :
-                                  (float)((bloco % 5 + 5) % 5) * 10;
-        if (estilo == 0) elevacao += sinf(t * 3 + bloco) * 5;
-        if (estilo == 1 && bloco % 4 == 0) elevacao += 18;          /* balsa de limo separada */
-        if (estilo == 2 && bloco % 5 == 3) elevacao += 24;
-        if (estilo == 2) elevacao = fminf(elevacao, 44.0f);            /* toda toca e alcancavel */
-        if (f->total_plataformas < 12)
-            f->plataformas[f->total_plataformas++] = (Rectangle){x, base - elevacao, width, 7};
-    }
-    AdicionarAreaPerigosa(f, (Rectangle){b.x, b.y + b.height - 11, b.width, 11});
-}
-
 void QuadroPadraoMovimento(const EstadoDefesa *d, QuadroMovimento *f)
 {
     memset(f, 0, sizeof(*f));
@@ -310,8 +261,25 @@ void QuadroPadraoMovimento(const EstadoDefesa *d, QuadroMovimento *f)
             f->guia.y = b.y + b.height * (.5f + sinf(t * 1.15f) * .30f);
             break;
         }
-        case PADRAO_SAPO_BARREIRAS: ObstaculosMoveis(d, f, t, 170 * aumento, .94f, 0); break;
-        case PADRAO_SAPO_VITORIAS_REGIAS: PercursoPlataformas(d, f, t, 55 * aumento, 0); break;
+        case PADRAO_SAPO_BARREIRAS: {
+            /* Marolas atravessam a arena com uma crista aberta alternada. */
+            const float abertura = b.y + b.height * (batida % 2 ? .27f : .73f);
+            const float x = b.x + b.width + 16.0f - fmodf(t, 1.18f) * 265.0f * aumento;
+            if (tempo_local < .36f || relogio < AQUECIMENTO) PreverPortao(f, b, abertura, 25.0f, false);
+            if (x > b.x - 18.0f) Portao(f, b, x, abertura, 25.0f, false);
+            f->guia = (Vector2){x, abertura};
+            break;
+        }
+        case PADRAO_SAPO_VITORIAS_REGIAS: {
+            /* Uma unica abertura desliza lentamente: leia a onda em vez de apertar pulo. */
+            float abertura = b.y + b.height * (.50f + sinf(t * 1.55f) * .30f);
+            float x = b.x + fmodf(t * 238.0f, b.width + 58.0f) - 29.0f;
+            if (x < b.x - 16.0f) x += b.width + 58.0f;
+            if (tempo_local < .34f || relogio < AQUECIMENTO) PreverPortao(f, b, abertura, 24.0f, false);
+            Portao(f, b, x, abertura, 24.0f, false);
+            f->guia = (Vector2){x, abertura};
+            break;
+        }
         case PADRAO_PASSARO_FOGO_CRUZADO: {
             static const int aberturas[] = {1, 2, 1, 0, 1, 2, 3, 2};
             int aberta = aberturas[batida % 8];
@@ -344,8 +312,40 @@ void QuadroPadraoMovimento(const EstadoDefesa *d, QuadroMovimento *f)
             f->guia.y = y < b.y + b.height / 2 ? b.y + b.height - 18 : b.y + 18;
             break;
         }
-        case PADRAO_LIMO_MARE: ObstaculosMoveis(d, f, t, 158 * aumento, 1.16f, 1); break;
-        case PADRAO_LIMO_BALSAS: PercursoPlataformas(d, f, t, 48 * aumento, 1); break;
+        case PADRAO_LIMO_MARE: {
+            /* A mare sobe por uma metade e depois pela outra: posicao importa mais que reflexo. */
+            const bool alto = batida % 2 == 0;
+            Rectangle onda = alto ? (Rectangle){b.x, b.y, b.width, b.height * .58f} :
+                                      (Rectangle){b.x, b.y + b.height * .42f, b.width, b.height * .58f};
+            if (tempo_local < .48f || relogio < AQUECIMENTO) AdicionarAviso(f, onda);
+            else if (tempo_local < 1.00f) AdicionarAreaPerigosa(f, onda);
+            f->guia = (Vector2){b.x + b.width * .5f, alto ? b.y + b.height * .80f : b.y + b.height * .20f};
+            break;
+        }
+        case PADRAO_LIMO_BALSAS: {
+            /* Duas paredes de limo fecham em tempos diferentes; a segunda fenda cobra planejamento. */
+            const float primeira = b.y + b.height * (.30f + .20f * sinf(t * 1.3f));
+            const float segunda = b.y + b.height * (.70f - .18f * sinf(t * 1.3f));
+            const float x1 = b.x + b.width * .31f;
+            const float x2 = b.x + b.width * .69f;
+            if (tempo_local < .48f || relogio < AQUECIMENTO) {
+                PreverPortao(f, b, primeira, 23.0f, false);
+                PreverPortao(f, b, segunda, 23.0f, false);
+            } else {
+                Portao(f, b, x1, primeira, 23.0f, false);
+                Portao(f, b, x2, segunda, 23.0f, false);
+                /* A massa central oscila entre os lados; uma unica fuga nao resolve o turno. */
+                const float lado = batida % 2 ? .24f : .76f;
+                AdicionarAreaPerigosa(f, (Rectangle){b.x + b.width * lado - 12.0f, b.y,
+                                      24.0f, b.height});
+                AdicionarAreaPerigosa(f, (Rectangle){b.x + b.width * .47f, b.y,
+                                      b.width * .06f, b.height});
+                AdicionarAreaPerigosa(f, (Rectangle){b.x, b.y + b.height * .45f,
+                                      b.width, b.height * .10f});
+            }
+            f->guia = (Vector2){x1, primeira};
+            break;
+        }
         case PADRAO_FAGULHA_CANHOES: {
             bool vertical = batida % 2 == 0;
             static const float offsets[] = {-.18f, 0, .18f, 0};
@@ -383,8 +383,32 @@ void QuadroPadraoMovimento(const EstadoDefesa *d, QuadroMovimento *f)
             }
             break;
         }
-        case PADRAO_LEBRE_BARREIRAS: ObstaculosMoveis(d, f, t, 205 * aumento, .92f, 2); break;
-        case PADRAO_LEBRE_PARKOUR: PercursoPlataformas(d, f, t, 68 * aumento, 2); break;
+        case PADRAO_LEBRE_BARREIRAS: {
+            /* Duas roseiras vem em cadencia; a brecha troca de lado a cada batida. */
+            const float abertura = b.y + b.height * (batida % 2 ? .30f : .70f);
+            const float x = b.x + b.width + 18.0f - fmodf(t, 1.30f) * 282.0f * aumento;
+            if (tempo_local < .42f || relogio < AQUECIMENTO) PreverPortao(f, b, abertura, 20.0f, false);
+            if (x > b.x - 20.0f) Portao(f, b, x, abertura, 20.0f, false);
+            f->guia = (Vector2){x, abertura};
+            break;
+        }
+        case PADRAO_LEBRE_PARKOUR: {
+            /* Labirinto de roseiras: duas passagens se alternam, sem teleporte ou salto forçado. */
+            const float ciclo = fmodf(t, 2.15f);
+            const float abertura_a = b.y + b.height * (ciclo < 1.08f ? .28f : .72f);
+            const float abertura_b = b.y + b.height * (ciclo < 1.08f ? .72f : .28f);
+            if (tempo_local < .42f || relogio < AQUECIMENTO) {
+                PreverPortao(f, b, abertura_a, 21.0f, false);
+                PreverPortao(f, b, abertura_b, 21.0f, false);
+            } else {
+                Portao(f, b, b.x + b.width * .36f, abertura_a, 21.0f, false);
+                Portao(f, b, b.x + b.width * .67f, abertura_b, 21.0f, false);
+                AdicionarAreaPerigosa(f, (Rectangle){b.x + b.width * .49f, b.y, 16.0f, b.height});
+                AdicionarAreaPerigosa(f, (Rectangle){b.x, b.y + b.height * .46f, b.width, 8.0f});
+            }
+            f->guia = (Vector2){b.x + b.width * .36f, abertura_a};
+            break;
+        }
         case PADRAO_GATO_IMPACTO:
         case PADRAO_SINO_IMPACTO: {
             bool bell = d->id_padrao == PADRAO_SINO_IMPACTO;
@@ -427,22 +451,25 @@ void QuadroPadraoMovimento(const EstadoDefesa *d, QuadroMovimento *f)
             break;
         }
         case PADRAO_CAVALEIRO_DESAFIO: {
-            ObstaculosMoveis(d, f, t, 190 * aumento, .88f, 0);
-            for (int onda = 0; onda < 18; onda++) if (onda % 3 == 2) {
-                float x = b.x + b.width + 20 - (t - onda * .88f) * 190 * aumento;
-                if (x > b.x - 30 && x < b.x + b.width + 20) {
-                    /* Troca a lanca baixa desta onda por uma alta. Nunca exige
-                       que o jogador pule e fique abaixado no mesmo x. */
-                    for (int i = 0; i < f->total_perigos; i++) {
-                        Rectangle r = f->perigo[i];
-                        if (fabsf(r.x - x) < 2 && r.y > b.y + b.height / 2) {
-                            for (int j = i; j + 1 < f->total_perigos; j++) f->perigo[j] = f->perigo[j + 1];
-                            f->total_perigos--; break;
-                        }
-                    }
-                    AdicionarAreaPerigosa(f, (Rectangle){x, b.y, 22, b.height - 38});
-                }
+            /* A espada mira a ultima posicao do jogador e varre uma linha; cruzar depois
+               do golpe e mais seguro que simplesmente fugir em linha reta. */
+            const bool vertical = batida % 2 == 0;
+            const float eixo = vertical ? Clamp(d->ancora_movimento.x, b.x + 26, b.x + b.width - 26) :
+                                           Clamp(d->ancora_movimento.y, b.y + 22, b.y + b.height - 22);
+            Rectangle lamina = vertical ? (Rectangle){eixo - 12, b.y, 24, b.height} :
+                                            (Rectangle){b.x, eixo - 12, b.width, 24};
+            if (tempo_local < .58f || relogio < AQUECIMENTO) AdicionarAviso(f, lamina);
+            else if (tempo_local < 1.03f) AdicionarAreaPerigosa(f, lamina);
+            /* Petalas atras da espada punem ficar parado no mesmo lado, sem fechar a arena. */
+            if (tempo_local > .76f && tempo_local < 1.15f) {
+                Rectangle petalas = vertical ? (Rectangle){eixo < b.x + b.width / 2 ? b.x : eixo + 14,
+                    b.y + b.height * .18f, b.width * .28f, b.height * .64f} :
+                    (Rectangle){b.x + b.width * .22f, eixo < b.y + b.height / 2 ? b.y : eixo + 14,
+                    b.width * .56f, b.height * .26f};
+                AdicionarAreaPerigosa(f, petalas);
             }
+            f->guia = vertical ? (Vector2){eixo < b.x + b.width / 2 ? eixo + 58 : eixo - 58, b.y + b.height * .5f} :
+                                  (Vector2){b.x + b.width * .5f, eixo < b.y + b.height / 2 ? eixo + 48 : eixo - 48};
             break;
         }
         case PADRAO_SINO_CANHOES: {
@@ -471,7 +498,20 @@ void QuadroPadraoMovimento(const EstadoDefesa *d, QuadroMovimento *f)
             f->guia = (Vector2){b.x + (seguro_x + .5f) * largura_celula, b.y + (seguro_y + .5f) * altura_celula};
             break;
         }
-        case PADRAO_TORRE_PARKOUR: PercursoPlataformas(d, f, t, 72 * aumento, 3); break;
+        case PADRAO_TORRE_PARKOUR: {
+            /* Degraus desabam em diagonal, deixando um corredor em zigue-zague claro. */
+            const int seguro = batida % 4;
+            const float largura = b.width / 4.0f;
+            for (int coluna = 0; coluna < 4; coluna++) if (coluna != seguro) {
+                const float queda = Clamp((tempo_local - .36f) / .66f, 0.0f, 1.0f);
+                Rectangle degrau = {b.x + coluna * largura + 3, b.y - b.height * .40f +
+                    queda * b.height * 1.18f, largura - 6, 30};
+                if (tempo_local < .36f || relogio < AQUECIMENTO) AdicionarAviso(f, (Rectangle){degrau.x, b.y, degrau.width, b.height});
+                else if (degrau.y < b.y + b.height && degrau.y + degrau.height > b.y) AdicionarAreaPerigosa(f, degrau);
+            }
+            f->guia = (Vector2){b.x + (seguro + .5f) * largura, b.y + b.height * .5f};
+            break;
+        }
         case PADRAO_TORRE_CANHOES: {
             bool horizontal = batida % 2 != 0;
             float direcao = batida % 4 < 2 ? 1.0f : -1.0f;
@@ -641,6 +681,11 @@ void QuadroPadraoMovimento(const EstadoDefesa *d, QuadroMovimento *f)
                         b.y + b.height - inicio_trajetoria
                     });
                     AdicionarAreaPerigosa(f, chama);
+                }
+                /* A chama deixa lava por pouco tempo: o jogador precisa planejar
+                   a proxima posicao, e nao apenas sair da area marcada. */
+                if (idade_chama > tempo_travessia && idade_chama < tempo_travessia + .72f) {
+                    AdicionarAreaPerigosa(f, (Rectangle){x - 15.0f, b.y + b.height - 12.0f, 30.0f, 12.0f});
                 }
             }
             break;
@@ -818,11 +863,7 @@ void QuadroPadraoMovimento(const EstadoDefesa *d, QuadroMovimento *f)
 static void Atingir(EstadoDefesa *d, AtributosJogador *p)
 {
     if (d->depurar_invencivel || d->temporizador_invencibilidade > 0) return;
-    d->multiplicador_ultimo_dano = JogadorEfetividadeDanoRecebido(p, d->padrao.tipo);
-    int dano = (int)ceilf(d->padrao.dano * d->multiplicador_ultimo_dano * p->multiplicador_dano_recebido);
-    if (dano < 1) dano = 1;
-    p->hp = p->hp > dano ? p->hp - dano : 0;
-    d->ultimo_dano = dano; d->temporizador_popup_dano = .75f; d->temporizador_invencibilidade = .65f;
+    DefesaAplicarDano(d, p, d->padrao.dano, d->padrao.tipo);
 }
 
 void PadraoMovimentoAtualizar(EstadoDefesa *d, AtributosJogador *jogador, EntradaDefesa entrada, float tempo_delta)
@@ -876,7 +917,7 @@ void PadraoMovimentoAtualizar(EstadoDefesa *d, AtributosJogador *jogador, Entrad
     d->posicao_alma.x = Clamp(d->posicao_alma.x, b.x + d->raio_alma, b.x + b.width - d->raio_alma);
     d->posicao_alma.y = Clamp(d->posicao_alma.y, b.y + d->raio_alma, b.y + b.height - d->raio_alma);
     for (int i = 0; i < f.total_perigos; i++) {
-        if (!CirculoPerigoAtingeRetangulo(d->posicao_alma, d->raio_alma, f.perigo[i])) continue;
+        if (!PercursoAtingeRetangulo(d->inicio_movimento, d->posicao_alma, d->raio_alma, f.perigo[i])) continue;
         bool nocivo = true;
         if (d->id_padrao == PADRAO_MARIPOSA_CORRENTE) {
             float intencao = Vector2Length(entrada.movimento);
@@ -914,7 +955,10 @@ static void DesenharSpriteNaArea(const EstadoDefesa *d, const SistemaSprites *sp
     if (quantidade < 1) quantidade = 1;
     if (quantidade > 10) quantidade = 10;
     const float espessura = horizontal ? area.height : area.width;
-    const float escala = Clamp(espessura / 16.0f, .65f, 1.8f);
+    const SpriteJogo *peca = sprite_obter(sprites,id);
+    const float largura_arte = peca->metadados.largura_quadro > 0 ? peca->metadados.largura_quadro : peca->textura.width;
+    const float altura_arte = peca->metadados.altura_quadro > 0 ? peca->metadados.altura_quadro : peca->textura.height;
+    const float escala = (espessura + 4.0f) / fmaxf(largura_arte,altura_arte) / peca->escala;
     for (int i = 0; i < quantidade; i++) {
         const float proporcao = ((float)i + .5f) / quantidade;
         Vector2 centro = horizontal ?
@@ -930,7 +974,7 @@ void PadraoMovimentoDesenhar(const EstadoDefesa *d, const SistemaSprites *sprite
 {
     QuadroMovimento f; QuadroPadraoMovimento(d, &f);
     Rectangle b = d->caixa; Color cor = cor_tipo(d->padrao.tipo);
-    DrawText(InstrucaoPadraoMovimento(d->id_padrao), (int)b.x, (int)b.y - 24, 10, WHITE);
+    InterfaceDesenharTexto(InstrucaoPadraoMovimento(d->id_padrao), (int)b.x, (int)b.y - 24, 10, WHITE);
     for (int i = 0; i < f.total_avisos; i++) {
         DrawRectangleRec(f.avisos[i], Fade(YELLOW, .10f)); DrawRectangleLinesEx(f.avisos[i], 1, YELLOW);
     }
@@ -959,21 +1003,43 @@ void PadraoMovimentoDesenhar(const EstadoDefesa *d, const SistemaSprites *sprite
             DrawRectangleRec(r, Fade(BLUE, .72f));
             for (float y = r.y; y < r.y + r.height; y += 9)
                 DrawCircleLines((int)(r.x + r.width / 2), (int)y, fmaxf(4, r.width / 2), SKYBLUE);
+        } else if (f.modo == MOVIMENTO_SAPO_VITORIAS_REGIAS) {
+            DrawRectangleRec(r, Fade((Color){55, 131, 183, 255}, .82f));
+            DrawCircleLines((int)(r.x + r.width * .5f), (int)(r.y + r.height * .5f),
+                            fmaxf(4.0f, r.width * .22f), (Color){176, 238, 232, 255});
         } else if (f.modo == MOVIMENTO_LIMO_MARE) {
             DrawRectangleRounded(r, .7f, 8, Fade(GREEN, .82f));
             DrawCircleV((Vector2){r.x + r.width * .35f, r.y + 7}, 3, WHITE);
+        } else if (f.modo == MOVIMENTO_LIMO_BALSAS) {
+            DrawRectangleRounded(r, .45f, 8, (Color){89, 187, 149, 255});
+            DrawRectangleLinesEx(r, 2.0f, (Color){227, 255, 236, 255});
         } else if (f.modo == MOVIMENTO_LEBRE_BARREIRAS) {
-            DrawRectangleRec(r, BROWN);
-            DrawLineEx((Vector2){r.x, r.y + r.height * .3f},
-                       (Vector2){r.x + r.width, r.y + r.height * .3f}, 3, WHITE);
-            DrawLineEx((Vector2){r.x, r.y + r.height * .7f},
-                       (Vector2){r.x + r.width, r.y + r.height * .7f}, 3, WHITE);
+            /* Roseiras vivas: os espinhos tornam a faixa perigosa legivel sem virar um bloco. */
+            DrawRectangleRec(r, (Color){47, 111, 63, 255});
+            const bool horizontal = r.width >= r.height;
+            const float limite = horizontal ? r.width : r.height;
+            for (float passo = 5.0f; passo < limite; passo += 10.0f) {
+                if (horizontal) {
+                    const float x = r.x + passo;
+                    DrawTriangle((Vector2){x - 4, r.y + r.height}, (Vector2){x + 4, r.y + r.height},
+                                 (Vector2){x, r.y + 2}, (Color){235, 221, 196, 255});
+                } else {
+                    const float y = r.y + passo;
+                    DrawTriangle((Vector2){r.x + r.width, y - 4}, (Vector2){r.x + r.width, y + 4},
+                                 (Vector2){r.x + 2, y}, (Color){235, 221, 196, 255});
+                }
+            }
+            DrawCircle((int)(r.x + r.width * .5f), (int)(r.y + r.height * .5f), 5, (Color){231, 117, 151, 255});
+            DrawCircleLines((int)(r.x + r.width * .5f), (int)(r.y + r.height * .5f), 5, BLACK);
         } else if (f.modo == MOVIMENTO_CAVALEIRO_JUSTA) {
-            DrawRectangleRec(r, Fade(cor, .82f));
-            if (r.width < r.height) DrawTriangle((Vector2){r.x, r.y}, (Vector2){r.x + r.width, r.y},
-                                                 (Vector2){r.x + r.width / 2, r.y - 9}, WHITE);
-            else DrawTriangle((Vector2){r.x, r.y}, (Vector2){r.x, r.y + r.height},
-                              (Vector2){r.x - 10, r.y + r.height / 2}, WHITE);
+            /* A justa e uma lamina em movimento, nao uma zona retangular anonima. */
+            const Vector2 inicio = {r.x + 3, r.y + r.height - 3};
+            const Vector2 fim = {r.x + r.width - 3, r.y + 3};
+            DrawLineEx(inicio, fim, fmaxf(5.0f, fminf(r.width, r.height) * .42f), (Color){230, 232, 237, 255});
+            DrawLineEx(inicio, fim, 1.5f, BLACK);
+            DrawLineEx((Vector2){inicio.x - 7, inicio.y - 3}, (Vector2){inicio.x + 3, inicio.y + 7}, 3.0f, (Color){223, 141, 164, 255});
+            DrawTriangle((Vector2){fim.x - 4, fim.y + 1}, (Vector2){fim.x + 5, fim.y - 5},
+                         (Vector2){fim.x + 4, fim.y + 4}, WHITE);
         } else if (f.modo == MOVIMENTO_TORRE_COLAPSO) {
             DrawRectangleRec(r, GRAY);
             for (float y = r.y + 13; y < r.y + r.height; y += 16)
@@ -982,6 +1048,7 @@ void PadraoMovimentoDesenhar(const EstadoDefesa *d, const SistemaSprites *sprite
             DrawRectangleRec(r, Fade(cor, EhFeixe(f.modo) ? .62f : .85f));
             DrawRectangleLinesEx(r, EhFeixe(f.modo) ? 2 : 1, WHITE);
         }
+        /* A arte de cada golpe e dinamica. Sprite externo e reservado aos padroes genericos. */
         DesenharSpriteNaArea(d, sprites, r);
     }
     for (int i = 0; i < f.total_plataformas; i++) {
@@ -1003,12 +1070,19 @@ void PadraoMovimentoDesenhar(const EstadoDefesa *d, const SistemaSprites *sprite
     EndScissorMode();
     if (f.modo == MOVIMENTO_MARIPOSA_POEIRA) {
         const char *regra = f.regra_movimento == 1 ? "POEIRA AZUL: PARE" : "POEIRA LARANJA: MOVA";
-        DrawText(regra, (int)b.x + 10, (int)b.y + 10, 14, f.regra_movimento == 1 ? SKYBLUE : ORANGE);
+        InterfaceDesenharTexto(regra, (int)b.x + 10, (int)b.y + 10, 14, f.regra_movimento == 1 ? SKYBLUE : ORANGE);
     }
     if (f.modo == MOVIMENTO_GATO_BOTE || f.modo == MOVIMENTO_SINO_PESO) {
         static const char *instructions[] = {"DIREITA >>", "<< ESQUERDA", "BAIXO v", "CIMA ^"};
-        DrawText(instructions[f.direcao], (int)b.x + 12, (int)b.y + 10, 18, YELLOW);
+        InterfaceDesenharTexto(instructions[f.direcao], (int)b.x + 12, (int)b.y + 10, 18, YELLOW);
     }
-    if (d->temporizador_padrao < AQUECIMENTO) DrawText("LEIA O AVISO", (int)b.x + 10, (int)b.y + 30, 14, WHITE);
+    if (f.modo == MOVIMENTO_PASSARO_CHUVA_FOGO) {
+        DrawTriangle((Vector2){b.x + b.width * .5f - 28, b.y + b.height - 2},
+                     (Vector2){b.x + b.width * .5f + 28, b.y + b.height - 2},
+                     (Vector2){b.x + b.width * .5f, b.y + b.height - 38}, (Color){74, 54, 46, 255});
+        DrawCircle((int)(b.x + b.width * .5f), (int)(b.y + b.height - 34), 8, ORANGE);
+        InterfaceDesenharTexto("CHUVA DO VULCAO", (int)b.x + 10, (int)b.y + 10, 13, ORANGE);
+    }
+    if (d->temporizador_padrao < AQUECIMENTO) InterfaceDesenharTexto("LEIA O AVISO", (int)b.x + 10, (int)b.y + 30, 14, WHITE);
     if (d->ataque_segunda_fase) DrawRectangleLinesEx(b, 3, MAROON);
 }

@@ -35,22 +35,22 @@ typedef struct {
 static Inimigo CriarInimigoNovo(IdInimigo id)
 {
     static const ModeloInimigoNovo modelos[] = {
-        {"Soldado das Sarcas","Um guerreiro tomado por madeira funeraria.",TIPO_PLANTA,52,55,false,{PADRAO_SARCAS_PORTOES,PADRAO_LEBRE_BARREIRAS,PADRAO_CAVALEIRO_DUELO},3},
-        {"Herbalista da Peste","Mistura cura e veneno no mesmo almofariz.",TIPO_PLANTA,48,48,false,{PADRAO_HERBALISTA_FRASCOS,PADRAO_LIMO_MARE,PADRAO_LIMO_CRESCIMENTO},3},
-        {"Legionario Afogado","Ainda marcha sob o peso do oceano.",TIPO_AGUA,58,58,false,{PADRAO_LEGIONARIO_ESCUDOS,PADRAO_PASSARO_FOGO_CRUZADO,PADRAO_SAPO_SALTOS},3},
-        {"Bruxa do Lodo","Molda o pantano como uma armadilha viva.",TIPO_AGUA,50,52,false,{PADRAO_BRUXA_CALDEIRAO,PADRAO_MARIPOSA_CORRENTE,PADRAO_LIMO_CRESCIMENTO},3},
-        {"Revenante de Gelo","Cada passo deixa uma prisao congelada.",TIPO_AGUA,62,62,false,{PADRAO_REVENANTE_PRISAO,PADRAO_CAVALEIRO_DESAFIO,PADRAO_TORRE_ESMAGAMENTO},3},
+        {"Soldado das Sarcas","Um guerreiro tomado por madeira funeraria.",TIPO_PLANTA,52,55,false,{PADRAO_PLANTA_ESTILHACO_LANCA,PADRAO_PLANTA_ESCUDO_ENRAIZADO,PADRAO_PLANTA_TAMPAS_DOBRADICA},3},
+        {"Herbalista da Peste","Mistura cura e veneno no mesmo almofariz.",TIPO_PLANTA,48,48,false,{PADRAO_PLANTA_FRASCO_AGITADO,PADRAO_PLANTA_RECEITA_REVERSA,PADRAO_PLANTA_ALMOFARIZ},3},
+        {"Legionario Afogado","Ainda marcha sob o peso do oceano.",TIPO_AGUA,58,58,false,{PADRAO_AGUA_TSUNAMI,PADRAO_AGUA_JATO_QUADRANTE,PADRAO_AGUA_CONVES},3},
+        {"Bruxa do Lodo","Molda o pantano como uma armadilha viva.",TIPO_AGUA,50,52,false,{PADRAO_AGUA_PEGADAS,PADRAO_AGUA_VISCOSIDADE,PADRAO_AGUA_BOLHA},3},
+        {"Revenante de Gelo","Cada passo deixa uma prisao congelada.",TIPO_AGUA,62,62,false,{PADRAO_AGUA_AVALANCHE,PADRAO_AGUA_ESTACAS,PADRAO_AGUA_PRISAO},3},
         {"Esqueleto Carbonizado","Seus ossos estalam antes de explodir.",TIPO_FOGO,59,67,false,{PADRAO_ESQUELETO_ESTOUPIDO,PADRAO_PASSARO_TUNEL,PADRAO_PASSARO_MERGULHO},3},
         {"Acendedor da Forja","Golpeia o campo como metal em uma bigorna.",TIPO_FOGO,64,64,false,{PADRAO_ACENDEDOR_MARTELO,PADRAO_TORRE_DESAFIO,PADRAO_FAGULHA_LUZ},3},
         {"Penitente sem Rosto","Reza para uma sombra que responde.",TIPO_SOMBRA,66,60,false,{PADRAO_PENITENTE_INCENSARIO,PADRAO_MARIPOSA_TRAMA,PADRAO_SINO_ECO},3},
-        {"Ladrao da Mortalha","Ataca apenas quando sua rota parece segura.",TIPO_SOMBRA,57,72,false,{PADRAO_LADRAO_REFLEXO,PADRAO_GATO_PERSEGUICAO,PADRAO_GATO_EMBOSCADA},3},
+        {"Ladrao da Mortalha","Ataca apenas quando sua rota parece segura.",TIPO_SOMBRA,57,72,false,{PADRAO_PILOTO_ADAGA_RETORNO,PADRAO_PILOTO_REFLEXO_ROUBADO,PADRAO_PILOTO_ROUBO_PASSAGEM},3},
         {"Acolito do Vitral","Divide a luz em laminas coloridas.",TIPO_LUZ,68,63,false,{PADRAO_ACOLITO_VITRAL,PADRAO_FAGULHA_ORBITA,PADRAO_FAGULHA_LUZ},3},
         {"Goblin Lanceiro","Controla distancia com estocadas precisas.",TIPO_NEUTRO,63,66,false,{PADRAO_GOBLIN_ESTOCADAS,PADRAO_CAVALEIRO_DESAFIO,PADRAO_CAVALEIRO_DUELO},3},
         {"Automato de Pedra","Obedece a um ritmo gravado no granito.",TIPO_NEUTRO,78,55,false,{PADRAO_AUTOMATO_ENGRENAGENS,PADRAO_SINO_IMPACTO,PADRAO_TORRE_ESMAGAMENTO},3},
         {"Mercenario Ferrugem","Troca espaco por golpes pesados.",TIPO_NEUTRO,70,69,false,{PADRAO_MERCENARIO_RICOCHETE,PADRAO_PASSARO_FOGO_CRUZADO,PADRAO_TORRE_ESMAGAMENTO},3},
         {"Carcereiro Correntes","Fecha rotas antes de puxar as correntes.",TIPO_NEUTRO,74,70,false,{PADRAO_CARCEREIRO_GRADE,PADRAO_SINO_DESAFIO,PADRAO_GATO_EMBOSCADA},3},
-        {"Cultista das Raizes","O altar cresce atraves de sua armadura.",TIPO_PLANTA,125,64,true,{PADRAO_CULTISTA_LABIRINTO,PADRAO_LEBRE_BARREIRAS,PADRAO_LIMO_MARE,PADRAO_LEBRE_PARKOUR,PADRAO_CAVALEIRO_DUELO},5},
-        {"Afogado de Coral","Uma mare morta veste uma armadura de coral.",TIPO_AGUA,150,66,true,{PADRAO_AFOGADO_MARE_CORAL,PADRAO_SAPO_VITORIAS_REGIAS,PADRAO_LIMO_BALSAS,PADRAO_PASSARO_FOGO_CRUZADO,PADRAO_SINO_ECO},5},
+        {"Cultista das Raizes","O altar cresce atraves de sua armadura.",TIPO_PLANTA,125,64,true,{PADRAO_PLANTA_CEIFA,PADRAO_PLANTA_RAIZES_PROCURA,PADRAO_PLANTA_RITUAL},3},
+        {"Afogado de Coral","Uma mare morta veste uma armadura de coral.",TIPO_AGUA,150,66,true,{PADRAO_PILOTO_ANCORA_CORAL,PADRAO_PILOTO_RESSACA_CALCIFICADA,PADRAO_PILOTO_RECIFE_RUPTURA},3},
         {"Mago das Cinzas","Na segunda fase, a mascara revela um oni em brasas.",TIPO_FOGO,180,70,true,{PADRAO_MAGO_ESPIRAL_CINZAS,PADRAO_PASSARO_MERGULHO,PADRAO_FAGULHA_CANHOES,PADRAO_PASSARO_TUNEL,PADRAO_TORRE_ESMAGAMENTO},5},
         {"Goblin da Cripta","Comanda sombras como soldados enterrados.",TIPO_SOMBRA,205,73,true,{PADRAO_GOBLIN_EXERCITO,PADRAO_MARIPOSA_CORRENTE,PADRAO_SINO_GAS_SOMBRA,PADRAO_GATO_PERSEGUICAO,PADRAO_SINO_ECO},5},
         {"Inquisidor Sol","Condena cada quadrante com luz impiedosa.",TIPO_LUZ,230,76,true,{PADRAO_INQUISIDOR_VEREDITO,PADRAO_FAGULHA_ORBITA,PADRAO_CAVALEIRO_LANCAS,PADRAO_CAVALEIRO_DESAFIO,PADRAO_FAGULHA_LUZ},5}
@@ -140,9 +140,9 @@ Inimigo InimigoCriar(IdInimigo id)
             inimigo.hp = inimigo.vida_maxima;
             inimigo.tipo = TIPO_SOMBRA;
             inimigo.agressividade = 40;
-            inimigo.ids_padroes[0] = PADRAO_MARIPOSA_TRAMA;
-            inimigo.ids_padroes[1] = PADRAO_MARIPOSA_CORRENTE;
-            inimigo.ids_padroes[2] = PADRAO_MARIPOSA_ASAS; inimigo.total_padroes = 3;
+            inimigo.ids_padroes[0] = PADRAO_PILOTO_POEIRA_ASA;
+            inimigo.ids_padroes[1] = PADRAO_PILOTO_PO_CONTRATEMPO;
+            inimigo.ids_padroes[2] = PADRAO_PILOTO_REVOADA_CEGA; inimigo.total_padroes = 3;
             snprintf(inimigo.descricao, sizeof(inimigo.descricao),
                      "Ela ronda lampadas apagadas e parece esperar um elogio.");
             inimigo.acoes[0] = CriarAcao("Analisar", "", INIMIGO_ACAO_ANALISAR, 0, 0, 0, 0, 1.0f, 100);
@@ -173,9 +173,9 @@ Inimigo InimigoCriar(IdInimigo id)
         case INIMIGO_MENTA_LIMO:
             snprintf(inimigo.nome, sizeof(inimigo.nome), "Limo de Menta");
             inimigo.vida_maxima = 34; inimigo.hp = inimigo.vida_maxima; inimigo.tipo = TIPO_PLANTA; inimigo.agressividade = 28;
-            inimigo.ids_padroes[0] = PADRAO_LIMO_MARE;
-            inimigo.ids_padroes[1] = PADRAO_LIMO_BALSAS;
-            inimigo.ids_padroes[2] = PADRAO_LIMO_CRESCIMENTO; inimigo.total_padroes = 3;
+            inimigo.ids_padroes[0] = PADRAO_PLANTA_GOTAS_GEMEAS;
+            inimigo.ids_padroes[1] = PADRAO_PLANTA_ARRASTO_MENTA;
+            inimigo.ids_padroes[2] = PADRAO_PLANTA_DIVISAO_CELULAR; inimigo.total_padroes = 3;
             snprintf(inimigo.descricao, sizeof(inimigo.descricao), "Ele cresce onde ninguem olha.");
             inimigo.acoes[0] = CriarAcao("Analisar", "", INIMIGO_ACAO_ANALISAR, 0, 0, 0, 0, 1.0f, 100);
             inimigo.acoes[1] = CriarAcao("Regar", "O limo balanca contente.", INIMIGO_ACAO_SOCIAL, 28, -8, 2, 1, .5f, 100);
@@ -197,9 +197,9 @@ Inimigo InimigoCriar(IdInimigo id)
         case INIMIGO_ESPINHO_LEBRE:
             snprintf(inimigo.nome, sizeof(inimigo.nome), "Lebre de Espinhos");
             inimigo.vida_maxima = 44; inimigo.hp = inimigo.vida_maxima; inimigo.tipo = TIPO_PLANTA; inimigo.agressividade = 58;
-            inimigo.ids_padroes[0] = PADRAO_LEBRE_BARREIRAS;
-            inimigo.ids_padroes[1] = PADRAO_LEBRE_PARKOUR;
-            inimigo.ids_padroes[2] = PADRAO_LEBRE_PULOS; inimigo.total_padroes = 3;
+            inimigo.ids_padroes[0] = PADRAO_PLANTA_SACUDIDA;
+            inimigo.ids_padroes[1] = PADRAO_PLANTA_TOCAS_CADEIA;
+            inimigo.ids_padroes[2] = PADRAO_PLANTA_DISPARADA; inimigo.total_padroes = 3;
             snprintf(inimigo.descricao, sizeof(inimigo.descricao), "Ela se esconde atras dos espinhos.");
             inimigo.acoes[0] = CriarAcao("Analisar", "", INIMIGO_ACAO_ANALISAR, 0, 0, 0, 0, 1.0f, 100);
             inimigo.acoes[1] = CriarAcao("Oferecer folha", "Ela mastiga devagar.", INIMIGO_ACAO_SOCIAL, 25, -15, 2, 1, .5f, 100);
@@ -269,9 +269,9 @@ Inimigo InimigoCriar(IdInimigo id)
             inimigo.tipo2 = TIPO_LUZ;
             inimigo.possui_tipo2 = true;
             inimigo.agressividade = 55;
-            inimigo.ids_padroes[0] = PADRAO_SAPO_BARREIRAS;
-            inimigo.ids_padroes[1] = PADRAO_SAPO_VITORIAS_REGIAS;
-            inimigo.ids_padroes[2] = PADRAO_SAPO_SALTOS; inimigo.total_padroes = 3;
+            inimigo.ids_padroes[0] = PADRAO_AGUA_REFRACAO;
+            inimigo.ids_padroes[1] = PADRAO_AGUA_REFLEXO;
+            inimigo.ids_padroes[2] = PADRAO_AGUA_MEMBRANA; inimigo.total_padroes = 3;
             snprintf(inimigo.descricao, sizeof(inimigo.descricao),
                      "Seu brilho gentil esconde uma pressa estranha.");
             inimigo.acoes[0] = CriarAcao("Analisar", "", INIMIGO_ACAO_ANALISAR, 0, 0, 0, 0, 1.0f, 100);
@@ -299,7 +299,9 @@ void InimigoReceberDano(Inimigo *inimigo, int dano, float efetividade)
     if (inimigo->chefe && !inimigo->segunda_fase && inimigo->hp * 2 <= inimigo->vida_maxima) {
         inimigo->segunda_fase = true;
         inimigo->agressividade = LimitarValorInimigo(inimigo->agressividade + 20);
-        inimigo->indice_proximo_padrao += 2;
+        if (inimigo->ids_padroes[0] < PADRAO_PILOTO_POEIRA_ASA ||
+            inimigo->ids_padroes[0] >= PADRAO_TOTAL)
+            inimigo->indice_proximo_padrao += 2;
     }
     InimigoAtualizarPoupavel(inimigo);
 }

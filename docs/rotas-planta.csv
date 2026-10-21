@@ -1,0 +1,361 @@
+ataque;fps;inicio_x;inicio_y;fase;rota;dano
+Estilhaco de Lanca;30;320;237;0;1;0
+Estilhaco de Lanca;30;176;164;0;1;0
+Estilhaco de Lanca;30;464;164;0;1;0
+Estilhaco de Lanca;30;176;310;0;1;0
+Estilhaco de Lanca;30;464;310;0;1;0
+Estilhaco de Lanca;60;320;237;0;1;0
+Estilhaco de Lanca;60;176;164;0;1;0
+Estilhaco de Lanca;60;464;164;0;1;0
+Estilhaco de Lanca;60;176;310;0;1;0
+Estilhaco de Lanca;60;464;310;0;1;0
+Estilhaco de Lanca;120;320;237;0;1;0
+Estilhaco de Lanca;120;176;164;0;1;0
+Estilhaco de Lanca;120;464;164;0;1;0
+Estilhaco de Lanca;120;176;310;0;1;0
+Estilhaco de Lanca;120;464;310;0;1;0
+Estilhaco de Lanca;144;320;237;0;1;0
+Estilhaco de Lanca;144;176;164;0;1;0
+Estilhaco de Lanca;144;464;164;0;1;0
+Estilhaco de Lanca;144;176;310;0;1;0
+Estilhaco de Lanca;144;464;310;0;1;0
+Escudo Enraizado;30;320;237;0;1;0
+Escudo Enraizado;30;176;164;0;1;0
+Escudo Enraizado;30;464;164;0;1;0
+Escudo Enraizado;30;176;310;0;1;0
+Escudo Enraizado;30;464;310;0;1;0
+Escudo Enraizado;60;320;237;0;1;0
+Escudo Enraizado;60;176;164;0;1;0
+Escudo Enraizado;60;464;164;0;1;0
+Escudo Enraizado;60;176;310;0;1;0
+Escudo Enraizado;60;464;310;0;1;0
+Escudo Enraizado;120;320;237;0;1;0
+Escudo Enraizado;120;176;164;0;1;0
+Escudo Enraizado;120;464;164;0;1;0
+Escudo Enraizado;120;176;310;0;1;0
+Escudo Enraizado;120;464;310;0;1;0
+Escudo Enraizado;144;320;237;0;1;0
+Escudo Enraizado;144;176;164;0;1;0
+Escudo Enraizado;144;464;164;0;1;0
+Escudo Enraizado;144;176;310;0;1;0
+Escudo Enraizado;144;464;310;0;1;0
+Tampas em Dobradica;30;320;237;0;1;0
+Tampas em Dobradica;30;176;164;0;1;0
+Tampas em Dobradica;30;464;164;0;1;0
+Tampas em Dobradica;30;176;310;0;1;0
+Tampas em Dobradica;30;464;310;0;1;0
+Tampas em Dobradica;60;320;237;0;1;0
+Tampas em Dobradica;60;176;164;0;1;0
+Tampas em Dobradica;60;464;164;0;1;0
+Tampas em Dobradica;60;176;310;0;1;0
+Tampas em Dobradica;60;464;310;0;1;0
+Tampas em Dobradica;120;320;237;0;1;0
+Tampas em Dobradica;120;176;164;0;1;0
+Tampas em Dobradica;120;464;164;0;1;0
+Tampas em Dobradica;120;176;310;0;1;0
+Tampas em Dobradica;120;464;310;0;1;0
+Tampas em Dobradica;144;320;237;0;1;0
+Tampas em Dobradica;144;176;164;0;1;0
+Tampas em Dobradica;144;464;164;0;1;0
+Tampas em Dobradica;144;176;310;0;1;0
+Tampas em Dobradica;144;464;310;0;1;0
+Frasco Agitado;30;320;237;0;1;0
+Frasco Agitado;30;176;164;0;1;0
+Frasco Agitado;30;464;164;0;1;0
+Frasco Agitado;30;176;310;0;1;0
+Frasco Agitado;30;464;310;0;1;0
+Frasco Agitado;60;320;237;0;1;0
+Frasco Agitado;60;176;164;0;1;0
+Frasco Agitado;60;464;164;0;1;0
+Frasco Agitado;60;176;310;0;1;0
+Frasco Agitado;60;464;310;0;1;0
+Frasco Agitado;120;320;237;0;1;0
+Frasco Agitado;120;176;164;0;1;0
+Frasco Agitado;120;464;164;0;1;0
+Frasco Agitado;120;176;310;0;1;0
+Frasco Agitado;120;464;310;0;1;0
+Frasco Agitado;144;320;237;0;1;0
+Frasco Agitado;144;176;164;0;1;0
+Frasco Agitado;144;464;164;0;1;0
+Frasco Agitado;144;176;310;0;1;0
+Frasco Agitado;144;464;310;0;1;0
+Receita Reversa;30;320;237;0;1;0
+Receita Reversa;30;176;164;0;1;0
+Receita Reversa;30;464;164;0;1;0
+Receita Reversa;30;176;310;0;1;0
+Receita Reversa;30;464;310;0;1;0
+Receita Reversa;60;320;237;0;1;0
+Receita Reversa;60;176;164;0;1;0
+Receita Reversa;60;464;164;0;1;0
+Receita Reversa;60;176;310;0;1;0
+Receita Reversa;60;464;310;0;1;0
+Receita Reversa;120;320;237;0;1;0
+Receita Reversa;120;176;164;0;1;0
+Receita Reversa;120;464;164;0;1;0
+Receita Reversa;120;176;310;0;1;0
+Receita Reversa;120;464;310;0;1;0
+Receita Reversa;144;320;237;0;1;0
+Receita Reversa;144;176;164;0;1;0
+Receita Reversa;144;464;164;0;1;0
+Receita Reversa;144;176;310;0;1;0
+Receita Reversa;144;464;310;0;1;0
+Almofariz Transbordante;30;320;237;0;1;0
+Almofariz Transbordante;30;176;164;0;1;0
+Almofariz Transbordante;30;464;164;0;1;0
+Almofariz Transbordante;30;176;310;0;1;0
+Almofariz Transbordante;30;464;310;0;1;0
+Almofariz Transbordante;60;320;237;0;1;0
+Almofariz Transbordante;60;176;164;0;1;0
+Almofariz Transbordante;60;464;164;0;1;0
+Almofariz Transbordante;60;176;310;0;1;0
+Almofariz Transbordante;60;464;310;0;1;0
+Almofariz Transbordante;120;320;237;0;1;0
+Almofariz Transbordante;120;176;164;0;1;0
+Almofariz Transbordante;120;464;164;0;1;0
+Almofariz Transbordante;120;176;310;0;1;0
+Almofariz Transbordante;120;464;310;0;1;0
+Almofariz Transbordante;144;320;237;0;1;0
+Almofariz Transbordante;144;176;164;0;1;0
+Almofariz Transbordante;144;464;164;0;1;0
+Almofariz Transbordante;144;176;310;0;1;0
+Almofariz Transbordante;144;464;310;0;1;0
+Gotas Gemeas;30;320;237;0;1;0
+Gotas Gemeas;30;176;164;0;1;0
+Gotas Gemeas;30;464;164;0;1;0
+Gotas Gemeas;30;176;310;0;1;0
+Gotas Gemeas;30;464;310;0;1;0
+Gotas Gemeas;60;320;237;0;1;0
+Gotas Gemeas;60;176;164;0;1;0
+Gotas Gemeas;60;464;164;0;1;0
+Gotas Gemeas;60;176;310;0;1;0
+Gotas Gemeas;60;464;310;0;1;0
+Gotas Gemeas;120;320;237;0;1;0
+Gotas Gemeas;120;176;164;0;1;0
+Gotas Gemeas;120;464;164;0;1;0
+Gotas Gemeas;120;176;310;0;1;0
+Gotas Gemeas;120;464;310;0;1;0
+Gotas Gemeas;144;320;237;0;1;0
+Gotas Gemeas;144;176;164;0;1;0
+Gotas Gemeas;144;464;164;0;1;0
+Gotas Gemeas;144;176;310;0;1;0
+Gotas Gemeas;144;464;310;0;1;0
+Arrasto de Menta;30;320;237;0;1;0
+Arrasto de Menta;30;176;164;0;1;0
+Arrasto de Menta;30;464;164;0;1;0
+Arrasto de Menta;30;176;310;0;1;0
+Arrasto de Menta;30;464;310;0;1;0
+Arrasto de Menta;60;320;237;0;1;0
+Arrasto de Menta;60;176;164;0;1;0
+Arrasto de Menta;60;464;164;0;1;0
+Arrasto de Menta;60;176;310;0;1;0
+Arrasto de Menta;60;464;310;0;1;0
+Arrasto de Menta;120;320;237;0;1;0
+Arrasto de Menta;120;176;164;0;1;0
+Arrasto de Menta;120;464;164;0;1;0
+Arrasto de Menta;120;176;310;0;1;0
+Arrasto de Menta;120;464;310;0;1;0
+Arrasto de Menta;144;320;237;0;1;0
+Arrasto de Menta;144;176;164;0;1;0
+Arrasto de Menta;144;464;164;0;1;0
+Arrasto de Menta;144;176;310;0;1;0
+Arrasto de Menta;144;464;310;0;1;0
+Divisao Celular;30;320;237;0;1;0
+Divisao Celular;30;176;164;0;1;0
+Divisao Celular;30;464;164;0;1;0
+Divisao Celular;30;176;310;0;1;0
+Divisao Celular;30;464;310;0;1;0
+Divisao Celular;60;320;237;0;1;0
+Divisao Celular;60;176;164;0;1;0
+Divisao Celular;60;464;164;0;1;0
+Divisao Celular;60;176;310;0;1;0
+Divisao Celular;60;464;310;0;1;0
+Divisao Celular;120;320;237;0;1;0
+Divisao Celular;120;176;164;0;1;0
+Divisao Celular;120;464;164;0;1;0
+Divisao Celular;120;176;310;0;1;0
+Divisao Celular;120;464;310;0;1;0
+Divisao Celular;144;320;237;0;1;0
+Divisao Celular;144;176;164;0;1;0
+Divisao Celular;144;464;164;0;1;0
+Divisao Celular;144;176;310;0;1;0
+Divisao Celular;144;464;310;0;1;0
+Sacudida Espinhosa;30;320;237;0;1;0
+Sacudida Espinhosa;30;176;164;0;1;0
+Sacudida Espinhosa;30;464;164;0;1;0
+Sacudida Espinhosa;30;176;310;0;1;0
+Sacudida Espinhosa;30;464;310;0;1;0
+Sacudida Espinhosa;60;320;237;0;1;0
+Sacudida Espinhosa;60;176;164;0;1;0
+Sacudida Espinhosa;60;464;164;0;1;0
+Sacudida Espinhosa;60;176;310;0;1;0
+Sacudida Espinhosa;60;464;310;0;1;0
+Sacudida Espinhosa;120;320;237;0;1;0
+Sacudida Espinhosa;120;176;164;0;1;0
+Sacudida Espinhosa;120;464;164;0;1;0
+Sacudida Espinhosa;120;176;310;0;1;0
+Sacudida Espinhosa;120;464;310;0;1;0
+Sacudida Espinhosa;144;320;237;0;1;0
+Sacudida Espinhosa;144;176;164;0;1;0
+Sacudida Espinhosa;144;464;164;0;1;0
+Sacudida Espinhosa;144;176;310;0;1;0
+Sacudida Espinhosa;144;464;310;0;1;0
+Tocas em Cadeia;30;320;237;0;1;0
+Tocas em Cadeia;30;176;164;0;1;0
+Tocas em Cadeia;30;464;164;0;1;0
+Tocas em Cadeia;30;176;310;0;1;0
+Tocas em Cadeia;30;464;310;0;1;0
+Tocas em Cadeia;60;320;237;0;1;0
+Tocas em Cadeia;60;176;164;0;1;0
+Tocas em Cadeia;60;464;164;0;1;0
+Tocas em Cadeia;60;176;310;0;1;0
+Tocas em Cadeia;60;464;310;0;1;0
+Tocas em Cadeia;120;320;237;0;1;0
+Tocas em Cadeia;120;176;164;0;1;0
+Tocas em Cadeia;120;464;164;0;1;0
+Tocas em Cadeia;120;176;310;0;1;0
+Tocas em Cadeia;120;464;310;0;1;0
+Tocas em Cadeia;144;320;237;0;1;0
+Tocas em Cadeia;144;176;164;0;1;0
+Tocas em Cadeia;144;464;164;0;1;0
+Tocas em Cadeia;144;176;310;0;1;0
+Tocas em Cadeia;144;464;310;0;1;0
+Disparada da Roseira;30;320;237;0;1;0
+Disparada da Roseira;30;176;164;0;1;0
+Disparada da Roseira;30;464;164;0;1;0
+Disparada da Roseira;30;176;310;0;1;0
+Disparada da Roseira;30;464;310;0;1;0
+Disparada da Roseira;60;320;237;0;1;0
+Disparada da Roseira;60;176;164;0;1;0
+Disparada da Roseira;60;464;164;0;1;0
+Disparada da Roseira;60;176;310;0;1;0
+Disparada da Roseira;60;464;310;0;1;0
+Disparada da Roseira;120;320;237;0;1;0
+Disparada da Roseira;120;176;164;0;1;0
+Disparada da Roseira;120;464;164;0;1;0
+Disparada da Roseira;120;176;310;0;1;0
+Disparada da Roseira;120;464;310;0;1;0
+Disparada da Roseira;144;320;237;0;1;0
+Disparada da Roseira;144;176;164;0;1;0
+Disparada da Roseira;144;464;164;0;1;0
+Disparada da Roseira;144;176;310;0;1;0
+Disparada da Roseira;144;464;310;0;1;0
+Ceifa Germinante;30;320;237;0;1;0
+Ceifa Germinante;30;176;164;0;1;0
+Ceifa Germinante;30;464;164;0;1;0
+Ceifa Germinante;30;176;310;0;1;0
+Ceifa Germinante;30;464;310;0;1;0
+Ceifa Germinante;60;320;237;0;1;0
+Ceifa Germinante;60;176;164;0;1;0
+Ceifa Germinante;60;464;164;0;1;0
+Ceifa Germinante;60;176;310;0;1;0
+Ceifa Germinante;60;464;310;0;1;0
+Ceifa Germinante;120;320;237;0;1;0
+Ceifa Germinante;120;176;164;0;1;0
+Ceifa Germinante;120;464;164;0;1;0
+Ceifa Germinante;120;176;310;0;1;0
+Ceifa Germinante;120;464;310;0;1;0
+Ceifa Germinante;144;320;237;0;1;0
+Ceifa Germinante;144;176;164;0;1;0
+Ceifa Germinante;144;464;164;0;1;0
+Ceifa Germinante;144;176;310;0;1;0
+Ceifa Germinante;144;464;310;0;1;0
+Ceifa Germinante;30;320;237;1;1;0
+Ceifa Germinante;30;191;164;1;1;0
+Ceifa Germinante;30;449;164;1;1;0
+Ceifa Germinante;30;191;310;1;1;0
+Ceifa Germinante;30;449;310;1;1;0
+Ceifa Germinante;60;320;237;1;1;0
+Ceifa Germinante;60;191;164;1;1;0
+Ceifa Germinante;60;449;164;1;1;0
+Ceifa Germinante;60;191;310;1;1;0
+Ceifa Germinante;60;449;310;1;1;0
+Ceifa Germinante;120;320;237;1;1;0
+Ceifa Germinante;120;191;164;1;1;0
+Ceifa Germinante;120;449;164;1;1;0
+Ceifa Germinante;120;191;310;1;1;0
+Ceifa Germinante;120;449;310;1;1;0
+Ceifa Germinante;144;320;237;1;1;0
+Ceifa Germinante;144;191;164;1;1;0
+Ceifa Germinante;144;449;164;1;1;0
+Ceifa Germinante;144;191;310;1;1;0
+Ceifa Germinante;144;449;310;1;1;0
+Raizes de Procura;30;320;237;0;1;0
+Raizes de Procura;30;176;164;0;1;0
+Raizes de Procura;30;464;164;0;1;0
+Raizes de Procura;30;176;310;0;1;0
+Raizes de Procura;30;464;310;0;1;0
+Raizes de Procura;60;320;237;0;1;0
+Raizes de Procura;60;176;164;0;1;0
+Raizes de Procura;60;464;164;0;1;0
+Raizes de Procura;60;176;310;0;1;0
+Raizes de Procura;60;464;310;0;1;0
+Raizes de Procura;120;320;237;0;1;0
+Raizes de Procura;120;176;164;0;1;0
+Raizes de Procura;120;464;164;0;1;0
+Raizes de Procura;120;176;310;0;1;0
+Raizes de Procura;120;464;310;0;1;0
+Raizes de Procura;144;320;237;0;1;0
+Raizes de Procura;144;176;164;0;1;0
+Raizes de Procura;144;464;164;0;1;0
+Raizes de Procura;144;176;310;0;1;0
+Raizes de Procura;144;464;310;0;1;0
+Raizes de Procura;30;320;237;1;1;0
+Raizes de Procura;30;191;164;1;1;0
+Raizes de Procura;30;449;164;1;1;0
+Raizes de Procura;30;191;310;1;1;0
+Raizes de Procura;30;449;310;1;1;0
+Raizes de Procura;60;320;237;1;1;0
+Raizes de Procura;60;191;164;1;1;0
+Raizes de Procura;60;449;164;1;1;0
+Raizes de Procura;60;191;310;1;1;0
+Raizes de Procura;60;449;310;1;1;0
+Raizes de Procura;120;320;237;1;1;0
+Raizes de Procura;120;191;164;1;1;0
+Raizes de Procura;120;449;164;1;1;0
+Raizes de Procura;120;191;310;1;1;0
+Raizes de Procura;120;449;310;1;1;0
+Raizes de Procura;144;320;237;1;1;0
+Raizes de Procura;144;191;164;1;1;0
+Raizes de Procura;144;449;164;1;1;0
+Raizes de Procura;144;191;310;1;1;0
+Raizes de Procura;144;449;310;1;1;0
+Ritual da Colheita;30;320;237;0;1;0
+Ritual da Colheita;30;176;164;0;1;0
+Ritual da Colheita;30;464;164;0;1;0
+Ritual da Colheita;30;176;310;0;1;0
+Ritual da Colheita;30;464;310;0;1;0
+Ritual da Colheita;60;320;237;0;1;0
+Ritual da Colheita;60;176;164;0;1;0
+Ritual da Colheita;60;464;164;0;1;0
+Ritual da Colheita;60;176;310;0;1;0
+Ritual da Colheita;60;464;310;0;1;0
+Ritual da Colheita;120;320;237;0;1;0
+Ritual da Colheita;120;176;164;0;1;0
+Ritual da Colheita;120;464;164;0;1;0
+Ritual da Colheita;120;176;310;0;1;0
+Ritual da Colheita;120;464;310;0;1;0
+Ritual da Colheita;144;320;237;0;1;0
+Ritual da Colheita;144;176;164;0;1;0
+Ritual da Colheita;144;464;164;0;1;0
+Ritual da Colheita;144;176;310;0;1;0
+Ritual da Colheita;144;464;310;0;1;0
+Ritual da Colheita;30;320;237;1;1;0
+Ritual da Colheita;30;191;164;1;1;0
+Ritual da Colheita;30;449;164;1;1;0
+Ritual da Colheita;30;191;310;1;1;0
+Ritual da Colheita;30;449;310;1;1;0
+Ritual da Colheita;60;320;237;1;1;0
+Ritual da Colheita;60;191;164;1;1;0
+Ritual da Colheita;60;449;164;1;1;0
+Ritual da Colheita;60;191;310;1;1;0
+Ritual da Colheita;60;449;310;1;1;0
+Ritual da Colheita;120;320;237;1;1;0
+Ritual da Colheita;120;191;164;1;1;0
+Ritual da Colheita;120;449;164;1;1;0
+Ritual da Colheita;120;191;310;1;1;0
+Ritual da Colheita;120;449;310;1;1;0
+Ritual da Colheita;144;320;237;1;1;0
+Ritual da Colheita;144;191;164;1;1;0
+Ritual da Colheita;144;449;164;1;1;0
+Ritual da Colheita;144;191;310;1;1;0
+Ritual da Colheita;144;449;310;1;1;0

@@ -1,0 +1,12 @@
+﻿inimigo;ataque_novo;entrada_anterior;base_antes;base_depois;teto_impacto;teto_rodada_percentual;duracao_segundos;motivo
+Mariposa;Poeira de Asa;Trama;3;3;5;35;5;Projéteis ondulados; remover inflação inicial
+Mariposa;Pó em Contratempo;Corrente;3;4;6;35;6;Regra de estado com tolerância e movimento real
+Mariposa;Revoada Cega;Asas;3;5;6;35;7;Duas asas em curvas defasadas e caudas atrasadas
+Ladrão;Adaga de Retorno;Reflexo antigo;5;4;6;35;5;Ensinar ida, rebote e retorno com menor punição
+Ladrão;Reflexo Roubado;Gato: Perseguição;4;5;7;35;6;Origem invertida pelo espelho; retirar ataque emprestado
+Ladrão;Roubo de Passagem;Gato: Emboscada;4;6;7;35;7;Ler lado aberto e recolhimento dos fios; sem sangramento automático
+Afogado;Âncora de Coral;Maré de Coral;6;5;7;35;6;Peso e cabo físicos substituem faixa estática
+Afogado;Ressaca Calcificada;Sapo: Vitórias-régias;4;6;8;35;8;Correnteza compensável e ramos móveis; retirar empréstimo
+Afogado;Recife em Ruptura;Limo: Balsas;3;7;8;45;10;Final com aviso 1,2 s; teto por impacto reduzido de 12 propostos para 8
+Afogado;Removido do repertório;Pássaro: Fogo Cruzado;4;—;—;—;—;Ataque emprestado; permanece disponível aos seus outros usuários
+Afogado;Removido do repertório;Sineiro: Eco;5;—;—;—;—;Ataque emprestado; permanece com o Sineiro
