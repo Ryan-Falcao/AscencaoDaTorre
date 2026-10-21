@@ -31,7 +31,14 @@ static void DesenharTorre(float tempo)
 
 static Rectangle ObterBotaoTitulo(int indice_opcao)
 {
-    return (Rectangle){190.0f, 318.0f + indice_opcao * 29.0f, 260.0f, 26.0f};
+    return (Rectangle){170.0f, 316.0f + indice_opcao * 32.0f, 300.0f, 29.0f};
+}
+
+static void DesenharBotaoTitulo(const EstadoJogo *jogo, Rectangle botao, const char *rotulo,
+                                bool selecionado)
+{
+    InterfaceDesenharBotao(&jogo->sprites, botao, rotulo, selecionado, true,
+                           (Color){225, 95, 122, 255});
 }
 
 static void DesenharTitulo(const EstadoJogo *jogo)
@@ -53,12 +60,16 @@ static void DesenharTitulo(const EstadoJogo *jogo)
         DesenharTorre(jogo->tempo_decorrido);
     }
 
-    if (tem_fundo_titulo) DrawRectangle(156, 218, 328, 84, (Color){255, 249, 236, 188});
-    const char *titulo = "ASCENSAO";
-    const char *subtitulo = "DA TORRE";
-    DrawText(titulo, (LOGICO_LARGURA - MeasureText(titulo, 42)) / 2, 225, 42, BLACK);
-    DrawText(subtitulo, (LOGICO_LARGURA - MeasureText(subtitulo, 23)) / 2, 266, 23,
-             (Color){73, 77, 85, 255});
+    if (sprite_obter(&jogo->sprites, SPRITE_LOGO_ASCENSAO_TORRE) != NULL) {
+        SpriteDesenharAjustado(&jogo->sprites, SPRITE_LOGO_ASCENSAO_TORRE,
+                               (Rectangle){156.0f, 54.0f, 328.0f, 142.0f}, WHITE);
+    } else {
+        const char *titulo = "ASCENSAO";
+        const char *subtitulo = "DA TORRE";
+        DrawText(titulo, (LOGICO_LARGURA - MeasureText(titulo, 42)) / 2, 225, 42, BLACK);
+        DrawText(subtitulo, (LOGICO_LARGURA - MeasureText(subtitulo, 23)) / 2, 266, 23,
+                 (Color){73, 77, 85, 255});
+    }
     DrawText(TextFormat("melhor andar: %d  |  vitorias: %d", jogo->salvamento.melhor_andar,
                         jogo->salvamento.vitorias), 188, 298, 13, (Color){86, 88, 96, 255});
 
@@ -66,8 +77,7 @@ static void DesenharTitulo(const EstadoJogo *jogo)
         const Rectangle botao = ObterBotaoTitulo(indice_opcao);
         const bool selecionado = jogo->selecao_titulo == indice_opcao;
 
-        InterfaceDesenharBotao(botao, opcoes[indice_opcao], selecionado, true,
-                               (Color){225, 95, 122, 255});
+        DesenharBotaoTitulo(jogo, botao, opcoes[indice_opcao], selecionado);
     }
 }
 
@@ -528,9 +538,9 @@ static void DesenharPausa(const EstadoJogo *jogo)
         const bool sobre_desistir = CheckCollisionPointRec(jogo->posicao_mouse, botao_desistir);
         const bool sobre_cancelar = CheckCollisionPointRec(jogo->posicao_mouse, botao_cancelar);
         DrawText("Desistir desta run?", 210, 178, 18, MAROON);
-        InterfaceDesenharBotao(botao_desistir, "DESISTIR", sobre_desistir, true,
+        InterfaceDesenharBotao(&jogo->sprites, botao_desistir, "DESISTIR", sobre_desistir, true,
                                (Color){197, 69, 78, 255});
-        InterfaceDesenharBotao(botao_cancelar, "CANCELAR", sobre_cancelar || !sobre_desistir, true,
+        InterfaceDesenharBotao(&jogo->sprites, botao_cancelar, "CANCELAR", sobre_cancelar || !sobre_desistir, true,
                                (Color){83, 132, 171, 255});
         InterfaceDesenharAtalho("ESPACO confirmar  |  X cancelar", 206, 278);
         return;

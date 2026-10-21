@@ -3,6 +3,7 @@
 
 #include "raylib.h"
 
+typedef struct SistemaSprites SistemaSprites;
 
 #define DIALOGO_CAPACIDADE 192
 
@@ -18,7 +19,7 @@ void InterfaceAtualizarTexto(TextoDigitado *texto, float tempo_delta);
 bool InterfaceConfirmarTexto(TextoDigitado *texto);
 void InterfaceDesenharCaixaTexto(const TextoDigitado *texto, Rectangle caixa);
 void InterfaceDesenharPainel(Rectangle painel);
-void InterfaceDesenharBotao(Rectangle botao, const char *rotulo, bool selecionado,
+void InterfaceDesenharBotao(const SistemaSprites *sprites, Rectangle botao, const char *rotulo, bool selecionado,
                             bool habilitado, Color destaque);
 void InterfaceDesenharLinhaOpcao(Rectangle area, bool selecionada, bool habilitada,
                                  Color destaque);

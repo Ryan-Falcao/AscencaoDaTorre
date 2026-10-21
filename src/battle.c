@@ -762,8 +762,23 @@ static void DesenharIconeTipo(Tipo tipo, Vector2 centro, bool habilitado)
     }
 }
 
-static void DesenharIconeMenuPrincipal(int indice, Vector2 centro, Color cor)
+static IdSprite SpriteIdAcaoPrincipal(int indice)
 {
+    static const IdSprite icones[] = {
+        SPRITE_ACAO_ATACAR, SPRITE_ACAO_AGIR, SPRITE_ACAO_ITEM, SPRITE_ACAO_POUPAR
+    };
+    return indice >= 0 && indice < 4 ? icones[indice] : SPRITE_ACAO_ATACAR;
+}
+
+static void DesenharIconeMenuPrincipal(int indice, Vector2 centro, Color cor,
+                                       const SistemaSprites *sprites)
+{
+    const IdSprite id_sprite = SpriteIdAcaoPrincipal(indice);
+    if (sprites != NULL && sprite_obter(sprites, id_sprite) != NULL) {
+        SpriteDesenharCentralizado(sprites, id_sprite, centro, WHITE, 0.0f, false);
+        return;
+    }
+
     if (indice == 0) {
         DesenharIconeAtaque(centro, cor);
     } else if (indice == 1) {
@@ -859,7 +874,7 @@ static void DesenharListaAcoes(const Batalha *batalha, const AtributosJogador *j
                     0.0f, 0.68f, sprites->depurar_limites);
             } else {
                 DesenharIconeMenuPrincipal(2, (Vector2){area.x + 18.0f, area.y + 10.0f},
-                                           disponivel ? BLACK : GRAY);
+                                           disponivel ? BLACK : GRAY, sprites);
             }
             DrawText(definicao->nome, (int)area.x + 34, y, 13, disponivel ? BLACK : GRAY);
             DrawText(disponivel ? TextFormat("x%d", item->quantidade) : "VAZIO",
@@ -988,11 +1003,11 @@ void BatalhaDesenhar(const Batalha *batalha, const AtributosJogador *jogador, co
             const Rectangle botao = ObterBotaoPrincipal(indice_botao);
             const bool selecionado = batalha->fase == BATALHA_JOGADOR_MENU && batalha->selecao_principal == indice_botao;
 
-            InterfaceDesenharBotao(botao, button_names[indice_botao], selecionado, true,
+            InterfaceDesenharBotao(sprites, botao, button_names[indice_botao], selecionado, true,
                                    (Color){225, 95, 122, 255});
             DesenharIconeMenuPrincipal(indice_botao,
                 (Vector2){botao.x + 23.0f, botao.y + botao.height / 2.0f},
-                selecionado ? (Color){175, 52, 83, 255} : BLACK);
+                selecionado ? (Color){175, 52, 83, 255} : BLACK, sprites);
         }
     }
 }

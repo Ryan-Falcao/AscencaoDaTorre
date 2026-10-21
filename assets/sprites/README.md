@@ -13,6 +13,9 @@ Use PNG com transparencia, sem antialiasing e pixel art em escala inteira (1x, 2
 | Projetil | `bullet_<tipo>.png` | 16x16 ou 24x24 |
 | Titulo | `title_tower.png` | 200x300 |
 | Fundo do titulo | `bg_title.png` | 640x480 (ou qualquer proporcao 4:3) |
+| Botoes do titulo | `ui_button_title.png`, `ui_button_title_selected.png` | Molduras PNG opcionais, com fundo transparente |
+| Icones de combate | `ui_action_attack.png`, `ui_action_act.png`, `ui_action_item.png`, `ui_action_spare.png` | 24x24 transparentes; os quatro botoes usam desenho por codigo como fallback |
+| Logo do titulo | `logo_ascensao_torre.png` | PNG transparente; se ausente, o texto padrao aparece |
 | Fundo | `bg_pastel.png`, `bg_boss.png` | 640x480 |
 
 ## IDs aceitos

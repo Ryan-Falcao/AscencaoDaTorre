@@ -1,13 +1,32 @@
 #include "ui.h"
+#include "sprites.h"
 
 #include <stdio.h>
 #include <string.h>
 
-static const Color UI_SOMBRA = {25, 27, 34, 70};
-static const Color UI_PAPEL = {251, 248, 240, 255};
-static const Color UI_PAPEL_ELEVADO = {255, 253, 247, 255};
+static const Color UI_SOMBRA = {25, 27, 34, 105};
+static const Color UI_PAPEL = {255, 250, 239, 230};
+static const Color UI_PAPEL_ELEVADO = {255, 253, 247, 242};
 static const Color UI_TEXTO = {31, 33, 40, 255};
 static const Color UI_DESABILITADO = {177, 178, 181, 255};
+static const Color UI_ROSA_SUAVE = {233, 132, 153, 180};
+
+static void DesenharCantosPainel(Rectangle area, Color cor)
+{
+    const int esquerda = (int)area.x + 5;
+    const int direita = (int)(area.x + area.width) - 6;
+    const int cima = (int)area.y + 5;
+    const int baixo = (int)(area.y + area.height) - 6;
+
+    DrawRectangle(esquerda, cima, 8, 2, cor);
+    DrawRectangle(esquerda, cima, 2, 8, cor);
+    DrawRectangle(direita - 7, cima, 8, 2, cor);
+    DrawRectangle(direita - 1, cima, 2, 8, cor);
+    DrawRectangle(esquerda, baixo - 1, 8, 2, cor);
+    DrawRectangle(esquerda, baixo - 7, 2, 8, cor);
+    DrawRectangle(direita - 7, baixo - 1, 8, 2, cor);
+    DrawRectangle(direita - 1, baixo - 7, 2, 8, cor);
+}
 
 void InterfaceDefinirTexto(TextoDigitado *texto, const char *mensagem)
 {
@@ -46,30 +65,40 @@ void InterfaceDesenharPainel(Rectangle painel)
 {
     DrawRectangleRec((Rectangle){painel.x + 4, painel.y + 5, painel.width, painel.height}, UI_SOMBRA);
     DrawRectangleRec(painel, UI_PAPEL);
-    DrawRectangleLinesEx(painel, 2.0f, UI_TEXTO);
-    DrawLine((int)painel.x + 3, (int)painel.y + 3,
-             (int)(painel.x + painel.width) - 4, (int)painel.y + 3,
-             Fade(WHITE, 0.75f));
+    DrawRectangleLinesEx(painel, 3.0f, UI_TEXTO);
+    DrawRectangleLinesEx((Rectangle){painel.x + 5.0f, painel.y + 5.0f,
+                                      painel.width - 10.0f, painel.height - 10.0f},
+                         1.0f, Fade(UI_ROSA_SUAVE, 0.55f));
+    DesenharCantosPainel(painel, UI_ROSA_SUAVE);
 }
 
-void InterfaceDesenharBotao(Rectangle botao, const char *rotulo, bool selecionado,
+void InterfaceDesenharBotao(const SistemaSprites *sprites, Rectangle botao, const char *rotulo, bool selecionado,
                             bool habilitado, Color destaque)
 {
-    const Color fundo = !habilitado ? (Color){226, 225, 221, 255} :
-                        (selecionado ? ColorLerp(UI_PAPEL_ELEVADO, destaque, 0.20f) : UI_PAPEL_ELEVADO);
+    const Color fundo = !habilitado ? (Color){218, 216, 210, 225} :
+                        (selecionado ? ColorLerp(UI_PAPEL_ELEVADO, destaque, 0.30f) : UI_PAPEL_ELEVADO);
     const Color contorno = selecionado ? destaque : UI_TEXTO;
     const Color texto = habilitado ? UI_TEXTO : UI_DESABILITADO;
     const int tamanho_fonte = 16;
     const int largura_texto = MeasureText(rotulo, tamanho_fonte);
 
-    DrawRectangleRec((Rectangle){botao.x + 3, botao.y + 4, botao.width, botao.height}, UI_SOMBRA);
-    DrawRectangleRec(botao, fundo);
-    DrawRectangleLinesEx(botao, selecionado ? 3.0f : 1.5f, contorno);
-    if (selecionado) {
-        DrawRectangle((int)botao.x, (int)botao.y, 6, (int)botao.height, destaque);
-        DrawTriangle((Vector2){botao.x + 13, botao.y + botao.height / 2.0f},
-                     (Vector2){botao.x + 8, botao.y + botao.height / 2.0f - 5},
-                     (Vector2){botao.x + 8, botao.y + botao.height / 2.0f + 5}, destaque);
+    const IdSprite id_sprite = selecionado ? SPRITE_BOTAO_TITULO_SELECIONADO : SPRITE_BOTAO_TITULO;
+    const bool tem_moldura = sprites != NULL && sprite_obter(sprites, id_sprite) != NULL;
+
+    if (tem_moldura) {
+        const Color tinta = habilitado ? WHITE : (Color){185, 185, 185, 220};
+        SpriteDesenharAjustado(sprites, id_sprite, botao, tinta);
+    } else {
+        DrawRectangleRec((Rectangle){botao.x + 3, botao.y + 4, botao.width, botao.height}, UI_SOMBRA);
+        DrawRectangleRec(botao, fundo);
+        DrawRectangleLinesEx(botao, selecionado ? 3.0f : 2.0f, contorno);
+        DrawRectangleLinesEx((Rectangle){botao.x + 4.0f, botao.y + 4.0f,
+                                          botao.width - 8.0f, botao.height - 8.0f},
+                             1.0f, selecionado ? Fade(WHITE, 0.80f) : Fade(UI_ROSA_SUAVE, 0.42f));
+        if (selecionado) {
+            DrawCircle((int)botao.x + 12, (int)(botao.y + botao.height * 0.5f), 4.0f, destaque);
+            DrawCircleLines((int)botao.x + 12, (int)(botao.y + botao.height * 0.5f), 5.0f, UI_TEXTO);
+        }
     }
     DrawText(rotulo, (int)(botao.x + (botao.width - largura_texto) / 2.0f),
              (int)(botao.y + (botao.height - tamanho_fonte) / 2.0f), tamanho_fonte, texto);
@@ -78,16 +107,13 @@ void InterfaceDesenharBotao(Rectangle botao, const char *rotulo, bool selecionad
 void InterfaceDesenharLinhaOpcao(Rectangle area, bool selecionada, bool habilitada,
                                  Color destaque)
 {
+    const Color fundo = !habilitada ? (Color){218, 216, 210, 205} :
+                        (selecionada ? ColorLerp(UI_PAPEL, destaque, 0.24f) : Fade(UI_PAPEL_ELEVADO, 0.86f));
+    DrawRectangleRec((Rectangle){area.x + 2.0f, area.y + 3.0f, area.width, area.height}, Fade(UI_SOMBRA, 0.55f));
+    DrawRectangleRec(area, fundo);
+    DrawRectangleLinesEx(area, selecionada ? 2.5f : 1.0f, selecionada ? destaque : Fade(UI_TEXTO, 0.65f));
     if (selecionada) {
-        DrawRectangleRec(area, ColorLerp(UI_PAPEL, destaque, 0.18f));
-        DrawRectangle((int)area.x, (int)area.y, 5, (int)area.height, destaque);
-        DrawRectangleLinesEx(area, 1.5f, destaque);
-    } else {
-        DrawRectangleRec(area, habilitada ? Fade(UI_PAPEL_ELEVADO, 0.72f) :
-                                           (Color){228, 227, 223, 210});
-        DrawLine((int)area.x + 8, (int)(area.y + area.height),
-                 (int)(area.x + area.width) - 8, (int)(area.y + area.height),
-                 (Color){197, 196, 191, 180});
+        DrawCircle((int)area.x + 12, (int)(area.y + area.height * 0.5f), 3.0f, destaque);
     }
 }
 
